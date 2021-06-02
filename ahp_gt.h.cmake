@@ -34,6 +34,7 @@ extern "C" {
 #include <string.h>
 #include <math.h>
 
+///GT1Feature AHP GT default features
 typedef enum  {
     GpioUnused             = 0x0000,
     GpioAsST4              = 0x0001,
@@ -41,6 +42,7 @@ typedef enum  {
     LowCurrentAndGpioAsST4 = 0x0101,
 } GT1Feature;
 
+///SkywatcherFeature Skywatcher default features
 typedef enum {
     inPPECTraining         = 0x000010,
     inPPEC                 = 0x000020,
@@ -54,6 +56,7 @@ typedef enum {
     hasWifi                = 0x008000,
 } SkywatcherFeature;
 
+///MountType Default Mount type
 typedef enum {
     isEQ6 = 0x00,
     isHEQ5 = 0x01,
@@ -69,12 +72,7 @@ typedef enum {
     isCustom = 0xF0,
 } MountType;
 
-typedef enum {
-    Ra = 0,
-    Dec = 1,
-    num_axes = 2,
-} SkywatcherAxis;
-
+///SkywatcherCommand Taken from INDIlib
 typedef enum {
     Null                      = '\0',
     Initialize                = 'F',
@@ -109,38 +107,159 @@ typedef enum {
     FlashEnable               = '!',
 } SkywatcherCommand;
 
-#define HEX(c) (unsigned int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
+///AHP_GT_VERSION This library version
+#define AHP_GT_VERSION @AHP_GT_VERSION@
 
+/**
+* \brief Write values from the GT controller
+*/
 DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
+
+/**
+* \brief Read values from the GT controller
+*/
 DLL_EXPORT void ahp_gt_read_values(int axis);
+
+/**
+* \brief Connect to the GT controller
+*/
 DLL_EXPORT int ahp_gt_connect(const char* port);
 
-DLL_EXPORT int ahp_gt_get_version();
+/**
+* \brief Get the GT firmware version
+*/
+DLL_EXPORT int ahp_gt_get_mc_version();
+
+/**
+* \brief Get the current GT features
+*/
 DLL_EXPORT MountType ahp_gt_get_mount_type();
+
+/**
+* \brief Get the current GT features
+*/
 DLL_EXPORT GT1Feature ahp_gt_get_feature(int axis);
+
+/**
+* \brief Get the current SkyWatcher features
+*/
 DLL_EXPORT SkywatcherFeature ahp_gt_get_features(int axis);
+
+/**
+* \brief Get the current motor steps number
+*/
 DLL_EXPORT double ahp_gt_get_motor_steps(int axis);
+
+/**
+* \brief Get the current motor gear teeth number
+*/
 DLL_EXPORT double ahp_gt_get_motor_teeth(int axis);
+
+/**
+* \brief Get the current worm gear teeth number
+*/
 DLL_EXPORT double ahp_gt_get_worm_teeth(int axis);
+
+/**
+* \brief Get the current crown gear teeth number
+*/
 DLL_EXPORT double ahp_gt_get_crown_teeth(int axis);
+
+/**
+* \brief Get the microsteps in the current configuration
+*/
 DLL_EXPORT double ahp_gt_get_microsteps(int axis);
+
+/**
+* \brief Get the guiding speed
+*/
 DLL_EXPORT double ahp_gt_get_guide_steps(int axis);
+
+/**
+* \brief Get the acceleration increment steps number
+*/
 DLL_EXPORT double ahp_gt_get_acceleration_steps(int axis);
+
+/**
+* \brief Get the acceleration
+*/
 DLL_EXPORT double ahp_gt_get_acceleration(int axis);
+
+/**
+* \brief Get the stepping configuration
+*/
 DLL_EXPORT double ahp_gt_get_stepping_conf(int axis);
+
+/**
+* \brief Get the maximum speed
+*/
 DLL_EXPORT double ahp_gt_get_max_speed(int axis);
+
+/**
+* \brief Get the speed limit
+*/
 DLL_EXPORT double ahp_gt_get_speed_limit(int axis);
+
+/**
+* \brief Set the mount type
+*/
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
+
+/**
+* \brief Get the GT features
+*/
 DLL_EXPORT void ahp_gt_set_features(int axis, SkywatcherFeature value);
+
+/**
+* \brief Set the motor steps number
+*/
 DLL_EXPORT void ahp_gt_set_motor_steps(int axis, double value);
+
+/**
+* \brief Set the motor gear teeth number
+*/
 DLL_EXPORT void ahp_gt_set_motor_teeth(int axis, double value);
+
+/**
+* \brief Set the worm gear teeth number
+*/
 DLL_EXPORT void ahp_gt_set_worm_teeth(int axis, double value);
+
+/**
+* \brief Set the crown gear teeth number
+*/
 DLL_EXPORT void ahp_gt_set_crown_teeth(int axis, double value);
+
+/**
+* \brief Set the guiding speed
+*/
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
+
+/**
+* \brief Set the number of acceleration increments
+*/
 DLL_EXPORT void ahp_gt_set_acceleration_steps(int axis, double value);
+
+/**
+* \brief Set the acceleration in high speed mode
+*/
 DLL_EXPORT void ahp_gt_set_acceleration(int axis, double value);
+
+/**
+* \brief Set the stepping configuration
+*/
 DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, double value);
+
+/**
+* \brief Set the maximum goto speed
+*/
 DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
+
+/**
+* \brief Obtain the current libahp-gt version
+*/
+DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
+
 
 #ifdef __cplusplus
 } // extern "C"

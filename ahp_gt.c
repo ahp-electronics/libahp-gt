@@ -1,6 +1,14 @@
 #include "ahp_gt.h"
 #include "rs232.h"
 
+#define HEX(c) (unsigned int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
+
+typedef enum {
+    Ra = 0,
+    Dec = 1,
+    num_axes = 2,
+} SkywatcherAxis;
+
 static char command[32];
 static char response[32];
 static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
@@ -294,8 +302,8 @@ int ahp_gt_connect(const char* port)
     if(!RS232_OpenComport(port)) {
         if(!RS232_SetupPort(9600, "8N1", 0)) {
             version = dispatch_command(InquireMotorBoardVersion, 0, -1);
-            fprintf(stderr, "MC Version: %02X\n", ahp_gt_get_version());
-            if(ahp_gt_get_version()>0x24) {
+            fprintf(stderr, "MC Version: %02X\n", ahp_gt_get_mc_version());
+            if(ahp_gt_get_mc_version()>0x24) {
                 ahp_gt_read_values(0);
                 ahp_gt_read_values(1);
                 return 1;
@@ -306,7 +314,7 @@ int ahp_gt_connect(const char* port)
     return 0;
 }
 
-int ahp_gt_get_version()
+int ahp_gt_get_mc_version()
 {
     return (version>>8)&0xff;
 }
