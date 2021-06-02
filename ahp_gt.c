@@ -170,7 +170,8 @@ void optimize_values(int axis)
     maxspeed [axis] = (maxperiod [axis] * microsteps [axis] / speedx);
     maxspeed [axis] ++;
     guide [axis] = (SIDEREAL_DAY * baseclock / totalsteps[axis]);
-    double degrees = ((acceleration_value [axis] * totalsteps[axis]) / microsteps[axis] / 180.0);
+    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps[axis]);
+    double degrees = (((64-acceleration_value [axis]) * totalsteps[axis] / 63) / microsteps[axis] / 180.0);
     for(acceleration [axis] = 0; acceleration [axis] < 63 && degrees > 0; acceleration [axis]++, degrees -= acceleration [axis]);
     accelsteps[axis] = 0;
     if(acceleration[axis] > 0) {
