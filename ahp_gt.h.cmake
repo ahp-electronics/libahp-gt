@@ -34,6 +34,13 @@ extern "C" {
 #include <string.h>
 #include <math.h>
 
+///GT1 coil configuration
+typedef enum {
+    AABB             = 0,
+    ABAB             = 1,
+    ABBA             = 2,
+} GT1Stepping;
+
 ///GT1Feature AHP GT default features
 typedef enum  {
     GpioUnused             = 0x0000,
@@ -186,9 +193,14 @@ DLL_EXPORT double ahp_gt_get_acceleration_steps(int axis);
 DLL_EXPORT double ahp_gt_get_acceleration(int axis);
 
 /**
+* \brief Get the forward direction
+*/
+DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
+
+/**
 * \brief Get the stepping configuration
 */
-DLL_EXPORT double ahp_gt_get_stepping_conf(int axis);
+DLL_EXPORT GT1Stepping ahp_gt_get_stepping_conf(int axis);
 
 /**
 * \brief Get the maximum speed
@@ -246,9 +258,14 @@ DLL_EXPORT void ahp_gt_set_acceleration_steps(int axis, double value);
 DLL_EXPORT void ahp_gt_set_acceleration(int axis, double value);
 
 /**
+* \brief Set the forward direction
+*/
+DLL_EXPORT void ahp_gt_set_direction_invert(int axis, int value);
+
+/**
 * \brief Set the stepping configuration
 */
-DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, double value);
+DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1Stepping value);
 
 /**
 * \brief Set the maximum goto speed

@@ -1,0 +1,9 @@
+Package: libahp-gt
+Version: VERSION
+Architecture: ARCH
+Maintainer: Ilia Platone <info@iliaplatone.com>
+Installed-Size: XXX		
+Depends: libc6
+Section: utils
+Priority: extra
+Description: Backend programming library for AHP GT Controllers

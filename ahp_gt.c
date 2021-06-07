@@ -13,29 +13,30 @@ static char command[32];
 static char response[32];
 static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 
-static MountType type = isEQ8;
+MountType type = isEQ8;
 const double SIDEREAL_DAY = 86164.0916000;
 const double SOLAR_DAY = 86400.0;
-static int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
-static int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
-static double maxperiod[num_axes] = { 64, 64 };
-static double speed_limit[num_axes] = { 1000, 1000 };
-static double acceleration_min[num_axes] = { 1, 1 };
-static double acceleration[num_axes] = { 1, 1 };
-static double acceleration_value[num_axes] = { 1, 1 };
-static double microsteps[num_axes] = { 64, 64 };
-static double crown[num_axes] = { 180, 180 };
-static double steps[num_axes] = { 200, 200 };
-static double motor[num_axes] = { 10, 10 };
-static double worm[num_axes] = { 40, 40 };
-static double guide[num_axes] = { 1, 1 };
-static int stepping[num_axes] = { 0, 0 };
-static int version = 0;
-static double maxspeed[num_axes] = { 1000, 1000 };
-static double maxspeed_value[num_axes] = { 500, 500 };
-static SkywatcherFeature features[num_axes] = { hasPPEC, hasPPEC };
-static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
-static double accelsteps[num_axes]  = { 1, 1 };
+int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
+int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
+double maxperiod[num_axes] = { 64, 64 };
+double speed_limit[num_axes] = { 1000, 1000 };
+double acceleration_min[num_axes] = { 1, 1 };
+double acceleration[num_axes] = { 1, 1 };
+double acceleration_value[num_axes] = { 1, 1 };
+double microsteps[num_axes] = { 64, 64 };
+double crown[num_axes] = { 180, 180 };
+double steps[num_axes] = { 200, 200 };
+double motor[num_axes] = { 10, 10 };
+double worm[num_axes] = { 40, 40 };
+double guide[num_axes] = { 1, 1 };
+int direction_invert[num_axes] = { 0, 0 };
+int stepping[num_axes] = { 0, 0 };
+int version = 0;
+double maxspeed[num_axes] = { 1000, 1000 };
+double maxspeed_value[num_axes] = { 500, 500 };
+int features[num_axes] = { hasPPEC, hasPPEC };
+GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
+double accelsteps[num_axes]  = { 1, 1 };
 
 
 static int Revu24str2long(char *s)
@@ -260,7 +261,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 5, (((unsigned short)acceleration [axis] < 0x3f ? (unsigned short)acceleration [axis] : 0x3f) << 18) | (((unsigned short)accelsteps [axis] < 0xff ? (unsigned short)accelsteps [axis] : 0xff) << 10) | (((unsigned short)microsteps [axis] & 0x7f) << 3) | (stepping [axis] & 0x07))) {
+    if (!WriteAndCheck (axis, offset + 5, (((unsigned short)acceleration [axis] < 0x3f ? (unsigned short)acceleration [axis] : 0x3f) << 18) | (((unsigned short)accelsteps [axis] < 0xff ? (unsigned short)accelsteps [axis] : 0xff) << 10) | (((unsigned short)microsteps [axis] & 0x7f) << 3) | ((stepping [axis] & 0x03) << 1) | (direction_invert[axis] & 1))) {
         *finished = -1;
         return;
     }
@@ -280,17 +281,17 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
 
 void ahp_gt_read_values(int axis)
 {
-    int tmp = 0;
     int offset = axis * 8;
     totalsteps [axis] = dispatch_command(GetVars, offset + 0, -1);
     wormsteps [axis] = dispatch_command(GetVars, offset + 1, -1);
     maxspeed [axis] = dispatch_command(GetVars, offset + 2, -1);
     guide [axis] = dispatch_command(GetVars, offset + 3, -1);
-    tmp = dispatch_command(GetVars, offset + 5, -1);
+    int tmp = dispatch_command(GetVars, offset + 5, -1);
     acceleration_value [axis] = ((tmp >> 18) & 0x3f)*64;
     accelsteps [axis] =  (tmp >> 18) & 0xff;
     microsteps [axis] = (tmp >> 3) & 0x7f;
-    stepping [axis] = tmp & 0x07;
+    direction_invert [axis] = (tmp >> 2) & 0x1;
+    stepping [axis] = tmp & 0x03;
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
     gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0xff;
     type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
@@ -374,9 +375,14 @@ double ahp_gt_get_acceleration(int axis)
     return acceleration_value[axis];
 }
 
-double ahp_gt_get_stepping_conf(int axis)
+int ahp_gt_get_direction_invert(int axis)
 {
-    return stepping[axis];
+    return direction_invert[axis];
+}
+
+GT1Stepping ahp_gt_get_stepping_conf(int axis)
+{
+    return (GT1Stepping)stepping[axis];
 }
 
 double ahp_gt_get_max_speed(int axis)
@@ -441,9 +447,14 @@ void ahp_gt_set_acceleration(int axis, double value)
     optimize_values(axis);
 }
 
-void ahp_gt_set_stepping_conf(int axis, double value)
+void ahp_gt_set_direction_invert(int axis, int value)
 {
-    stepping[axis] = value;
+    direction_invert[axis] = value&1;
+}
+
+void ahp_gt_set_stepping_conf(int axis, GT1Stepping value)
+{
+    stepping[axis] = (int)value;
 }
 
 void ahp_gt_set_max_speed(int axis, double value)
