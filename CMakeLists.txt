@@ -23,6 +23,9 @@ set(SOURCES
     ${CMAKE_SOURCE_DIR}/ahp_gt.c
    )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files.libahp-gt.cmake ${CMAKE_CURRENT_BINARY_DIR}/files.libahp-gt )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/files.libahp-gt-dev.cmake ${CMAKE_CURRENT_BINARY_DIR}/files.libahp-gt-dev )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 

@@ -238,12 +238,13 @@ int RS232_OpenComport(const char* devname)
       fprintf(stderr, "Another process has locked the comport.");
       return(1);
     }
+    return(0);
 }
 
 ssize_t RS232_PollComport(unsigned char *buf, int size)
 {
   ssize_t n;
-  int ntries = n;
+  int ntries = size;
 retry:
   usleep(10000);
   n = read(fd, buf, (size_t)(size));

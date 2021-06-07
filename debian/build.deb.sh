@@ -5,10 +5,12 @@
 	arch=$3
 
 	sudo chown $user ${deb} -R
+	cp ../build-${arch}/files.${deb} .
 	cat files.${deb} | while read line; do
 		src=$(echo ${line} | cut -d ',' -f 1)
 		dst=$(echo ${line} | cut -d ',' -f 2)
-		cp ../build-${arch}/${src} ${deb}/${dst}
+		mkdir -p $(dirname ${deb}/${dst})
+		rsync -a ../build-${arch}/${src} ${deb}/${dst}
 	done
 
 	size=$(sudo du -sk ${deb}/ | sed -e "s:${deb}/::")
