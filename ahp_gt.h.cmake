@@ -273,10 +273,29 @@ DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1Stepping value);
 DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
 /**
+* \brief Start a slew motion
+*/
+DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
+
+/**
+* \brief Stop an axis motion
+*/
+DLL_EXPORT void ahp_gt_stop_motion(int axis);
+
+/**
+* \brief Set the slew speed
+*/
+DLL_EXPORT void ahp_gt_set_axis_speed(int axis, double speed);
+
+/**
+* \brief Start a test tracking motion
+*/
+DLL_EXPORT void ahp_gt_start_tracking(int axis);
+
+/**
 * \brief Obtain the current libahp-gt version
 */
 DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
-
 
 #ifdef __cplusplus
 } // extern "C"

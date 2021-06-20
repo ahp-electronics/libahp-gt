@@ -35,6 +35,8 @@ int version = 0;
 double maxspeed[num_axes] = { 1000, 1000 };
 double maxspeed_value[num_axes] = { 500, 500 };
 int features[num_axes] = { hasPPEC, hasPPEC };
+int motionmode[num_axes] = {0, 0};
+int axisstatus[2] = {0, 0};
 GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 double accelsteps[num_axes]  = { 1, 1 };
 
@@ -159,21 +161,22 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     return -1;
 }
 
-void optimize_values(int axis)
+static void optimize_values(int axis)
 {
-    double baseclock = 375000;
-    double steps0 = steps [axis] * worm [axis] / motor [axis];
+    double baseclock = 1500000;
     int maxsteps = 0xffffff;
-    wormsteps [axis] = (double)maxsteps / crown [axis];
-    microsteps [axis] = wormsteps [axis] / steps0;
-    microsteps [axis] = microsteps[axis] < 8 ? 8 : (microsteps[axis] < 63 ? microsteps[axis] : 63);
+    totalsteps [axis] = maxsteps;
+    microsteps [axis] = (int)128;
+    while(totalsteps[axis] >= maxsteps && microsteps [axis] > 1) {
+        microsteps [axis]--;
+        wormsteps [axis] = steps [axis] * microsteps [axis] * worm [axis] / motor [axis];
+        totalsteps [axis] = crown [axis] * wormsteps [axis];
+    }
     maxperiod [axis] = (SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
     maxperiod [axis] = floor(maxperiod [axis]);
     maxperiod [axis] *= 50;
     speed_limit [axis] = (maxperiod [axis] / 25);
-    wormsteps [axis] = (microsteps [axis] * steps0);
-    totalsteps [axis] = crown [axis] * wormsteps [axis];
     double speedx = (maxspeed_value [axis] * maxperiod [axis]) / speed_limit [axis];
     speedx = speedx < 1 ? 2 : speedx * 2;
     maxspeed [axis] = (maxperiod [axis] * microsteps [axis] / speedx);
@@ -462,4 +465,45 @@ void ahp_gt_set_max_speed(int axis, double value)
     maxspeed_value[axis] = value < 1 ? 1 : value;
     maxspeed_value[axis] = maxspeed_value[axis] < speed_limit[axis] ? maxspeed_value[axis] : speed_limit[axis];
     optimize_values(axis);
+}
+
+void ahp_gt_start_motion(int axis, double speed) {
+    if((axisstatus[axis] & 0xf) != 0)
+        return;
+    ahp_gt_set_axis_speed(axis, fabs(speed));
+    if((axisstatus[axis] & 0xf) != 0)
+        return;
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, motionmode[axis] | (speed < 0 ? 1 : 0));
+    dispatch_command (StartMotion, axis, -1);
+}
+
+void ahp_gt_stop_motion(int axis) {
+    dispatch_command(InstantAxisStop, axis, -1);
+    axisstatus[axis] = 0x111;
+    while ((axisstatus[axis] & 0xf) != 0)
+        axisstatus[axis] = send_cmd(GetAxisStatus, axis);
+}
+
+void ahp_gt_set_axis_speed(int axis, double speed) {
+    double minspeed = maxperiod[axis];
+    int speedx = fmax((int)(speed * minspeed) / maxspeed_value[axis], 1)*2;
+    if(speedx > 128) {
+        motionmode[axis] = 0x30;
+        minspeed *= microsteps [axis];
+    } else {
+        motionmode[axis] = 0x10;
+    }
+    int period = (int)(minspeed / speedx + 1);
+    dispatch_command (SetStepPeriod, axis, period);
+}
+
+void ahp_gt_start_tracking(int axis) {
+    int period = (int)maxperiod[axis];
+    dispatch_command (SetStepPeriod, axis, period);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, 0x10);
+    dispatch_command (StartMotion, axis, -1);
 }
