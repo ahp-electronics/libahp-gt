@@ -175,11 +175,10 @@ static void optimize_values(int axis)
         for(microsteps[axis] = (int)microstep; microsteps[axis]<64 && multiplier[axis] < 0xf; multiplier[axis]++) {
             microsteps[axis] = (int)microstep*multiplier[axis]+1;
         }
-        multipliers = (microspeed[0] << 9) | (microspeed[1] << 10) | (multiplier[0]<<1) | (multiplier[1]<<5);
+        multipliers = (microspeed[0] ? 0x200 : 0) | (microspeed[1] ? 0x400 : 0) | (multiplier[0]<<1)|(multiplier[1]<<5);
     }
     wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1);
     totalsteps [axis] = wormsteps [axis] * crown [axis];
-    maxperiod [axis] = (int)(SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] = (SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
     maxperiod [axis] = floor(maxperiod [axis]);
