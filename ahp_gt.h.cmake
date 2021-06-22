@@ -256,6 +256,10 @@ DLL_EXPORT void ahp_gt_set_acceleration_steps(int axis, double value);
 * \brief Set the acceleration in high speed mode
 */
 DLL_EXPORT void ahp_gt_set_acceleration(int axis, double value);
+/**
+* \brief Set the high speed stepping behavior
+*/
+DLL_EXPORT void ahp_gt_set_microspeed(int axis, int value);
 
 /**
 * \brief Set the forward direction

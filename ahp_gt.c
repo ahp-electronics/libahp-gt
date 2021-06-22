@@ -13,32 +13,35 @@ static char command[32];
 static char response[32];
 static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 
-MountType type = isEQ8;
-const double SIDEREAL_DAY = 86164.0916000;
-const double SOLAR_DAY = 86400.0;
-int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
-int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
-double maxperiod[num_axes] = { 64, 64 };
-double speed_limit[num_axes] = { 1000, 1000 };
-double acceleration_min[num_axes] = { 1, 1 };
-double acceleration[num_axes] = { 1, 1 };
-double acceleration_value[num_axes] = { 1, 1 };
-double microsteps[num_axes] = { 64, 64 };
-double crown[num_axes] = { 180, 180 };
-double steps[num_axes] = { 200, 200 };
-double motor[num_axes] = { 10, 10 };
-double worm[num_axes] = { 40, 40 };
-double guide[num_axes] = { 1, 1 };
-int direction_invert[num_axes] = { 0, 0 };
-int stepping[num_axes] = { 0, 0 };
-int version = 0;
-double maxspeed[num_axes] = { 1000, 1000 };
-double maxspeed_value[num_axes] = { 500, 500 };
-int features[num_axes] = { hasPPEC, hasPPEC };
-int motionmode[num_axes] = {0, 0};
-int axisstatus[2] = {0, 0};
-GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
-double accelsteps[num_axes]  = { 1, 1 };
+static MountType type = isEQ8;
+static const double SIDEREAL_DAY = 86164.0916000;
+static const double SOLAR_DAY = 86400.0;
+static int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
+static int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
+static double maxperiod[num_axes] = { 64, 64 };
+static double speed_limit[num_axes] = { 1000, 1000 };
+static double acceleration_min[num_axes] = { 1, 1 };
+static double acceleration[num_axes] = { 1, 1 };
+static double acceleration_value[num_axes] = { 1, 1 };
+static double microsteps[num_axes] = { 64, 64 };
+static int microspeed[num_axes] = { 0, 0 };
+static int multiplier[num_axes] = { 0, 0 };
+static int multipliers = 0;
+static double crown[num_axes] = { 180, 180 };
+static double steps[num_axes] = { 200, 200 };
+static double motor[num_axes] = { 10, 10 };
+static double worm[num_axes] = { 40, 40 };
+static double guide[num_axes] = { 1, 1 };
+static int direction_invert[num_axes] = { 0, 0 };
+static int stepping[num_axes] = { 0, 0 };
+static int version = 0;
+static double maxspeed[num_axes] = { 1000, 1000 };
+static double maxspeed_value[num_axes] = { 500, 500 };
+static int features[num_axes] = { hasPPEC, hasPPEC };
+static int motionmode[num_axes] = {0, 0};
+static int axisstatus[2] = {0, 0};
+static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
+static double accelsteps[num_axes]  = { 1, 1 };
 
 
 static int Revu24str2long(char *s)
@@ -163,15 +166,20 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
 static void optimize_values(int axis)
 {
-    double baseclock = 1500000;
+    double baseclock = 375000;
     int maxsteps = 0xffffff;
-    totalsteps [axis] = maxsteps;
-    microsteps [axis] = (int)128;
-    while(totalsteps[axis] >= maxsteps && microsteps [axis] > 1) {
-        microsteps [axis]--;
-        wormsteps [axis] = steps [axis] * microsteps [axis] * worm [axis] / motor [axis];
-        totalsteps [axis] = crown [axis] * wormsteps [axis];
+    wormsteps [axis] = (int)(maxsteps / crown [axis]);
+    double microstep = (wormsteps [axis] * motor [axis] / (steps [axis] * worm [axis]));
+    multiplier[axis] = 0;
+    if(version == 0x31) {
+        for(microsteps[axis] = (int)microstep; microsteps[axis]<64 && multiplier[axis] < 0xf; multiplier[axis]++) {
+            microsteps[axis] = (int)microstep*multiplier[axis]+1;
+        }
+        multipliers = (microspeed[0] << 9) | (microspeed[1] << 10) | (multiplier[0]<<1) | (multiplier[1]<<5);
     }
+    wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1);
+    totalsteps [axis] = wormsteps [axis] * crown [axis];
+    maxperiod [axis] = (int)(SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] = (SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
     maxperiod [axis] = floor(maxperiod [axis]);
@@ -274,7 +282,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 7, (ushort)gt1feature[axis] | ((unsigned char)type)<<16)) {
+    if (!WriteAndCheck (axis, offset + 7, (ushort)gt1feature[axis] | ((unsigned char)type)<<16) | (int)(((multipliers>>(8*axis))&0xff)<<8)) {
         *finished = -1;
         return;
     }
@@ -447,6 +455,12 @@ void ahp_gt_set_acceleration_steps(int axis, double value)
 void ahp_gt_set_acceleration(int axis, double value)
 {
     acceleration_value[axis] = value;
+    optimize_values(axis);
+}
+
+void ahp_gt_set_microspeed(int axis, int value)
+{
+    microspeed[axis] = value;
     optimize_values(axis);
 }
 
