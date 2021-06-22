@@ -1,7 +1,7 @@
 #include "ahp_gt.h"
 #include "rs232.h"
 
-#define HEX(c) (unsigned int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
+#define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 
 typedef enum {
     Ra = 0,
@@ -15,12 +15,10 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 
 static MountType type = isEQ8;
 static const double SIDEREAL_DAY = 86164.0916000;
-static const double SOLAR_DAY = 86400.0;
 static int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
 static int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
 static double maxperiod[num_axes] = { 64, 64 };
 static double speed_limit[num_axes] = { 1000, 1000 };
-static double acceleration_min[num_axes] = { 1, 1 };
 static double acceleration[num_axes] = { 1, 1 };
 static double acceleration_value[num_axes] = { 1, 1 };
 static double microsteps[num_axes] = { 64, 64 };
@@ -46,7 +44,7 @@ static double accelsteps[num_axes]  = { 1, 1 };
 
 static int Revu24str2long(char *s)
 {
-    unsigned int res = 0;
+    int res = 0;
     res = HEX(s[4]);
     res <<= 4;
     res |= HEX(s[5]);
@@ -63,7 +61,7 @@ static int Revu24str2long(char *s)
 
 static int Highstr2long(char *s)
 {
-    unsigned int res = 0;
+    int res = 0;
     res = HEX(s[0]);
     res <<= 4;
     res |= HEX(s[1]);
@@ -130,7 +128,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         // Clear string
         command[0] = '\0';
         char command_arg[32];
-        unsigned long n;
+        int n;
         if (arg < 0) {
             snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
             n = 4;
@@ -169,15 +167,16 @@ static void optimize_values(int axis)
     double baseclock = 375000;
     int maxsteps = 0xffffff;
     wormsteps [axis] = (int)(maxsteps / crown [axis]);
-    double microstep = (wormsteps [axis] * motor [axis] / (steps [axis] * worm [axis]));
+    int microstep = (int)(wormsteps [axis] * motor [axis] / (steps [axis] * worm [axis]));
     multiplier[axis] = 0;
+    microsteps[axis] = microstep;
     if(version == 0x31) {
-        for(microsteps[axis] = (int)microstep; microsteps[axis]<64 && multiplier[axis] < 0xf; multiplier[axis]++) {
-            microsteps[axis] = (int)microstep*multiplier[axis]+1;
+        for(; microsteps[axis]<64 && multiplier[axis] < 0xf; multiplier[axis]++) {
+            microsteps[axis] = ((int)microstep*(multiplier[axis]+1));
         }
         multipliers = (microspeed[0] ? 0x200 : 0) | (microspeed[1] ? 0x400 : 0) | (multiplier[0]<<1)|(multiplier[1]<<5);
     }
-    wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1);
+    wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1) + 1;
     totalsteps [axis] = wormsteps [axis] * crown [axis];
     maxperiod [axis] = (SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
@@ -281,7 +280,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 7, (ushort)gt1feature[axis] | ((unsigned char)type)<<16) | (int)(((multipliers>>(8*axis))&0xff)<<8)) {
+    if (!WriteAndCheck (axis, offset + 7, (ushort)gt1feature[axis] | (((unsigned char)type)<<16) | (int)(((multipliers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -342,7 +341,7 @@ GT1Feature ahp_gt_get_feature(int axis)
 
 SkywatcherFeature ahp_gt_get_features(int axis)
 {
-    return features[axis];
+    return (SkywatcherFeature)features[axis];
 }
 
 double ahp_gt_get_motor_steps(int axis)
@@ -496,7 +495,7 @@ void ahp_gt_stop_motion(int axis) {
     dispatch_command(InstantAxisStop, axis, -1);
     axisstatus[axis] = 0x111;
     while ((axisstatus[axis] & 0xf) != 0)
-        axisstatus[axis] = send_cmd(GetAxisStatus, axis);
+        axisstatus[axis] = dispatch_command(GetAxisStatus, axis, -1);
 }
 
 void ahp_gt_set_axis_speed(int axis, double speed) {
