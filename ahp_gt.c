@@ -170,13 +170,13 @@ static void optimize_values(int axis)
     int microstep = (int)(wormsteps [axis] * motor [axis] / (steps [axis] * worm [axis]));
     multiplier[axis] = 0;
     microsteps[axis] = microstep;
-    if(version == 0x31) {
+    if(ahp_gt_get_mc_version() == 0x31) {
         for(; microsteps[axis]<64 && multiplier[axis] < 0xf; multiplier[axis]++) {
             microsteps[axis] = ((int)microstep*(multiplier[axis]+1));
         }
         multipliers = (microspeed[0] ? 0x200 : 0) | (microspeed[1] ? 0x400 : 0) | (multiplier[0]<<1)|(multiplier[1]<<5);
     }
-    wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1) + 1;
+    wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1);
     totalsteps [axis] = wormsteps [axis] * crown [axis];
     maxperiod [axis] = (SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
