@@ -193,6 +193,16 @@ DLL_EXPORT double ahp_gt_get_acceleration_steps(int axis);
 DLL_EXPORT double ahp_gt_get_acceleration(int axis);
 
 /**
+* \brief Get the rs232 port polarity
+*/
+DLL_EXPORT int ahp_gt_get_rs232_polarity();
+
+/**
+* \brief Get the high speed stepping behavior
+*/
+DLL_EXPORT int ahp_gt_get_microspeed(int axis);
+
+/**
 * \brief Get the forward direction
 */
 DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
@@ -256,6 +266,12 @@ DLL_EXPORT void ahp_gt_set_acceleration_steps(int axis, double value);
 * \brief Set the acceleration in high speed mode
 */
 DLL_EXPORT void ahp_gt_set_acceleration(int axis, double value);
+
+/**
+* \brief Set the rs232 port polarity
+*/
+DLL_EXPORT void ahp_gt_set_rs232_polarity(int value);
+
 /**
 * \brief Set the high speed stepping behavior
 */

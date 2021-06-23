@@ -14,6 +14,7 @@ static char response[32];
 static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 
 static MountType type = isEQ8;
+static int rs232_polarity = 0;
 static const double SIDEREAL_DAY = 86164.0916000;
 static int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
 static int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
@@ -304,6 +305,11 @@ void ahp_gt_read_values(int axis)
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
     gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0xff;
     type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
+    multipliers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
+    multipliers |= dispatch_command(GetVars, 15, -1) & 0xff00;
+    microspeed[axis] = (multipliers >> (9+axis)) & 0x1;
+    multiplier[axis] = (multipliers >> (1+axis*4)) & 0xf;
+    rs232_polarity = multipliers & 1;
     optimize_values(axis);
 }
 
@@ -384,6 +390,16 @@ double ahp_gt_get_acceleration(int axis)
     return acceleration_value[axis];
 }
 
+int ahp_gt_get_rs232_polarity()
+{
+    return rs232_polarity;
+}
+
+int ahp_gt_get_microspeed(int axis)
+{
+    return microspeed[axis];
+}
+
 int ahp_gt_get_direction_invert(int axis)
 {
     return direction_invert[axis];
@@ -454,6 +470,13 @@ void ahp_gt_set_acceleration(int axis, double value)
 {
     acceleration_value[axis] = value;
     optimize_values(axis);
+}
+
+void ahp_gt_set_rs232_polarity(int value)
+{
+    rs232_polarity = value;
+    optimize_values(0);
+    optimize_values(1);
 }
 
 void ahp_gt_set_microspeed(int axis, int value)
