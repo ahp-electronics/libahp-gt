@@ -258,14 +258,9 @@ DLL_EXPORT void ahp_gt_set_crown_teeth(int axis, double value);
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
 
 /**
-* \brief Set the number of acceleration increments
-*/
-DLL_EXPORT void ahp_gt_set_acceleration_steps(int axis, double value);
-
-/**
 * \brief Set the acceleration in high speed mode
 */
-DLL_EXPORT void ahp_gt_set_acceleration(int axis, double value);
+DLL_EXPORT void ahp_gt_set_acceleration_degrees(int axis, double value);
 
 /**
 * \brief Set the rs232 port polarity

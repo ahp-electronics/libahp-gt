@@ -20,8 +20,8 @@ static int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10
 static int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
 static double maxperiod[num_axes] = { 64, 64 };
 static double speed_limit[num_axes] = { 1000, 1000 };
-static double acceleration[num_axes] = { 1, 1 };
-static double acceleration_value[num_axes] = { 1, 1 };
+static double acceleration[num_axes] = { 20.0, 20.0 };
+static double acceleration_value[num_axes] = { 20.0, 20.0 };
 static double microsteps[num_axes] = { 64, 64 };
 static int microspeed[num_axes] = { 0, 0 };
 static int multiplier[num_axes] = { 0, 0 };
@@ -166,38 +166,39 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 static void optimize_values(int axis)
 {
     double baseclock = 375000;
+    double steps0 = steps [axis] * worm [axis] / motor [axis];
     int maxsteps = 0xffffff;
-    wormsteps [axis] = (int)(maxsteps / crown [axis]);
-    int microstep = (int)(wormsteps [axis] * motor [axis] / (steps [axis] * worm [axis]));
-    multiplier[axis] = 0;
-    microsteps[axis] = microstep;
-    if(ahp_gt_get_mc_version() == 0x31) {
-        for(; microsteps[axis]<64 && multiplier[axis] < 0xf; multiplier[axis]++) {
-            microsteps[axis] = ((int)microstep*(multiplier[axis]+1));
-        }
-        multipliers = (microspeed[0] ? 0x200 : 0) | (microspeed[1] ? 0x400 : 0) | (multiplier[0]<<1)|(multiplier[1]<<5);
-    }
-    wormsteps [axis] = microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / (multiplier[axis]+1);
-    totalsteps [axis] = wormsteps [axis] * crown [axis];
-    maxperiod [axis] = (SIDEREAL_DAY / crown [axis]);
+    wormsteps [axis] = maxsteps / crown [axis];
+    double microstep = (double)wormsteps [axis] / steps0;
+    multiplier [axis] = 1;
+    if (version == 0x31)
+        multiplier [axis] = (int)fmax (1, fmin (0x10, (32.0 / microstep)));
+    microsteps [axis] = (int)fmax (1, fmin ((double)63, microstep * multiplier [axis] - 1));
+    wormsteps [axis] = (int)(microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / multiplier [axis]);
+    totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
+
+    maxperiod [axis] = (int)(SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
-    maxperiod [axis] = floor(maxperiod [axis]);
+    maxperiod [axis] = floor (maxperiod [axis]);
     maxperiod [axis] *= 50;
-    speed_limit [axis] = (maxperiod [axis] / 25);
-    double speedx = (maxspeed_value [axis] * maxperiod [axis]) / speed_limit [axis];
-    speedx = speedx < 1 ? 2 : speedx * 2;
-    maxspeed [axis] = (maxperiod [axis] * microsteps [axis] / speedx);
-    maxspeed [axis] ++;
-    guide [axis] = (SIDEREAL_DAY * baseclock / totalsteps[axis]);
-    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps[axis]);
-    double degrees = (((64-acceleration_value [axis]) * totalsteps[axis] / 63) / microsteps[axis] / 180.0);
-    for(acceleration [axis] = 0; acceleration [axis] < 63 && degrees > 0; acceleration [axis]++, degrees -= acceleration [axis]);
-    accelsteps[axis] = 0;
-    if(acceleration[axis] > 0) {
-        accelsteps[axis] = (guide [axis] / acceleration [axis]);
-        accelsteps[axis] = accelsteps[axis] < 1 ? 1 : accelsteps[axis];
-        accelsteps[axis] = accelsteps[axis] > 255 ? 255 : accelsteps[axis];
+
+    maxspeed [axis] = (int)(maxperiod [axis] + 1) / multiplier [axis] / 25;
+    maxspeed_value [axis] = fmin (maxspeed [axis], fmax (128, maxspeed_value [axis]));
+    int speedx = (int)fmax ((maxspeed_value [axis] * maxperiod [axis]) / maxspeed [axis], 1) * 2;
+    maxspeed [axis] = (int)(maxperiod [axis] * microsteps [axis] / speedx);
+    maxspeed [axis]++;
+    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
+    double degrees = acceleration[axis];
+    for (acceleration_value [axis] = 0; acceleration_value [axis] < 63 && degrees > 0; acceleration_value [axis]++, degrees -= acceleration_value [axis])
+        ;
+    if (acceleration_value [axis] > 0) {
+        accelsteps [axis] = (int)(guide [axis] / acceleration_value [axis]);
+        accelsteps [axis] = fmax (1, fmin (0xff, accelsteps [axis]));
     }
+    multiplier [axis] --;
+    if (version == 0x31)
+        multipliers = (microspeed [0] ? 0x200 : 0) | (microspeed [1] ? 0x400 : 0) | (multiplier [0] << 1) | (multiplier [1] << 5);
+
 }
 
 int Check(int pos)
@@ -460,15 +461,9 @@ void ahp_gt_set_guide_steps(int axis, double value)
     guide[axis] = value;
 }
 
-void ahp_gt_set_acceleration_steps(int axis, double value)
+void ahp_gt_set_acceleration_degrees(int axis, double value)
 {
-    accelsteps[axis] = value;
-    optimize_values(axis);
-}
-
-void ahp_gt_set_acceleration(int axis, double value)
-{
-    acceleration_value[axis] = value;
+    acceleration [axis] = value * (totalsteps [axis] / microsteps [axis] / 360.0);
     optimize_values(axis);
 }
 
