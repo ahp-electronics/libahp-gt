@@ -22,9 +22,10 @@ static double maxperiod[num_axes] = { 64, 64 };
 static double speed_limit[num_axes] = { 1000, 1000 };
 static double acceleration[num_axes] = { 20.0, 20.0 };
 static double acceleration_value[num_axes] = { 20.0, 20.0 };
-static double microsteps[num_axes] = { 64, 64 };
+static double divider[num_axes] = { 64, 64 };
 static int microspeed[num_axes] = { 0, 0 };
 static int multiplier[num_axes] = { 0, 0 };
+static int address = 0;
 static int multipliers = 0;
 static double crown[num_axes] = { 180, 180 };
 static double steps[num_axes] = { 200, 200 };
@@ -37,7 +38,8 @@ static int version = 0;
 static double maxspeed[num_axes] = { 1000, 1000 };
 static double maxspeed_value[num_axes] = { 500, 500 };
 static int features[num_axes] = { hasPPEC, hasPPEC };
-static int motionmode[num_axes] = {0, 0};
+static SkywatcherMotionMode motionmode[num_axes] = {0, 0};
+static int motionspeed[num_axes] = {0, 0};
 static int axisstatus[2] = {0, 0};
 static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 static double accelsteps[num_axes]  = { 1, 1 };
@@ -166,16 +168,18 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 static void optimize_values(int axis)
 {
     double baseclock = 375000;
-    double steps0 = steps [axis] * worm [axis] / motor [axis];
     int maxsteps = 0xffffff;
-    wormsteps [axis] = maxsteps / crown [axis];
-    double microstep = (double)wormsteps [axis] / steps0;
-    multiplier [axis] = 1;
-    if (version == 0x31)
-        multiplier [axis] = (int)fmax (1, fmin (0x10, (32.0 / microstep)));
-    microsteps [axis] = (int)fmax (1, fmin ((double)63, microstep * multiplier [axis] - 1));
-    wormsteps [axis] = (int)(microsteps [axis] * steps [axis] * worm [axis] / motor [axis] / multiplier [axis]);
+    double microsteps = 126.0;
+    maxsteps /= (int)microsteps;
+    wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
+    double d = 1.0;
+    if (version == 0x31)
+        d += fmin (15.0, (double)totalsteps [axis] / (double)maxsteps);
+    divider [axis] = (int)d;
+    multiplier [axis] = (int)(microsteps-(d-(double)divider [axis])*microsteps)+1;
+    wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
+    totalsteps [axis] = (int)((double)totalsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
 
     maxperiod [axis] = (int)(SIDEREAL_DAY / crown [axis]);
     maxperiod [axis] /= 50;
@@ -185,7 +189,7 @@ static void optimize_values(int axis)
     maxspeed [axis] = (int)(maxperiod [axis] + 1) / multiplier [axis] / 25;
     maxspeed_value [axis] = fmin (maxspeed [axis], fmax (128, maxspeed_value [axis]));
     int speedx = (int)fmax ((maxspeed_value [axis] * maxperiod [axis]) / maxspeed [axis], 1) * 2;
-    maxspeed [axis] = (int)(maxperiod [axis] * microsteps [axis] / speedx);
+    maxspeed [axis] = (int)(maxperiod [axis] * divider [axis] / speedx);
     maxspeed [axis]++;
     guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
     double degrees = acceleration[axis];
@@ -197,7 +201,7 @@ static void optimize_values(int axis)
     }
     multiplier [axis] --;
     if (version == 0x31)
-        multipliers = (microspeed [0] ? 0x200 : 0) | (microspeed [1] ? 0x400 : 0) | (multiplier [0] << 1) | (multiplier [1] << 5);
+        multipliers = (multiplier [0] << 1) | (multiplier [1] << 5);
 
 }
 
@@ -272,7 +276,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 5, (((unsigned short)acceleration [axis] < 0x3f ? (unsigned short)acceleration [axis] : 0x3f) << 18) | (((unsigned short)accelsteps [axis] < 0xff ? (unsigned short)accelsteps [axis] : 0xff) << 10) | (((unsigned short)microsteps [axis] & 0x7f) << 3) | ((stepping [axis] & 0x03) << 1) | (direction_invert[axis] & 1))) {
+    if (!WriteAndCheck (axis, offset + 5, (((unsigned short)acceleration [axis] < 0x3f ? (unsigned short)acceleration [axis] : 0x3f) << 18) | (((unsigned short)accelsteps [axis] < 0xff ? (unsigned short)accelsteps [axis] : 0xff) << 10) | (((unsigned short)divider [axis] & 0x7f) << 3) | ((stepping [axis] & 0x03) << 1) | (direction_invert[axis] & 1))) {
         *finished = -1;
         return;
     }
@@ -300,7 +304,7 @@ void ahp_gt_read_values(int axis)
     int tmp = dispatch_command(GetVars, offset + 5, -1);
     acceleration_value [axis] = ((tmp >> 18) & 0x3f)*64;
     accelsteps [axis] =  (tmp >> 18) & 0xff;
-    microsteps [axis] = (tmp >> 3) & 0x7f;
+    divider [axis] = (tmp >> 3) & 0x7f;
     direction_invert [axis] = (tmp >> 2) & 0x1;
     stepping [axis] = tmp & 0x03;
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
@@ -308,8 +312,8 @@ void ahp_gt_read_values(int axis)
     type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
     multipliers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
     multipliers |= dispatch_command(GetVars, 15, -1) & 0xff00;
-    microspeed[axis] = (multipliers >> (9+axis)) & 0x1;
     multiplier[axis] = (multipliers >> (1+axis*4)) & 0xf;
+    address = (multipliers >> 9) & 0x7f;
     rs232_polarity = multipliers & 1;
     optimize_values(axis);
 }
@@ -371,9 +375,14 @@ double ahp_gt_get_crown_teeth(int axis)
     return crown[axis];
 }
 
-double ahp_gt_get_microsteps(int axis)
+double ahp_gt_get_multiplier(int axis)
 {
-    return microsteps[axis];
+    return multiplier[axis];
+}
+
+double ahp_gt_get_divider(int axis)
+{
+    return divider[axis];
 }
 
 double ahp_gt_get_guide_steps(int axis)
@@ -394,11 +403,6 @@ double ahp_gt_get_acceleration(int axis)
 int ahp_gt_get_rs232_polarity()
 {
     return rs232_polarity;
-}
-
-int ahp_gt_get_microspeed(int axis)
-{
-    return microspeed[axis];
 }
 
 int ahp_gt_get_direction_invert(int axis)
@@ -463,7 +467,7 @@ void ahp_gt_set_guide_steps(int axis, double value)
 
 void ahp_gt_set_acceleration_degrees(int axis, double value)
 {
-    acceleration [axis] = value * (totalsteps [axis] / microsteps [axis] / 360.0);
+    acceleration [axis] = value * (totalsteps [axis] / divider [axis] / 360.0);
     optimize_values(axis);
 }
 
@@ -472,12 +476,6 @@ void ahp_gt_set_rs232_polarity(int value)
     rs232_polarity = value;
     optimize_values(0);
     optimize_values(1);
-}
-
-void ahp_gt_set_microspeed(int axis, int value)
-{
-    microspeed[axis] = value;
-    optimize_values(axis);
 }
 
 void ahp_gt_set_direction_invert(int axis, int value)
@@ -497,10 +495,70 @@ void ahp_gt_set_max_speed(int axis, double value)
     optimize_values(axis);
 }
 
+void ahp_gt_select_device(int address) {
+    address &= 0x7f;
+    RS232_SendByte((unsigned char)address | 0x80);
+    ahp_gt_read_values(Ra);
+    ahp_gt_read_values(Dec);
+}
+
+int ahp_gt_get_status(int axis)
+{
+    return dispatch_command(GetAxisStatus, axis, -1);
+}
+
+double ahp_gt_get_position(int axis)
+{
+    return (double)dispatch_command(GetAxisPosition, axis, -1)/(double)totalsteps[axis];
+}
+
+void ahp_gt_goto_absolute(int axis, double target, double speed) {
+    double max = totalsteps[axis];
+    double position = ahp_gt_get_position(axis);
+    target -= position;
+    while(target > 0.5) target -= 1.0;
+    while(target < -0.5) target += 1.0;
+    double increment = target * max;
+    dispatch_command(SetGotoTargetIncrement, axis, (int)fabs(increment));
+    SkywatcherMotionMode mode = MODE_GOTO_HISPEED;
+    if(fabs(speed) < 128.0)
+        mode = MODE_GOTO_LOSPEED;
+    ahp_gt_set_axis_speed(axis, mode, fabs(speed));
+    if((axisstatus[axis] & 0xf) != 0)
+        return;
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, motionmode[axis] | (speed < 0 ? 1 : 0));
+    dispatch_command (StartMotion, axis, -1);
+}
+
+void ahp_gt_goto_relative(int axis, double increment, double speed) {
+    double max = totalsteps[axis];
+    while (increment > 1.0)
+        increment -= 1.0;
+    while (increment < 1.0)
+        increment += 1.0;
+    increment *= max;
+    dispatch_command(SetGotoTargetIncrement, axis, (int)fabs(increment));
+    SkywatcherMotionMode mode = MODE_GOTO_HISPEED;
+    if(fabs(speed) < 128.0)
+        mode = MODE_GOTO_LOSPEED;
+    ahp_gt_set_axis_speed(axis, mode, fabs(speed));
+    if((axisstatus[axis] & 0xf) != 0)
+        return;
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, motionmode[axis] | (speed < 0 ? 1 : 0));
+    dispatch_command (StartMotion, axis, -1);
+}
+
 void ahp_gt_start_motion(int axis, double speed) {
     if((axisstatus[axis] & 0xf) != 0)
         return;
-    ahp_gt_set_axis_speed(axis, fabs(speed));
+    SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
+    if(fabs(speed) < 128.0)
+        mode = MODE_SLEW_LOSPEED;
+    ahp_gt_set_axis_speed(axis, mode, fabs(speed));
     if((axisstatus[axis] & 0xf) != 0)
         return;
     dispatch_command (Initialize, axis, -1);
@@ -516,15 +574,10 @@ void ahp_gt_stop_motion(int axis) {
         axisstatus[axis] = dispatch_command(GetAxisStatus, axis, -1);
 }
 
-void ahp_gt_set_axis_speed(int axis, double speed) {
+void ahp_gt_set_axis_speed(int axis, SkywatcherMotionMode mode, double speed) {
     double minspeed = maxperiod[axis];
     int speedx = fmax((int)(speed * minspeed) / maxspeed_value[axis], 1)*2;
-    if(speedx > 128) {
-        motionmode[axis] = 0x30;
-        minspeed *= microsteps [axis];
-    } else {
-        motionmode[axis] = 0x10;
-    }
+    motionmode[axis] = mode;
     int period = (int)(minspeed / speedx + 1);
     dispatch_command (SetStepPeriod, axis, period);
 }

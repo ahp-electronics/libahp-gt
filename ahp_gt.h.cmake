@@ -114,6 +114,14 @@ typedef enum {
     FlashEnable               = '!',
 } SkywatcherCommand;
 
+///SkywatcherMotionMode
+typedef enum {
+    MODE_GOTO_HISPEED = 0x00,
+    MODE_SLEW_LOSPEED = 0x10,
+    MODE_GOTO_LOSPEED = 0x20,
+    MODE_SLEW_HISPEED = 0x30,
+} SkywatcherMotionMode;
+
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
 
@@ -173,9 +181,14 @@ DLL_EXPORT double ahp_gt_get_worm_teeth(int axis);
 DLL_EXPORT double ahp_gt_get_crown_teeth(int axis);
 
 /**
-* \brief Get the microsteps in the current configuration
+* \brief Get the divider in the current configuration
 */
-DLL_EXPORT double ahp_gt_get_microsteps(int axis);
+DLL_EXPORT double ahp_gt_get_divider(int axis);
+
+/**
+* \brief Get the multiplier in the current configuration
+*/
+DLL_EXPORT double ahp_gt_get_multiplier(int axis);
 
 /**
 * \brief Get the guiding speed
@@ -196,11 +209,6 @@ DLL_EXPORT double ahp_gt_get_acceleration(int axis);
 * \brief Get the rs232 port polarity
 */
 DLL_EXPORT int ahp_gt_get_rs232_polarity();
-
-/**
-* \brief Get the high speed stepping behavior
-*/
-DLL_EXPORT int ahp_gt_get_microspeed(int axis);
 
 /**
 * \brief Get the forward direction
@@ -288,7 +296,32 @@ DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1Stepping value);
 DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
 /**
-* \brief Start a slew motion
+* \brief Select a device on a serial bus
+*/
+DLL_EXPORT void ahp_gt_select_device(int address);
+
+/**
+* \brief Get an axis status
+*/
+DLL_EXPORT int ahp_gt_get_status(int axis);
+
+/**
+* \brief Get an axis position
+*/
+DLL_EXPORT double ahp_gt_get_position(int axis);
+
+/**
+* \brief Start an absolute goto motion on an axis
+*/
+DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
+
+/**
+* \brief Start a relative goto motion on an axis
+*/
+DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
+
+/**
+* \brief Start a slew motion on an axis
 */
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 
@@ -300,7 +333,7 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis);
 /**
 * \brief Set the slew speed
 */
-DLL_EXPORT void ahp_gt_set_axis_speed(int axis, double speed);
+DLL_EXPORT void ahp_gt_set_axis_speed(int axis, SkywatcherMotionMode mode, double speed);
 
 /**
 * \brief Start a test tracking motion
