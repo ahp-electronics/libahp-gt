@@ -311,6 +311,11 @@ DLL_EXPORT int ahp_gt_get_status(int axis);
 DLL_EXPORT double ahp_gt_get_position(int axis);
 
 /**
+* \brief Set an axis position
+*/
+DLL_EXPORT void ahp_gt_set_position(int axis, double value);
+
+/**
 * \brief Start an absolute goto motion on an axis
 */
 DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);

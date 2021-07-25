@@ -507,6 +507,11 @@ int ahp_gt_get_status(int axis)
     return dispatch_command(GetAxisStatus, axis, -1);
 }
 
+void ahp_gt_set_position(int axis, double value)
+{
+    dispatch_command(GetAxisPosition, axis, (int)(value*totalsteps[axis]));
+}
+
 double ahp_gt_get_position(int axis)
 {
     return (double)dispatch_command(GetAxisPosition, axis, -1)/(double)totalsteps[axis];
