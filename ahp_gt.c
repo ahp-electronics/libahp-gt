@@ -175,7 +175,8 @@ static void optimize_values(int axis)
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (version == 0x31)
-        d += fmin (15.0, (double)totalsteps [axis] / (double)maxsteps);
+        d += fmin (3.0, (double)log(totalsteps [axis])/log((double)maxsteps));
+    d = pow(2, d);
     divider [axis] = (int)d;
     multiplier [axis] = (int)(microsteps-(d-(double)divider [axis])*microsteps)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
@@ -186,12 +187,11 @@ static void optimize_values(int axis)
     maxperiod [axis] = floor (maxperiod [axis]);
     maxperiod [axis] *= 50;
 
-    maxspeed [axis] = (int)(maxperiod [axis] + 1) / multiplier [axis] / 25;
-    maxspeed_value [axis] = fmin (maxspeed [axis], fmax (128, maxspeed_value [axis]));
-    int speedx = (int)fmax ((maxspeed_value [axis] * maxperiod [axis]) / maxspeed [axis], 1) * 2;
-    maxspeed [axis] = (int)(maxperiod [axis] * divider [axis] / speedx);
-    maxspeed [axis]++;
-    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
+    double minstep = 4.0 / steps [axis];
+    double steptime = (SIDEREAL_DAY / (totalsteps [axis] * divider [axis] / multiplier [axis]));
+    speed_limit [axis] = (int)(steptime / minstep);
+    maxspeed_value [axis] = fmin (speed_limit [axis], fmax (1.0, maxspeed_value [axis]));
+    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis] );
     double degrees = acceleration[axis];
     for (acceleration_value [axis] = 0; acceleration_value [axis] < 63 && degrees > 0; acceleration_value [axis]++, degrees -= acceleration_value [axis])
         ;
@@ -199,9 +199,9 @@ static void optimize_values(int axis)
         accelsteps [axis] = (int)(guide [axis] / acceleration_value [axis]);
         accelsteps [axis] = fmax (1, fmin (0xff, accelsteps [axis]));
     }
-    multiplier [axis] --;
+    divider [axis] = (int)log(divider [axis])/log(2.0);
     if (version == 0x31)
-        multipliers = (multiplier [0] << 1) | (multiplier [1] << 5);
+        multipliers = (multiplier [0] << 1) | (multiplier [1] << 3);
 
 }
 
