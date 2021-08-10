@@ -112,6 +112,7 @@ typedef enum {
     ReloadVars                = '$',
     Flash                     = '#',
     FlashEnable               = '!',
+    SetAddress                = '=',
 } SkywatcherCommand;
 
 ///SkywatcherMotionMode
@@ -297,8 +298,9 @@ DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
 /**
 * \brief Select a device on a serial bus
+* \return -1 if no devices with such address, 0 if a device with the given address is present
 */
-DLL_EXPORT void ahp_gt_select_device(int address);
+DLL_EXPORT int ahp_gt_select_device(int address);
 
 /**
 * \brief Get an axis status

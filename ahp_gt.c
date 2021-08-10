@@ -495,11 +495,14 @@ void ahp_gt_set_max_speed(int axis, double value)
     optimize_values(axis);
 }
 
-void ahp_gt_select_device(int address) {
+int ahp_gt_select_device(int address) {
     address &= 0x7f;
-    RS232_SendByte((unsigned char)address | 0x80);
-    ahp_gt_read_values(Ra);
-    ahp_gt_read_values(Dec);
+    int device_present = dispatch_command(SetAddress, 0, (address | 0x80));
+    if(!device_present) {
+        ahp_gt_read_values(Ra);
+        ahp_gt_read_values(Dec);
+    }
+    return device_present;
 }
 
 int ahp_gt_get_status(int axis)
