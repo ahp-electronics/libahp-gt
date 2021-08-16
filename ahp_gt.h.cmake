@@ -144,12 +144,12 @@ DLL_EXPORT int ahp_gt_connect(const char* port);
 /**
 * \brief Get the GT firmware version
 */
-DLL_EXPORT int ahp_gt_get_mc_version();
+DLL_EXPORT int ahp_gt_get_mc_version(void);
 
 /**
 * \brief Get the current GT features
 */
-DLL_EXPORT MountType ahp_gt_get_mount_type();
+DLL_EXPORT MountType ahp_gt_get_mount_type(void);
 
 /**
 * \brief Get the current GT features
@@ -209,7 +209,12 @@ DLL_EXPORT double ahp_gt_get_acceleration(int axis);
 /**
 * \brief Get the rs232 port polarity
 */
-DLL_EXPORT int ahp_gt_get_rs232_polarity();
+DLL_EXPORT int ahp_gt_get_rs232_polarity(void);
+
+/**
+* \brief Get the microstepping pwm frequency
+*/
+DLL_EXPORT int ahp_gt_get_pwm_frequency(void);
 
 /**
 * \brief Get the forward direction
@@ -275,6 +280,11 @@ DLL_EXPORT void ahp_gt_set_acceleration_degrees(int axis, double value);
 * \brief Set the rs232 port polarity
 */
 DLL_EXPORT void ahp_gt_set_rs232_polarity(int value);
+
+/**
+* \brief Set the microstepping pwm frequency
+*/
+DLL_EXPORT void ahp_gt_set_pwm_frequency(int value);
 
 /**
 * \brief Set the high speed stepping behavior

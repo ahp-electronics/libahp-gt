@@ -43,7 +43,7 @@ static int motionspeed[num_axes] = {0, 0};
 static int axisstatus[2] = {0, 0};
 static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 static double accelsteps[num_axes]  = { 1, 1 };
-
+static unsigned char pwmfreq = 0;
 
 static int Revu24str2long(char *s)
 {
@@ -175,8 +175,7 @@ static void optimize_values(int axis)
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (version == 0x31)
-        d += fmin (3.0, (double)log(totalsteps [axis])/log((double)maxsteps));
-    d = pow(2, d);
+        d += fmin (15.0, (double)log(totalsteps [axis])/(double)maxsteps);
     divider [axis] = (int)d;
     multiplier [axis] = (int)(microsteps-(d-(double)divider [axis])*microsteps)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
@@ -187,11 +186,11 @@ static void optimize_values(int axis)
     maxperiod [axis] = floor (maxperiod [axis]);
     maxperiod [axis] *= 50;
 
-    double minstep = 4.0 / steps [axis];
-    double steptime = (SIDEREAL_DAY / (totalsteps [axis] * divider [axis] / multiplier [axis]));
-    speed_limit [axis] = (int)(steptime / minstep);
-    maxspeed_value [axis] = fmin (speed_limit [axis], fmax (1.0, maxspeed_value [axis]));
-    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis] );
+    speed_limit [axis] = (int)(maxperiod [axis] / 25) / divider [axis];
+    int speedx = (int)fmax (maxspeed_value [axis] * maxperiod [axis] / speed_limit [axis], 1) * 2;
+    maxspeed [axis] = (int)(maxperiod [axis] * multiplier [axis] / speedx);
+    maxspeed [axis]++;
+    guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
     double degrees = acceleration[axis];
     for (acceleration_value [axis] = 0; acceleration_value [axis] < 63 && degrees > 0; acceleration_value [axis]++, degrees -= acceleration_value [axis])
         ;
@@ -201,8 +200,7 @@ static void optimize_values(int axis)
     }
     divider [axis] = (int)log(divider [axis])/log(2.0);
     if (version == 0x31)
-        multipliers = (multiplier [0] << 1) | (multiplier [1] << 3);
-
+        multipliers = (rs232_polarity & 1) | (multiplier [0] << 1) | (multiplier [1] << 5);
 }
 
 int Check(int pos)
@@ -286,7 +284,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 7, (ushort)gt1feature[axis] | (((unsigned char)type)<<16) | (int)(((multipliers>>(8*axis))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, offset + 7, (unsigned char)(((pwmfreq << (6-2*axis))&0x30)|(gt1feature[axis]&0xf)) | (((unsigned char)type)<<16) | (int)(((multipliers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -405,6 +403,11 @@ int ahp_gt_get_rs232_polarity()
     return rs232_polarity;
 }
 
+int ahp_gt_get_pwm_frequency()
+{
+    return pwmfreq;
+}
+
 int ahp_gt_get_direction_invert(int axis)
 {
     return direction_invert[axis];
@@ -463,6 +466,12 @@ void ahp_gt_set_crown_teeth(int axis, double value)
 void ahp_gt_set_guide_steps(int axis, double value)
 {
     guide[axis] = value;
+}
+
+void ahp_gt_set_pwm_frequency(int value)
+{
+    value = fmin(0xf, fmax(0, value));
+    pwmfreq = value;
 }
 
 void ahp_gt_set_acceleration_degrees(int axis, double value)
