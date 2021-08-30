@@ -23,7 +23,6 @@ static double speed_limit[num_axes] = { 1000, 1000 };
 static double acceleration[num_axes] = { 20.0, 20.0 };
 static double acceleration_value[num_axes] = { 20.0, 20.0 };
 static double divider[num_axes] = { 64, 64 };
-static int microspeed[num_axes] = { 0, 0 };
 static int multiplier[num_axes] = { 0, 0 };
 static int address = 0;
 static int multipliers = 0;
@@ -39,7 +38,6 @@ static double maxspeed[num_axes] = { 1000, 1000 };
 static double maxspeed_value[num_axes] = { 500, 500 };
 static int features[num_axes] = { hasPPEC, hasPPEC };
 static SkywatcherMotionMode motionmode[num_axes] = {0, 0};
-static int motionspeed[num_axes] = {0, 0};
 static int axisstatus[2] = {0, 0};
 static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 static double accelsteps[num_axes]  = { 1, 1 };
@@ -91,7 +89,7 @@ static int read_eqmod()
     response[0] = '\0';
     char c = 0;
     while(c != '\r' && err_code < 10) {
-        if(1 == RS232_PollComport((unsigned char*)&c, 1))
+        if(1 == RS232_PollComport(&c, 1))
             response[nbytes_read++] = c;
         else
             err_code++;

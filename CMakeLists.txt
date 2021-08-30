@@ -16,7 +16,7 @@ set(AHPGT_VERSION "${AHP_GT_VERSION_MAJOR}.${AHP_GT_VERSION_MINOR}.${AHP_GT_VERS
 set(AHP_GT_VERSION 0x${AHP_GT_VERSION_MAJOR}${AHP_GT_VERSION_MINOR}${AHP_GT_VERSION_RELEASE})
 set(AHPGT_SOVERSION ${AHP_GT_VERSION_MAJOR})
 
-add_definitions(-Wall -O3 -g -fstack-protector -Wno-unused-parameter)
+add_definitions(-Wall -O3 -g -Wno-unused-parameter)
 
 set(SOURCES
     ${CMAKE_SOURCE_DIR}/rs232.c

@@ -25,6 +25,19 @@ extern "C" {
 #endif
 #ifdef _WIN32
 #define DLL_EXPORT __declspec(dllexport)
+#include <windows.h>
+void usleep(long int usec)
+{
+    HANDLE timer;
+    LARGE_INTEGER ft;
+
+    ft.QuadPart = -(10*usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+    timer = CreateWaitableTimer(NULL, TRUE, NULL);
+    SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+    WaitForSingleObject(timer, INFINITE);
+    CloseHandle(timer);
+}
 #else
 #define DLL_EXPORT extern
 #endif

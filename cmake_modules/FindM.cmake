@@ -28,6 +28,7 @@ else (M_LIB)
     ${_obLinkDir}
     ${GNUWIN32_DIR}/lib
     /usr/local/lib
+    HINTS ${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}
   )
 
   if(M_LIB)

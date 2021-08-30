@@ -33,9 +33,9 @@
 #include "rs232.h"
 
 
+static int baudrate = 57600;
 #if defined(__linux__) || defined(__FreeBSD__)   /* Linux & FreeBSD */
-
-static int error = 0, baudrate = 57600;
+static int error = 0;
 static int fd = -1;
 
 static struct termios new_port_settings, old_port_settings;
@@ -482,6 +482,10 @@ void RS232_flushRXTX()
   tcflush(fd, TCIOFLUSH);
 }
 
+void RS232_SetFD(unsigned long f)
+{
+    fd = f;
+}
 
 #else  /* windows */
 
@@ -492,7 +496,7 @@ HANDLE fd;
 char mode_str[128];
 
 
-int RS232_OpenComport(const char *dev_name)
+int RS232_OpenComport(const char *devname)
 {
     char *dev_name = strcat("\\\\.\\", devname);
     fd = CreateFileA(dev_name,
@@ -665,17 +669,10 @@ https://docs.microsoft.com/en-us/windows/desktop/api/winbase/ns-winbase-_dcb
 
 int RS232_AlignFrame(int sof, int maxtries)
 {
-    int n;
-    int c = 0;
+    char c = 0;
     RS232_flushRX();
     while(c != sof && maxtries-- > 0) {
-        n = RS232_PollComport(&c, 1);
-        if(n<0) {
-          if(errno == EAGAIN)
-              continue;
-          else
-              return 1;
-        }
+        RS232_PollComport(&c, 1);
     }
     return 0;
 }
@@ -816,16 +813,25 @@ void RS232_flushRXTX()
   PurgeComm(fd, PURGE_TXCLEAR | PURGE_TXABORT);
 }
 
+void RS232_SetFD(unsigned long f)
+{
+    fd = (HANDLE)f;
+}
 
 #endif
-
-
-void RS232_SetFD(int f)
-{
-    fd = f;
-}
 
 void RS232_cputs(const char *text)  /* sends a string to serial port */
 {
   while(*text != 0)   RS232_SendByte(*((const unsigned char*)text++));
 }
+
+
+
+
+
+
+
+
+
+
+
