@@ -25,7 +25,7 @@ static double acceleration_value[num_axes] = { 20.0, 20.0 };
 static double divider[num_axes] = { 64, 64 };
 static int multiplier[num_axes] = { 0, 0 };
 static int address = 0;
-static int multipliers = 0;
+static int dividers = 0;
 static double crown[num_axes] = { 180, 180 };
 static double steps[num_axes] = { 200, 200 };
 static double motor[num_axes] = { 10, 10 };
@@ -165,6 +165,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
 static void optimize_values(int axis)
 {
+    double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 375000;
     int maxsteps = 0xffffff;
     double microsteps = 126.0;
@@ -173,32 +174,34 @@ static void optimize_values(int axis)
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (version == 0x31)
-        d += fmin (15.0, (double)log(totalsteps [axis])/(double)maxsteps);
+        d += fmin (15.0, (double)totalsteps [axis] / (double)maxsteps);
     divider [axis] = (int)d;
     multiplier [axis] = (int)(microsteps-(d-(double)divider [axis])*microsteps)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
     totalsteps [axis] = (int)((double)totalsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
 
-    maxperiod [axis] = (int)(SIDEREAL_DAY / crown [axis]);
+    maxperiod [axis] = (int)sidereal_period;
     maxperiod [axis] /= 50;
     maxperiod [axis] = floor (maxperiod [axis]);
     maxperiod [axis] *= 50;
+    maxperiod [axis] /= divider [axis];
 
-    speed_limit [axis] = (int)(maxperiod [axis] / 25) / divider [axis];
-    int speedx = (int)fmax (maxspeed_value [axis] * maxperiod [axis] / speed_limit [axis], 1) * 2;
-    maxspeed [axis] = (int)(maxperiod [axis] * multiplier [axis] / speedx);
-    maxspeed [axis]++;
+    speed_limit [axis] = (int)(maxperiod [axis] / 25);
+    int speedx = (int)fmax ((maxspeed [axis] * maxperiod [axis]) / speed_limit [axis], 1) * 2;
+    maxspeed_value [axis] = (int)(maxperiod [axis] * multiplier [axis] / speedx);
+    maxspeed_value [axis]++;
     guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
-    double degrees = acceleration[axis];
-    for (acceleration_value [axis] = 0; acceleration_value [axis] < 63 && degrees > 0; acceleration_value [axis]++, degrees -= acceleration_value [axis])
+
+    int degrees = (int)(((double)(20 - acceleration [axis]) * totalsteps [axis] / 20.0) / multiplier [axis] / 180.0);
+    for (acceleration [axis] = 0; acceleration [axis] < 63 && degrees > 0; acceleration [axis]++, degrees -= acceleration [axis])
         ;
-    if (acceleration_value [axis] > 0) {
-        accelsteps [axis] = (int)(guide [axis] / acceleration_value [axis]);
-        accelsteps [axis] = fmax (1, fmin (0xff, accelsteps [axis]));
+    accelsteps [axis] = 0;
+    if (acceleration [axis] > 0) {
+        accelsteps [axis] = (int)(guide [axis] / acceleration [axis]);
+        accelsteps [axis] =fmax (1, fmin (0xff, accelsteps [axis]));
     }
-    divider [axis] = (int)log(divider [axis])/log(2.0);
     if (version == 0x31)
-        multipliers = (rs232_polarity & 1) | (multiplier [0] << 1) | (multiplier [1] << 5);
+        dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5);
 }
 
 int Check(int pos)
@@ -257,7 +260,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 2, 0xffffff < maxspeed [axis] ? 0xffffff : maxspeed [axis])) {
+    if (!WriteAndCheck (axis, offset + 2, 0xffffff < maxspeed_value [axis] ? 0xffffff : maxspeed_value [axis])) {
         *finished = -1;
         return;
     }
@@ -282,7 +285,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent += 100 / 8 / num_axes;
-    if (!WriteAndCheck (axis, offset + 7, (unsigned char)(((pwmfreq << (6-2*axis))&0x30)|(gt1feature[axis]&0xf)) | (((unsigned char)type)<<16) | (int)(((multipliers>>(8*axis))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | (unsigned short)gt1feature[axis] | ((unsigned char)type)<<16 | (int)(((dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -306,11 +309,11 @@ void ahp_gt_read_values(int axis)
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
     gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0xff;
     type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
-    multipliers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
-    multipliers |= dispatch_command(GetVars, 15, -1) & 0xff00;
-    multiplier[axis] = (multipliers >> (1+axis*4)) & 0xf;
-    address = (multipliers >> 9) & 0x7f;
-    rs232_polarity = multipliers & 1;
+    dividers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
+    dividers |= dispatch_command(GetVars, 15, -1) & 0xff00;
+    multiplier[axis] = (dividers >> (1+axis*4)) & 0xf;
+    address = (dividers >> 9) & 0x7f;
+    rs232_polarity = dividers & 1;
     optimize_values(axis);
 }
 
@@ -418,7 +421,7 @@ GT1Stepping ahp_gt_get_stepping_conf(int axis)
 
 double ahp_gt_get_max_speed(int axis)
 {
-    return maxspeed_value[axis];
+    return maxspeed[axis];
 }
 
 double ahp_gt_get_speed_limit(int axis)
@@ -497,8 +500,8 @@ void ahp_gt_set_stepping_conf(int axis, GT1Stepping value)
 
 void ahp_gt_set_max_speed(int axis, double value)
 {
-    maxspeed_value[axis] = value < 1 ? 1 : value;
-    maxspeed_value[axis] = maxspeed_value[axis] < speed_limit[axis] ? maxspeed_value[axis] : speed_limit[axis];
+    maxspeed[axis] = value < 1 ? 1 : value;
+    maxspeed[axis] = maxspeed[axis] < speed_limit[axis] ? maxspeed[axis] : speed_limit[axis];
     optimize_values(axis);
 }
 
