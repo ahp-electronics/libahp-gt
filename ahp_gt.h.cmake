@@ -24,9 +24,13 @@
 extern "C" {
 #endif
 #ifdef _WIN32
+#include <windows.h>
 #define DLL_EXPORT __declspec(dllexport)
+#define Handle HANDLE
 #else
 #define DLL_EXPORT extern
+#define Handle int
+#define INVALID_HANDLE_VALUE -1
 #endif
 
 #include <stdio.h>
@@ -46,8 +50,6 @@ typedef enum {
 typedef enum  {
     GpioUnused             = 0x0000,
     GpioAsST4              = 0x0001,
-    LowCurrent             = 0x0100,
-    LowCurrentAndGpioAsST4 = 0x0101,
 } GT1Feature;
 
 ///SkywatcherFeature Skywatcher default features
@@ -193,6 +195,16 @@ DLL_EXPORT double ahp_gt_get_divider(int axis);
 DLL_EXPORT double ahp_gt_get_multiplier(int axis);
 
 /**
+* \brief Get the total number of steps
+*/
+DLL_EXPORT int ahp_gt_get_totalsteps(int axis);
+
+/**
+* \brief Get the worm number of steps
+*/
+DLL_EXPORT int ahp_gt_get_wormsteps(int axis);
+
+/**
 * \brief Get the guiding speed
 */
 DLL_EXPORT double ahp_gt_get_guide_steps(int axis);
@@ -205,7 +217,7 @@ DLL_EXPORT double ahp_gt_get_acceleration_steps(int axis);
 /**
 * \brief Get the acceleration
 */
-DLL_EXPORT double ahp_gt_get_acceleration(int axis);
+DLL_EXPORT double ahp_gt_get_acceleration_angle(int axis);
 
 /**
 * \brief Get the rs232 port polarity
@@ -275,7 +287,7 @@ DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
 /**
 * \brief Set the acceleration in high speed mode
 */
-DLL_EXPORT void ahp_gt_set_acceleration_degrees(int axis, double value);
+DLL_EXPORT void ahp_gt_set_acceleration_angle(int axis, double value);
 
 /**
 * \brief Set the rs232 port polarity
@@ -314,27 +326,47 @@ DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 DLL_EXPORT int ahp_gt_select_device(int address);
 
 /**
+* \brief Change the current device address
+* \return -1 if no devices with such address, 0 if a device with the given address is present
+*/
+DLL_EXPORT void ahp_gt_set_address(int address);
+
+/**
+* \brief Get the current device address
+* \return the address of the current device
+*/
+DLL_EXPORT int ahp_gt_get_address();
+
+/**
 * \brief Get an axis status
+* \return the axis status value
 */
 DLL_EXPORT int ahp_gt_get_status(int axis);
 
 /**
 * \brief Get an axis position
+* \return the position of the specified axis in radians
 */
 DLL_EXPORT double ahp_gt_get_position(int axis);
 
 /**
-* \brief Set an axis position
+* \brief Set an axis position in radians
 */
 DLL_EXPORT void ahp_gt_set_position(int axis, double value);
 
 /**
-* \brief Start an absolute goto motion on an axis
+* \brief Determine if an axis is in motion
+* \return 1 if the axis is in motion, 0 if it's stopped
+*/
+DLL_EXPORT int ahp_gt_is_axis_moving(int axis);
+
+/**
+* \brief Start an absolute goto motion on an axis in radians
 */
 DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
 /**
-* \brief Start a relative goto motion on an axis
+* \brief Start a relative goto motion on an axis in radians
 */
 DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
 

@@ -41,7 +41,7 @@ extern "C" {
 
 
 
-#if defined(__linux__) || defined(__FreeBSD__)
+#ifndef _WIN32
 
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -53,15 +53,19 @@ extern "C" {
 #include <sys/file.h>
 #include <errno.h>
 
+#define Handle int
+#define INVALID_HANDLE_VALUE -1
+
 #else
 
 #include <windows.h>
+#define Handle HANDLE
 
 #endif
 
 int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);
 int RS232_OpenComport(const char *comport);
-void RS232_SetFD(unsigned long f);
+void RS232_SetFD(Handle f);
 int RS232_AlignFrame(int sof, int maxtries);
 int RS232_PollComport(char *buf, int size);
 int RS232_SendByte(unsigned char byte);
