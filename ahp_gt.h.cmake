@@ -26,11 +26,8 @@ extern "C" {
 #ifdef _WIN32
 #include <windows.h>
 #define DLL_EXPORT __declspec(dllexport)
-#define Handle HANDLE
 #else
 #define DLL_EXPORT extern
-#define Handle int
-#define INVALID_HANDLE_VALUE -1
 #endif
 
 #include <stdio.h>
@@ -143,6 +140,11 @@ DLL_EXPORT void ahp_gt_read_values(int axis);
 * \brief Connect to the GT controller
 */
 DLL_EXPORT int ahp_gt_connect(const char* port);
+
+/**
+* \brief Connect to the GT controller using an existing file descriptor
+*/
+DLL_EXPORT int ahp_gt_connect_fd(int fd);
 
 /**
 * \brief Get the GT firmware version

@@ -38,48 +38,35 @@ extern "C" {
 
 #include <stdio.h>
 #include <string.h>
-
-
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
 
 #ifndef _WIN32
 
 #include <termios.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
-#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <sys/file.h>
-#include <errno.h>
-
-#define Handle int
-#define INVALID_HANDLE_VALUE -1
 
 #else
 
 #include <windows.h>
-#define Handle HANDLE
-
+#undef UNICODE
+#undef _UNICODE
 #endif
 
 int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);
 int RS232_OpenComport(const char *comport);
-void RS232_SetFD(Handle f);
+void RS232_SetFD(int f);
 int RS232_AlignFrame(int sof, int maxtries);
-int RS232_PollComport(char *buf, int size);
+int RS232_RecvByte();
+int RS232_RecvBuf(unsigned char *buf, int size);
 int RS232_SendByte(unsigned char byte);
 int RS232_SendBuf(unsigned char *buf, int size);
 void RS232_CloseComport(void);
-void RS232_cputs(const char *text);
-int RS232_IsDCDEnabled(void);
-int RS232_IsRINGEnabled(void);
-int RS232_IsCTSEnabled(void);
-int RS232_IsDSREnabled(void);
-void RS232_enableDTR(void);
-void RS232_disableDTR(void);
-void RS232_enableRTS(void);
-void RS232_disableRTS(void);
 void RS232_flushRX(void);
 void RS232_flushTX(void);
 void RS232_flushRXTX(void);
@@ -89,5 +76,3 @@ void RS232_flushRXTX(void);
 #endif
 
 #endif
-
-

@@ -315,9 +315,9 @@ void ahp_gt_read_values(int axis)
     optimize_values(axis);
 }
 
-int ahp_gt_connect_fd(Handle fd)
+int ahp_gt_connect_fd(int fd)
 {
-    if(fd != INVALID_HANDLE_VALUE) {
+    if(fd != -1) {
         RS232_SetFD(fd);
         return 0;
     }
