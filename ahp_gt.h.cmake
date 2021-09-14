@@ -41,7 +41,14 @@ typedef enum {
     AABB             = 0,
     ABAB             = 1,
     ABBA             = 2,
-} GT1Stepping;
+} GT1SteppingConfiguration;
+
+///GT1 stepping mode
+typedef enum {
+    Mixed            = 0,
+    Microstep        = 1,
+    HalfStep         = 2,
+} GT1SteppingMode;
 
 ///GT1Feature AHP GT default features
 typedef enum  {
@@ -239,7 +246,12 @@ DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
 /**
 * \brief Get the stepping configuration
 */
-DLL_EXPORT GT1Stepping ahp_gt_get_stepping_conf(int axis);
+DLL_EXPORT GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis);
+
+/**
+* \brief Get the stepping mode
+*/
+DLL_EXPORT GT1SteppingMode ahp_gt_get_stepping_mode(int axis);
 
 /**
 * \brief Get the maximum speed
@@ -257,9 +269,14 @@ DLL_EXPORT double ahp_gt_get_speed_limit(int axis);
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
 /**
-* \brief Get the GT features
+* \brief Set the Skywatcher features
 */
 DLL_EXPORT void ahp_gt_set_features(int axis, SkywatcherFeature value);
+
+/**
+* \brief Set the GT features
+*/
+DLL_EXPORT void ahp_gt_set_feature(int axis, GT1Feature value);
 
 /**
 * \brief Set the motor steps number
@@ -314,7 +331,12 @@ DLL_EXPORT void ahp_gt_set_direction_invert(int axis, int value);
 /**
 * \brief Set the stepping configuration
 */
-DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1Stepping value);
+DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value);
+
+/**
+* \brief Set the stepping mode
+*/
+DLL_EXPORT void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value);
 
 /**
 * \brief Set the maximum goto speed

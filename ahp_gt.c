@@ -32,7 +32,8 @@ static double motor[num_axes] = { 10, 10 };
 static double worm[num_axes] = { 40, 40 };
 static double guide[num_axes] = { 1, 1 };
 static int direction_invert[num_axes] = { 0, 0 };
-static int stepping[num_axes] = { 0, 0 };
+static int stepping_conf[num_axes] = { 0, 0 };
+static int stepping_mode[num_axes] = { 0, 0 };
 static int version = 0;
 static double maxspeed[num_axes] = { 1000, 1000 };
 static double maxspeed_value[num_axes] = { 500, 500 };
@@ -89,7 +90,7 @@ static int read_eqmod()
     response[0] = '\0';
     char c = 0;
     while(c != '\r' && err_code < 10) {
-        if(1 == RS232_PollComport(&c, 1))
+        if(1 == RS232_RecvBuf(&c, 1))
             response[nbytes_read++] = c;
         else
             err_code++;
@@ -168,20 +169,21 @@ static void optimize_values(int axis)
     double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 375000;
     int maxsteps = 0xffffff;
-    double microsteps = 126.0;
+    double microsteps = stepping_mode[axis] == HalfStep ? 1.0 : 126.0;
     maxsteps /= (int)microsteps;
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
-    if (ahp_gt_get_mc_version() == 0x31)
+    if (ahp_gt_get_mc_version() > 0x30)
         d += fmin (14.0, (double)totalsteps [axis] / (double)maxsteps);
     divider [axis] = floor(d);
-    multiplier [axis] = (int)(microsteps-(d-divider [axis])*microsteps)+1;
+    multiplier [axis] = (int)(stepping_mode[axis] == HalfStep) ? 1 : (microsteps-(d-divider [axis])*microsteps)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
     totalsteps [axis] = (int)((double)totalsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
 
     maxperiod [axis] = (int)sidereal_period;
-    speed_limit [axis] = (int)(maxperiod [axis] / (divider [axis] - multiplier [axis] / (microsteps+1)));
+    speed_limit [axis] = (int)(maxperiod [axis] * worm[axis] / motor[axis]) / divider [axis];
+    maxspeed [axis] = fmin(speed_limit [axis], maxspeed [axis]);
     maxspeed_value [axis] = (int)fmax(multiplier [axis], (maxperiod [axis] * multiplier [axis] / maxspeed [axis]));
     maxspeed_value [axis]++;
     guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
@@ -269,7 +271,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = axis * 50 + 32.25;
-    if (!WriteAndCheck (axis, offset + 5, ((int)acceleration_value [axis] << 18) | ((int)accelsteps [axis] << 10) | (((int)multiplier [axis] & 0x7f) << 3) | ((stepping [axis] & 0x03) << 1) | (direction_invert[axis] & 1))) {
+    if (!WriteAndCheck (axis, offset + 5, ((int)acceleration_value [axis] << 18) | ((int)accelsteps [axis] << 10) | (((int)multiplier [axis] & 0x7f) << 3) | ((stepping_conf[axis] & 0x03) << 1) | (direction_invert[axis] & 1))) {
         *finished = -1;
         return;
     }
@@ -279,7 +281,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = axis * 50 + 44.75;
-    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | (int)gt1feature[axis] | ((unsigned char)type)<<16 | (int)(((dividers>>(8*axis))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)stepping_mode[axis] << 6) | ((int)gt1feature[axis] & 1) | ((unsigned char)type)<<16 | (int)(((dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -300,11 +302,12 @@ void ahp_gt_read_values(int axis)
     accelsteps [axis] =  (tmp >> 18) & 0xff;
     multiplier [axis] = (tmp >> 3) & 0x7f;
     direction_invert [axis] = (tmp >> 2) & 0x1;
-    stepping [axis] = tmp & 0x03;
+    stepping_conf [axis] = tmp & 0x03;
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
     gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0xf;
-    pwmfreq = (dispatch_command(GetVars, 7, -1) & 0x30)>>4;
-    pwmfreq |= (dispatch_command(GetVars, 15, -1) & 0x30)>>2;
+    stepping_mode[axis] = (dispatch_command(GetVars, offset + 7, -1) >> 6) & 0x03;
+    pwmfreq = (dispatch_command(GetVars, 7, -1) >> 4) & 0x3;
+    pwmfreq |= (dispatch_command(GetVars, 15, -1) >> 2) & 0xc;
     pwmfreq = 15-pwmfreq;
     type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
     dividers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
@@ -431,9 +434,14 @@ int ahp_gt_get_direction_invert(int axis)
     return direction_invert[axis];
 }
 
-GT1Stepping ahp_gt_get_stepping_conf(int axis)
+GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis)
 {
-    return (GT1Stepping)stepping[axis];
+    return (GT1SteppingConfiguration)stepping_conf[axis];
+}
+
+GT1SteppingMode ahp_gt_get_stepping_mode(int axis)
+{
+    return (GT1SteppingMode)stepping_mode[axis];
 }
 
 double ahp_gt_get_max_speed(int axis)
@@ -455,6 +463,12 @@ void ahp_gt_set_features(int axis, SkywatcherFeature value)
 {
     features[axis] &= ~value;
     features[axis] |= value;
+}
+
+void ahp_gt_set_feature(int axis, GT1Feature value)
+{
+    gt1feature[axis] = value & 1;
+    optimize_values(axis);
 }
 
 void ahp_gt_set_motor_steps(int axis, double value)
@@ -484,6 +498,7 @@ void ahp_gt_set_crown_teeth(int axis, double value)
 void ahp_gt_set_guide_steps(int axis, double value)
 {
     guide[axis] = value;
+    optimize_values(axis);
 }
 
 void ahp_gt_set_pwm_frequency(int value)
@@ -510,9 +525,15 @@ void ahp_gt_set_direction_invert(int axis, int value)
     direction_invert[axis] = value&1;
 }
 
-void ahp_gt_set_stepping_conf(int axis, GT1Stepping value)
+void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value)
 {
-    stepping[axis] = (int)value;
+    stepping_conf[axis] = (int)value;
+}
+
+void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value)
+{
+    stepping_mode[axis] = (int)value;
+    optimize_values(axis);
 }
 
 void ahp_gt_set_max_speed(int axis, double value)
@@ -649,9 +670,6 @@ void ahp_gt_stop_motion(int axis) {
     axisstatus[axis] = 0x111;
     while ((axisstatus[axis] & 0xf) != 0)
         axisstatus[axis] = dispatch_command(GetAxisStatus, axis, -1);
-}
-
-void ahp_gt_set_axis_speed(int axis, SkywatcherMotionMode mode, double speed) {
 }
 
 void ahp_gt_start_tracking(int axis) {
