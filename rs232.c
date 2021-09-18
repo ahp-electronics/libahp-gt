@@ -257,9 +257,9 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
 
     Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
     Cptimeouts.ReadTotalTimeoutMultiplier  = 0;
-    Cptimeouts.ReadTotalTimeoutConstant    = 50;
+    Cptimeouts.ReadTotalTimeoutConstant    = 0;
     Cptimeouts.WriteTotalTimeoutMultiplier = 0;
-    Cptimeouts.WriteTotalTimeoutConstant   = 50;
+    Cptimeouts.WriteTotalTimeoutConstant   = 0;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
@@ -314,7 +314,7 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     case '1': port_settings.StopBits = ONESTOPBIT; break;
     case '2': port_settings.StopBits = TWOSTOPBITS; break;
     default:
-        fprintf(stderr, "unable stop bits\n");
+        fprintf(stderr, "invalid stop bits\n");
     return 1;
     }
 

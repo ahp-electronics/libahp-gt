@@ -299,6 +299,26 @@ DLL_EXPORT void ahp_gt_set_worm_teeth(int axis, double value);
 DLL_EXPORT void ahp_gt_set_crown_teeth(int axis, double value);
 
 /**
+* \brief Set the divider in the current configuration
+*/
+DLL_EXPORT void ahp_gt_set_divider(int axis, int value);
+
+/**
+* \brief Set the multiplier in the current configuration
+*/
+DLL_EXPORT void ahp_gt_set_multiplier(int axis, int value);
+
+/**
+* \brief Set the total number of steps
+*/
+DLL_EXPORT void ahp_gt_set_totalsteps(int axis, int value);
+
+/**
+* \brief Set the worm number of steps
+*/
+DLL_EXPORT void ahp_gt_set_wormsteps(int axis, int value);
+
+/**
 * \brief Set the guiding speed
 */
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);

@@ -135,6 +135,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
             n = 4;
         } else {
+            arg = (int)fmin((double)0xffffff, arg);
             long2Revu24str((unsigned int)arg, command_arg);
             snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
             n = 10;
@@ -169,22 +170,22 @@ static void optimize_values(int axis)
     double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 375000;
     int maxsteps = 0xffffff;
-    double microsteps = stepping_mode[axis] == HalfStep ? 1.0 : 126.0;
-    maxsteps /= (int)microsteps;
+    double microsteps = stepping_mode[axis] == HalfStep ? 0.0 : 126.0;
+    maxsteps /= (int)microsteps+1;
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
-        d += fmin (14.0, (double)totalsteps [axis] / (double)maxsteps);
+        d = fmax (1.0, fmin(15.0, (double)totalsteps [axis] / (double)maxsteps));
     divider [axis] = floor(d);
     multiplier [axis] = (int)(stepping_mode[axis] == HalfStep) ? 1 : (microsteps-(d-divider [axis])*microsteps)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
     totalsteps [axis] = (int)((double)totalsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
 
     maxperiod [axis] = (int)sidereal_period;
-    speed_limit [axis] = (int)(maxperiod [axis] * worm[axis] / motor[axis]) / divider [axis];
+    speed_limit [axis] = (int)(maxperiod [axis] * 800 / steps[axis] / divider[axis]);
     maxspeed [axis] = fmin(speed_limit [axis], maxspeed [axis]);
-    maxspeed_value [axis] = (int)fmax(multiplier [axis], (maxperiod [axis] * multiplier [axis] / maxspeed [axis]));
+    maxspeed_value [axis] = (int)fmax(multiplier [axis], (maxperiod [axis] * divider[axis] * multiplier [axis] / maxspeed [axis]));
     maxspeed_value [axis]++;
     guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
 
@@ -196,7 +197,7 @@ static void optimize_values(int axis)
     if (acceleration_value [axis] > 0) {
         accelsteps [axis] = (int)fmax (1, fmin (0xff, guide [axis] / acceleration_value [axis]));
     }
-    if (ahp_gt_get_mc_version() == 0x31)
+    if (ahp_gt_get_mc_version() > 0x30)
         dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5) | (address_value << 9);
 }
 
@@ -302,7 +303,7 @@ void ahp_gt_read_values(int axis)
     accelsteps [axis] =  (tmp >> 18) & 0xff;
     multiplier [axis] = (tmp >> 3) & 0x7f;
     direction_invert [axis] = (tmp >> 2) & 0x1;
-    stepping_conf [axis] = tmp & 0x03;
+    stepping_conf [axis] = (tmp & 0x06)>>1;
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
     gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0xf;
     stepping_mode[axis] = (dispatch_command(GetVars, offset + 7, -1) >> 6) & 0x03;
@@ -516,8 +517,7 @@ void ahp_gt_set_acceleration_angle(int axis, double value)
 void ahp_gt_set_rs232_polarity(int value)
 {
     rs232_polarity = value;
-    optimize_values(0);
-    optimize_values(1);
+    dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5) | (address_value << 9);
 }
 
 void ahp_gt_set_direction_invert(int axis, int value)
@@ -540,6 +540,27 @@ void ahp_gt_set_max_speed(int axis, double value)
 {
     maxspeed[axis] = fabs(value);
     optimize_values(axis);
+}
+
+void ahp_gt_set_divider(int axis, int value)
+{
+    divider[axis] = abs(value);
+    dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5) | (address_value << 9);
+}
+
+void ahp_gt_set_multiplier(int axis, int value)
+{
+    multiplier[axis] = abs(value);
+}
+
+void ahp_gt_set_totalsteps(int axis, int value)
+{
+    totalsteps[axis] = abs(value);
+}
+
+void ahp_gt_set_wormsteps(int axis, int value)
+{
+    wormsteps[axis] = abs(value);
 }
 
 int ahp_gt_select_device(int address) {
@@ -598,7 +619,8 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
         increment += 1.0;
     increment *= max;
     speed *= (increment < 0 ? -1 : 1);
-    int period = maxperiod [axis] * multiplier[axis];
+    double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
+    int period = maxperiod * multiplier[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
     if(fabs(speed) < 128.0) {
         mode = MODE_SLEW_LOSPEED;
@@ -627,7 +649,8 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
         increment += 1.0;
     increment *= max;
     speed *= (increment < 0 ? -1 : 1);
-    int period = maxperiod [axis] * multiplier[axis];
+    double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
+    int period = maxperiod * multiplier[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
     if(fabs(speed) < 128.0) {
         mode = MODE_SLEW_LOSPEED;
@@ -647,7 +670,8 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
 }
 
 void ahp_gt_start_motion(int axis, double speed) {
-    int period = maxperiod [axis] * multiplier[axis];
+    double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
+    int period = maxperiod * multiplier[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
     if(fabs(speed) < 128.0) {
         mode = MODE_SLEW_LOSPEED;
@@ -673,7 +697,7 @@ void ahp_gt_stop_motion(int axis) {
 }
 
 void ahp_gt_start_tracking(int axis) {
-    int period = (int)maxperiod[axis];
+    double period = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
     dispatch_command (SetStepPeriod, axis, period);
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
