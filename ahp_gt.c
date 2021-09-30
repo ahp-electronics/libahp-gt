@@ -176,7 +176,7 @@ static void optimize_values(int axis)
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
-        d = fmax (1.0, fmin(15.0, (double)totalsteps [axis] / (double)maxsteps));
+        d = fmax (1.0, fmin(15.0, (double)totalsteps [axis] / (double)maxsteps / 2.0));
     divider [axis] = floor(d);
     multiplier [axis] = (int)(stepping_mode[axis] == HalfStep) ? 1 : (microsteps-(d-divider [axis])*microsteps)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);

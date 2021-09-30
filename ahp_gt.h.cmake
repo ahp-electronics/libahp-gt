@@ -54,6 +54,8 @@ typedef enum {
 typedef enum  {
     GpioUnused             = 0x0000,
     GpioAsST4              = 0x0001,
+    GpioAsEncoder          = 0x0002,
+    GpioAsPulseDrive       = 0x0003,
 } GT1Feature;
 
 ///SkywatcherFeature Skywatcher default features
