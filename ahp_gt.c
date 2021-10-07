@@ -282,7 +282,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = axis * 50 + 44.75;
-    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)stepping_mode[axis] << 6) | ((int)gt1feature[axis] & 1) | ((unsigned char)type)<<16 | (int)(((dividers>>(8*axis))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)stepping_mode[axis] << 6) | ((int)gt1feature[axis] & 7) | ((unsigned char)type)<<16 | (int)(((dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -468,7 +468,7 @@ void ahp_gt_set_features(int axis, SkywatcherFeature value)
 
 void ahp_gt_set_feature(int axis, GT1Feature value)
 {
-    gt1feature[axis] = value & 1;
+    gt1feature[axis] = value & 7;
     optimize_values(axis);
 }
 
