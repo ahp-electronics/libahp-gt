@@ -156,6 +156,11 @@ DLL_EXPORT int ahp_gt_connect(const char* port);
 DLL_EXPORT int ahp_gt_connect_fd(int fd);
 
 /**
+* \brief Disconnect from the GT controller
+*/
+DLL_EXPORT void ahp_gt_disconnect();
+
+/**
 * \brief Get the GT firmware version
 */
 DLL_EXPORT int ahp_gt_get_mc_version(void);

@@ -346,6 +346,11 @@ int ahp_gt_connect(const char* port)
     return 1;
 }
 
+void ahp_gt_disconnect()
+{
+    RS232_CloseComport();
+}
+
 int ahp_gt_get_mc_version()
 {
     return (version>>8)&0xff;
