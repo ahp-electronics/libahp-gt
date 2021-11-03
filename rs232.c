@@ -513,3 +513,8 @@ void RS232_SetFD(int f)
     }
     fd = f;
 }
+
+int RS232_GetFD()
+{
+    return fd;
+}

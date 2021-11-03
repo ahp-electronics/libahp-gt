@@ -169,17 +169,14 @@ static void optimize_values(int axis)
 {
     double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 375000;
-    int maxsteps = 0x400000;
-    double microsteps = stepping_mode[axis] == HalfStep ? 0.0 : 62.0;
-    maxsteps /= (int)microsteps+1;
+    int maxsteps = 0xffffff>>(stepping_mode[axis] == HalfStep ? 0 : 6);
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
         d += fmin(14.0, (double)totalsteps [axis] / (double)maxsteps);
     divider [axis] = floor(d);
-    microsteps++;
-    multiplier [axis] = (int)(stepping_mode[axis] == HalfStep) ? 1 : (microsteps-(d-divider [axis])*microsteps)+1;
+    multiplier [axis] = (int)(stepping_mode[axis] == HalfStep) ? 1 : (62-(d-divider [axis])*62)+1;
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
     totalsteps [axis] = (int)((double)totalsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
 

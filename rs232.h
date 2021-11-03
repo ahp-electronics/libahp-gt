@@ -61,6 +61,7 @@ extern "C" {
 int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);
 int RS232_OpenComport(const char *comport);
 void RS232_SetFD(int f);
+int RS232_GetFD();
 int RS232_AlignFrame(int sof, int maxtries);
 int RS232_RecvByte();
 int RS232_RecvBuf(unsigned char *buf, int size);
