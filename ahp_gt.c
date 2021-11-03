@@ -169,7 +169,7 @@ static void optimize_values(int axis)
 {
     double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 375000;
-    int maxsteps = 0xffffff>>(stepping_mode[axis] == HalfStep ? 0 : 6);
+    int maxsteps = 0xffffff>>(stepping_mode[axis] == HalfStep ? 0 : 13);
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
