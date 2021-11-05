@@ -1,8 +1,14 @@
+libahp-gt (1.3.8) focal; urgency=low
+
+  * New release
+
+ -- Ilia Platone <info@iliaplatone.com>  Mon, 05 Jun 2021 00:00:00 +0200
+
 libahp-gt (1.3.7) focal; urgency=low
 
   * Fixed timings
 
- -- Ilia Platone <info@iliaplatone.com>  Mon, 22 Jun 2021 00:00:00 +0200
+ -- Ilia Platone <info@iliaplatone.com>  Mon, 04 Jun 2021 00:00:00 +0200
 
 libahp-gt (1.3.3) focal; urgency=low
 
