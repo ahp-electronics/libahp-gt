@@ -169,16 +169,20 @@ static void optimize_values(int axis)
 {
     double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 375000;
-    int maxsteps = 0xffffff>>(stepping_mode[axis] == HalfStep ? 0 : 13);
+    int maxsteps = 0xffffff;
+    if(stepping_mode[axis] != HalfStep)
+        maxsteps >>= 8;
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
-        d += fmin(14.0, (double)totalsteps [axis] / (double)maxsteps);
+        d += fmin(14.0, (double)totalsteps [axis] / maxsteps);
     divider [axis] = floor(d);
-    multiplier [axis] = (int)(stepping_mode[axis] == HalfStep) ? 1 : (62-(d-divider [axis])*62)+1;
+    multiplier [axis] = 1;
+    if(stepping_mode[axis] != HalfStep)
+        multiplier [axis] += (int)(62-(d-divider [axis])*62);
     wormsteps [axis] = (int)((double)wormsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
-    totalsteps [axis] = (int)((double)totalsteps [axis] * (double)multiplier [axis] / (double)divider [axis]);
+    totalsteps [axis] = (int)((double)wormsteps [axis] * (double)crown [axis]);
 
     maxperiod [axis] = (int)sidereal_period;
     speed_limit [axis] = (int)(maxperiod [axis] * 800 / steps[axis] / divider[axis]);
