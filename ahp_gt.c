@@ -185,9 +185,9 @@ static void optimize_values(int axis)
     totalsteps [axis] = (int)((double)wormsteps [axis] * (double)crown [axis]);
 
     maxperiod [axis] = (int)sidereal_period;
-    speed_limit [axis] = (int)(maxperiod [axis] * 800 / steps[axis] / divider[axis]);
+    speed_limit [axis] = (int)(800);
     maxspeed [axis] = fmin(speed_limit [axis], maxspeed [axis]);
-    maxspeed_value [axis] = (int)fmax(multiplier [axis], (maxperiod [axis] * divider[axis] * multiplier [axis] / maxspeed [axis]));
+    maxspeed_value [axis] = (int)(maxperiod [axis] * multiplier [axis] / maxspeed [axis]);
     maxspeed_value [axis]++;
     guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
 
