@@ -19,7 +19,8 @@ static const double SIDEREAL_DAY = 86164.0916000;
 static int totalsteps[num_axes] = { 200 * 64 * 40 / 10 * 180, 200 * 64 * 40 / 10 * 180 };
 static int wormsteps[num_axes] = { 200 * 64 * 40 / 10, 200 * 64 * 40 / 10 };
 static double maxperiod[num_axes] = { 64, 64 };
-static double speed_limit[num_axes] = { 1000, 1000 };
+static double minperiod[num_axes] = { 1, 1 };
+static double speed_limit[num_axes] = { 800, 800 };
 static double acceleration[num_axes] = { 20.0, 20.0 };
 static double acceleration_value[num_axes] = { 20.0, 20.0 };
 static double divider[num_axes] = { 1, 1 };
@@ -187,8 +188,7 @@ static void optimize_values(int axis)
     maxperiod [axis] = (int)sidereal_period;
     speed_limit [axis] = (int)(800);
     maxspeed [axis] = fmin(speed_limit [axis], maxspeed [axis]);
-    maxspeed_value [axis] = (int)(maxperiod [axis] * multiplier [axis] / maxspeed [axis]);
-    maxspeed_value [axis]++;
+    maxspeed_value [axis] = (int)fmax(minperiod [axis], (maxperiod [axis] * multiplier [axis] / maxspeed [axis]));
     guide [axis] = (int)(SIDEREAL_DAY * baseclock / totalsteps [axis]);
 
     double accel = acceleration [axis] / (M_PI * 2.0);
@@ -677,8 +677,7 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
 }
 
 void ahp_gt_start_motion(int axis, double speed) {
-    double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
-    int period = maxperiod * multiplier[axis];
+    double period = SIDEREAL_DAY * multiplier[axis] * wormsteps[axis] / totalsteps[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
     if(fabs(speed) < 128.0) {
         mode = MODE_SLEW_LOSPEED;
