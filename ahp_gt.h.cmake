@@ -256,6 +256,11 @@ DLL_EXPORT int ahp_gt_get_pwm_frequency(void);
 DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
 
 /**
+* \brief Get the mount flags
+*/
+DLL_EXPORT int ahp_gt_get_mount_flags();
+
+/**
 * \brief Get the stepping configuration
 */
 DLL_EXPORT GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis);
@@ -359,6 +364,11 @@ DLL_EXPORT void ahp_gt_set_microspeed(int axis, int value);
 * \brief Set the forward direction
 */
 DLL_EXPORT void ahp_gt_set_direction_invert(int axis, int value);
+
+/**
+* \brief Set the mount flags
+*/
+DLL_EXPORT void ahp_gt_set_mount_flags(int value);
 
 /**
 * \brief Set the stepping configuration

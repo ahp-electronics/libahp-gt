@@ -27,6 +27,7 @@ static double divider[num_axes] = { 1, 1 };
 static int multiplier[num_axes] = { 0, 0 };
 static int address_value = 0;
 static int dividers = 0;
+static int mount_flags = 0;
 static double crown[num_axes] = { 180, 180 };
 static double steps[num_axes] = { 200, 200 };
 static double motor[num_axes] = { 10, 10 };
@@ -199,8 +200,9 @@ static void optimize_values(int axis)
     if (acceleration_value [axis] > 0) {
         accelsteps [axis] = (int)fmax (1, fmin (0xff, guide [axis] / acceleration_value [axis]));
     }
-    if (ahp_gt_get_mc_version() > 0x30)
+    if (ahp_gt_get_mc_version() > 0x30) {
         dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5) | (address_value << 9);
+    }
 }
 
 int Check(int pos)
@@ -284,7 +286,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = axis * 50 + 44.75;
-    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)stepping_mode[axis] << 6) | ((int)gt1feature[axis] & 7) | ((unsigned char)type)<<16 | (int)(((dividers>>(8*axis))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, offset + 7, ((((0xf-pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)stepping_mode[axis] << 6) | (((mount_flags >> axis)&1) << 3) | ((int)gt1feature[axis] & 7) | (axis == 0?(((unsigned char)type)<<16):((mount_flags&0x3fc)<<14)) | (int)(((dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -307,12 +309,14 @@ void ahp_gt_read_values(int axis)
     direction_invert [axis] = (tmp >> 2) & 0x1;
     stepping_conf [axis] = (tmp & 0x06)>>1;
     features [axis] = dispatch_command(GetVars, offset + 6, -1);
-    gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0xf;
+    gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0x7;
     stepping_mode[axis] = (dispatch_command(GetVars, offset + 7, -1) >> 6) & 0x03;
     pwmfreq = (dispatch_command(GetVars, 7, -1) >> 4) & 0x3;
     pwmfreq |= (dispatch_command(GetVars, 15, -1) >> 2) & 0xc;
     pwmfreq = 15-pwmfreq;
     type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
+    mount_flags = (dispatch_command(GetVars, 7, -1) & 0x8) >> 3;
+    mount_flags |= (dispatch_command(GetVars, 15, -1) & 0x8) >> 2;
     dividers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
     dividers |= dispatch_command(GetVars, 15, -1) & 0xff00;
     divider[axis] = (dividers >> (1+axis*4)) & 0xf;
@@ -442,6 +446,11 @@ int ahp_gt_get_direction_invert(int axis)
     return direction_invert[axis];
 }
 
+int ahp_gt_get_mount_flags()
+{
+    return mount_flags;
+}
+
 GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis)
 {
     return (GT1SteppingConfiguration)stepping_conf[axis];
@@ -530,6 +539,11 @@ void ahp_gt_set_rs232_polarity(int value)
 void ahp_gt_set_direction_invert(int axis, int value)
 {
     direction_invert[axis] = value&1;
+}
+
+void ahp_gt_set_mount_flags(int value)
+{
+    mount_flags = value;
 }
 
 void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value)
