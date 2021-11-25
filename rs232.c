@@ -502,7 +502,7 @@ int RS232_SendByte(unsigned char byte)
     return 0;
 }
 
-void RS232_SetFD(int f)
+void RS232_SetFD(int f, int bauds)
 {
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
@@ -512,6 +512,7 @@ void RS232_SetFD(int f)
         mutexes_initialized = 1;
     }
     fd = f;
+    baudrate = bauds;
 }
 
 int RS232_GetFD()

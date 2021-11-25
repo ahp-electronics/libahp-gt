@@ -328,8 +328,14 @@ void ahp_gt_read_values(int axis)
 int ahp_gt_connect_fd(int fd)
 {
     if(fd != -1) {
-        RS232_SetFD(fd);
-        return 0;
+        RS232_SetFD(fd, 9600);
+        version = dispatch_command(InquireMotorBoardVersion, 0, -1);
+        fprintf(stderr, "MC Version: %02X\n", ahp_gt_get_mc_version());
+        if(ahp_gt_get_mc_version()>0x24) {
+            ahp_gt_read_values(0);
+            ahp_gt_read_values(1);
+            return 0;
+        }
     }
     return 1;
 }
