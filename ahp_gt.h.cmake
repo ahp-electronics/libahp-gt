@@ -193,6 +193,14 @@ DLL_EXPORT int ahp_gt_get_fd();
 DLL_EXPORT void ahp_gt_disconnect();
 
 /**
+* \brief Report connection status
+* \sa ahp_gt_connect
+* \sa ahp_gt_connect_fd
+* \sa ahp_gt_disconnect
+*/
+DLL_EXPORT unsigned int ahp_gt_is_connected();
+
+/**
 * \brief Get the GT firmware version
 */
 DLL_EXPORT int ahp_gt_get_mc_version(void);
@@ -471,7 +479,7 @@ DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 /**
 * \brief Stop an axis motion
 */
-DLL_EXPORT void ahp_gt_stop_motion(int axis);
+DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 
 /**
 * \brief Set the slew speed

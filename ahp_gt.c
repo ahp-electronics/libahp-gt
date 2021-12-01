@@ -1,5 +1,6 @@
 #include "ahp_gt.h"
 #include "rs232.h"
+#include <pthread.h>
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 
@@ -9,6 +10,9 @@ typedef enum {
     num_axes = 2,
 } SkywatcherAxis;
 
+static int mutexes_initialized = 0;
+static pthread_mutexattr_t mutex_attr;
+static pthread_mutex_t mutex;
 static char command[32];
 static char response[32];
 static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
@@ -45,6 +49,7 @@ static SkywatcherAxisStatus axisstatus[2] = {0, 0};
 static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 static double accelsteps[num_axes]  = { 1, 1 };
 static unsigned char pwmfreq = 0;
+static unsigned int ahp_gt_connected = 0;
 
 static int Revu24str2long(char *s)
 {
@@ -66,7 +71,9 @@ static int Revu24str2long(char *s)
 static int Highstr2long(char *s)
 {
     int res = 0;
-    res = HEX(s[0]);
+    res = HEX(s[2]);
+    res <<= 4;
+    res |= HEX(s[0]);
     res <<= 4;
     res |= HEX(s[1]);
     return res;
@@ -127,6 +134,15 @@ static int read_eqmod()
 
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
+    int ret = -1;
+    if(!mutexes_initialized) {
+        pthread_mutexattr_init(&mutex_attr);
+        pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+        pthread_mutex_init(&mutex, &mutex_attr);
+        mutexes_initialized = 1;
+    }
+    while(pthread_mutex_trylock(&mutex))
+        usleep(10000);
     for (unsigned char i = 0; i < 10; i++)
     {
         // Clear string
@@ -149,7 +165,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         {
             if (i == 9)
             {
-                return -1;
+                ret = -1;
+                break;
             }
             else
             {
@@ -161,10 +178,11 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
         command[n-1] = '\0';
 
-        return read_eqmod();
+        ret = read_eqmod();
+        break;
     }
-
-    return -1;
+    pthread_mutex_unlock(&mutex);
+    return ret;
 }
 
 static void optimize_values(int axis)
@@ -334,6 +352,7 @@ int ahp_gt_connect_fd(int fd)
         if(ahp_gt_get_mc_version()>0x24) {
             ahp_gt_read_values(0);
             ahp_gt_read_values(1);
+            ahp_gt_connected = 1;
             return 0;
         }
     }
@@ -349,6 +368,7 @@ int ahp_gt_connect(const char* port)
             if(ahp_gt_get_mc_version()>0x24) {
                 ahp_gt_read_values(0);
                 ahp_gt_read_values(1);
+                ahp_gt_connected = 1;
                 return 0;
             }
         }
@@ -360,6 +380,18 @@ int ahp_gt_connect(const char* port)
 void ahp_gt_disconnect()
 {
     RS232_CloseComport();
+    if(mutexes_initialized) {
+        pthread_mutex_unlock(&mutex);
+        pthread_mutex_destroy(&mutex);
+        pthread_mutexattr_destroy(&mutex_attr);
+        mutexes_initialized = 0;
+    }
+    ahp_gt_connected = 0;
+}
+
+unsigned int ahp_gt_is_connected()
+{
+    return ahp_gt_connected;
 }
 
 int ahp_gt_get_mc_version()
@@ -616,7 +648,7 @@ SkywatcherAxisStatus ahp_gt_get_status(int axis)
     SkywatcherAxisStatus status;
     int response = dispatch_command(GetAxisStatus, axis, -1);
 
-    status.Initialized = (response & 0x1000);
+    status.Initialized = (response & 0x100);
     status.Running     = (response & 0x1);
     if (response & 0x10)
         status.Mode = MODE_SLEW;
@@ -635,34 +667,29 @@ SkywatcherAxisStatus ahp_gt_get_status(int axis)
 
 void ahp_gt_set_position(int axis, double value)
 {
-    dispatch_command(GetAxisPosition, axis, (int)(value*totalsteps[axis]/M_PI/2.0));
+    dispatch_command(SetAxisPositionCmd, axis, (int)(value*totalsteps[axis]/M_PI/2.0)+0x800000);
 }
 
 double ahp_gt_get_position(int axis)
 {
-    return (double)dispatch_command(GetAxisPosition, axis, -1)*M_PI*2.0/(double)totalsteps[axis];
+    int steps = dispatch_command(GetAxisPosition, axis, -1);
+    steps -= 0x800000;
+    return (double)steps*M_PI*2.0/(double)totalsteps[axis];
 }
 
 int ahp_gt_is_axis_moving(int axis)
 {
-    axisstatus[axis] = ahp_gt_get_status(axis);
     return axisstatus[axis].Running;
 }
 
 void ahp_gt_goto_absolute(int axis, double target, double speed) {
     double position = ahp_gt_get_position(axis);
-    target -= position;
-    target /= M_PI*2;
-    double increment = target;
     speed = fabs(speed);
+    speed *= (target-position < 0 ? -1 : 1);
     double max = totalsteps[axis];
-    increment /= M_PI*2;
-    while (increment > 0.5)
-        increment -= 1.0;
-    while (increment < 0.5)
-        increment += 1.0;
-    increment *= max;
-    speed *= (increment < 0 ? -1 : 1);
+    target /= M_PI*2;
+    target *= max;
+    target += (double)0x800000;
     double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
     int period = maxperiod * multiplier[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
@@ -672,12 +699,11 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
     }
     mode |= (speed < 0 ? 1 : 0);
     period /= fabs(speed);
-    if(ahp_gt_is_axis_moving(axis))
-        return;
+    ahp_gt_stop_motion(axis, 1);
     motionmode[axis] = mode;
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
-    dispatch_command(SetGotoTargetIncrement, axis, (int)fabs(increment));
+    dispatch_command(SetGotoTarget, axis, target);
     dispatch_command (SetStepPeriod, axis, period);
     dispatch_command (SetMotionMode, axis, mode);
     dispatch_command (StartMotion, axis, -1);
@@ -685,14 +711,10 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
 
 void ahp_gt_goto_relative(int axis, double increment, double speed) {
     speed = fabs(speed);
+    speed *= (increment < 0 ? -1 : 1);
     double max = totalsteps[axis];
     increment /= M_PI*2;
-    while (increment > 0.5)
-        increment -= 1.0;
-    while (increment < 0.5)
-        increment += 1.0;
     increment *= max;
-    speed *= (increment < 0 ? -1 : 1);
     double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
     int period = maxperiod * multiplier[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
@@ -702,8 +724,7 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
     }
     mode |= (speed < 0 ? 1 : 0);
     period /= fabs(speed);
-    if(ahp_gt_is_axis_moving(axis))
-        return;
+    ahp_gt_stop_motion(axis, 1);
     motionmode[axis] = mode;
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
@@ -722,8 +743,7 @@ void ahp_gt_start_motion(int axis, double speed) {
     }
     mode |= (speed < 0 ? 1 : 0);
     period /= fabs(speed);
-    if(ahp_gt_is_axis_moving(axis))
-        return;
+    ahp_gt_stop_motion(axis, 1);
     motionmode[axis] = mode;
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
@@ -732,14 +752,16 @@ void ahp_gt_start_motion(int axis, double speed) {
     dispatch_command (StartMotion, axis, -1);
 }
 
-void ahp_gt_stop_motion(int axis) {
+void ahp_gt_stop_motion(int axis, int wait) {
     dispatch_command(InstantAxisStop, axis, -1);
-    axisstatus[axis] = ahp_gt_get_status(axis);
-    while (axisstatus[axis].Running)
-        axisstatus[axis] = ahp_gt_get_status(axis);
+    if(wait) {
+        while (ahp_gt_is_axis_moving(axis))
+            usleep(100000);
+    }
 }
 
 void ahp_gt_start_tracking(int axis) {
+    ahp_gt_stop_motion(axis, 1);
     double period = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
     dispatch_command (SetStepPeriod, axis, period);
     dispatch_command (Initialize, axis, -1);
