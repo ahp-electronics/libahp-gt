@@ -188,10 +188,10 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 static void optimize_values(int axis)
 {
     double sidereal_period = SIDEREAL_DAY / crown[axis];
-    double baseclock = 375000;
+    double baseclock = 186250;
     int maxsteps = 0xffffff;
     if(stepping_mode[axis] != HalfStep)
-        maxsteps >>= 8;
+        maxsteps >>= 6;
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
@@ -692,18 +692,19 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
     target += (double)0x800000;
     double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
     int period = maxperiod * multiplier[axis];
-    SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
+    SkywatcherMotionMode mode = MODE_GOTO_HISPEED;
     if(fabs(speed) < 128.0) {
-        mode = MODE_SLEW_LOSPEED;
+        mode = MODE_GOTO_LOSPEED;
         period /= multiplier[axis];
     }
     mode |= (speed < 0 ? 1 : 0);
     period /= fabs(speed);
+    period = fmax(minperiod[axis], period);
     ahp_gt_stop_motion(axis, 1);
     motionmode[axis] = mode;
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
-    dispatch_command(SetGotoTarget, axis, target);
+    dispatch_command (SetGotoTarget, axis, target);
     dispatch_command (SetStepPeriod, axis, period);
     dispatch_command (SetMotionMode, axis, mode);
     dispatch_command (StartMotion, axis, -1);
@@ -717,9 +718,9 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
     increment *= max;
     double maxperiod = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];
     int period = maxperiod * multiplier[axis];
-    SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
+    SkywatcherMotionMode mode = MODE_GOTO_HISPEED;
     if(fabs(speed) < 128.0) {
-        mode = MODE_SLEW_LOSPEED;
+        mode = MODE_GOTO_LOSPEED;
         period /= multiplier[axis];
     }
     mode |= (speed < 0 ? 1 : 0);
@@ -728,7 +729,7 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
     motionmode[axis] = mode;
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
-    dispatch_command(SetGotoTargetIncrement, axis, (int)fabs(increment));
+    dispatch_command (SetGotoTargetIncrement, axis, (int)fabs(increment));
     dispatch_command (SetStepPeriod, axis, period);
     dispatch_command (SetMotionMode, axis, mode);
     dispatch_command (StartMotion, axis, -1);
