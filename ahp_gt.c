@@ -191,7 +191,7 @@ static void optimize_values(int axis)
     double baseclock = 186250;
     int maxsteps = 0xffffff;
     if(stepping_mode[axis] != HalfStep)
-        maxsteps >>= 6;
+        maxsteps >>= 8;
     wormsteps [axis] = (int)(steps [axis] * worm [axis] / motor [axis]);
     totalsteps [axis] = (int)(crown [axis] * wormsteps [axis]);
     double d = 1.0;
