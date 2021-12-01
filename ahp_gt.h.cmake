@@ -1,5 +1,5 @@
 /*
-    libahp_xc library to drive the AHP XC correlators
+    libahp_gt library to drive the AHP GT controllers
     Copyright (C) 2020  Ilia Platone
 
     This library is free software; you can redistribute it and/or
