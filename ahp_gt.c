@@ -41,7 +41,7 @@ static double maxspeed[num_axes] = { 1000, 1000 };
 static double maxspeed_value[num_axes] = { 500, 500 };
 static int features[num_axes] = { hasPPEC, hasPPEC };
 static SkywatcherMotionMode motionmode[num_axes] = {0, 0};
-static int axisstatus[2] = {0, 0};
+static SkywatcherAxisStatus axisstatus[2] = {0, 0};
 static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 static double accelsteps[num_axes]  = { 1, 1 };
 static unsigned char pwmfreq = 0;
@@ -611,9 +611,26 @@ int ahp_gt_get_address()
     return address_value;
 }
 
-int ahp_gt_get_status(int axis)
+SkywatcherAxisStatus ahp_gt_get_status(int axis)
 {
-    return dispatch_command(GetAxisStatus, axis, -1);
+    SkywatcherAxisStatus status;
+    int response = dispatch_command(GetAxisStatus, axis, -1);
+
+    status.Initialized = (response & 0x1000);
+    status.Running     = (response & 0x1);
+    if (response & 0x10)
+        status.Mode = MODE_SLEW;
+    else
+        status.Mode = MODE_GOTO;
+    if (response & 0x20)
+        status.Direction = DIRECTION_BACKWARD;
+    else
+        status.Direction = DIRECTION_FORWARD;
+    if (response & 0x40)
+        status.Speed = SPEED_HIGH;
+    else
+        status.Speed = SPEED_LOW;
+    return status;
 }
 
 void ahp_gt_set_position(int axis, double value)
@@ -629,7 +646,7 @@ double ahp_gt_get_position(int axis)
 int ahp_gt_is_axis_moving(int axis)
 {
     axisstatus[axis] = ahp_gt_get_status(axis);
-    return axisstatus[axis] & 0x1;
+    return axisstatus[axis].Running;
 }
 
 void ahp_gt_goto_absolute(int axis, double target, double speed) {
@@ -717,9 +734,9 @@ void ahp_gt_start_motion(int axis, double speed) {
 
 void ahp_gt_stop_motion(int axis) {
     dispatch_command(InstantAxisStop, axis, -1);
-    axisstatus[axis] = 0x111;
-    while ((axisstatus[axis] & 0xf) != 0)
-        axisstatus[axis] = dispatch_command(GetAxisStatus, axis, -1);
+    axisstatus[axis] = ahp_gt_get_status(axis);
+    while (axisstatus[axis].Running)
+        axisstatus[axis] = ahp_gt_get_status(axis);
 }
 
 void ahp_gt_start_tracking(int axis) {

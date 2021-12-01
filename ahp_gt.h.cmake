@@ -132,6 +132,33 @@ typedef enum {
     MODE_SLEW_HISPEED = 0x30,
 } SkywatcherMotionMode;
 
+///SkywatcherSlewMode
+typedef enum {
+    MODE_SLEW = 0x1,
+    MODE_GOTO = 0x0,
+} SkywatcherSlewMode;
+
+///SkywatcherSpeedMode
+typedef enum {
+    SPEED_LOW = 0x0,
+    SPEED_HIGH = 0x1,
+} SkywatcherSpeedMode;
+
+///SkywatcherDirection
+typedef enum {
+    DIRECTION_FORWARD = 0x00,
+    DIRECTION_BACKWARD = 0x01,
+} SkywatcherDirection;
+
+///SkywatcherAxisStatus
+typedef struct {
+    int Initialized;
+    int Running;
+    SkywatcherSlewMode Mode;
+    SkywatcherSpeedMode Speed;
+    SkywatcherDirection Direction;
+} SkywatcherAxisStatus;
+
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
 
@@ -407,7 +434,7 @@ DLL_EXPORT int ahp_gt_get_address();
 * \brief Get an axis status
 * \return the axis status value
 */
-DLL_EXPORT int ahp_gt_get_status(int axis);
+DLL_EXPORT SkywatcherAxisStatus ahp_gt_get_status(int axis);
 
 /**
 * \brief Get an axis position
