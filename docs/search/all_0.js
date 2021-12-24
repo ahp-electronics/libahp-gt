@@ -66,7 +66,7 @@ var searchData=
   ['ahp_5fgt_5fstart_5fmotion_63',['ahp_gt_start_motion',['../group___move.html#ga7d4d1a44984b65790569a633a6489d82',1,'ahp_gt.h']]],
   ['ahp_5fgt_5fstart_5ftracking_64',['ahp_gt_start_tracking',['../group___move.html#ga6042c8b7d4181b46009307433e8b9572',1,'ahp_gt.h']]],
   ['ahp_5fgt_5fstop_5fmotion_65',['ahp_gt_stop_motion',['../group___move.html#ga4a7cb69f55a91be23aa8b4981ab0c447',1,'ahp_gt.h']]],
-  ['ahp_5fgt_5fversion_66',['AHP_GT_VERSION',['../group___defs.html#ga8f55fc6c5650a9b4e133e67a3592d5f7',1,'ahp_gt.h']]],
+  ['ahp_5fgt_5fversion_66',['AHP_GT_VERSION',['../group___defines.html#ga8f55fc6c5650a9b4e133e67a3592d5f7',1,'ahp_gt.h']]],
   ['ahp®_20gt_20controllers_20api_67',['AHP® GT Controllers API',['../group___g_t___a_p_i.html',1,'']]],
   ['ahp®_20gt_20controllers_20driver_20library_20api_20documentation_68',['AHP® GT Controllers driver library API Documentation',['../index.html',1,'']]]
 ];
