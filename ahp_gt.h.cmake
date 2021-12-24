@@ -59,6 +59,9 @@ extern "C" {
 * visit https://www.iliaplatone.com/gt1 for more informations and purchase options.
 *
 * \author Ilia Platone
+* \version @AHPGT_VERSION@
+* \date 2017-2021
+* \copyright MIT License.
 */
 
 /**
@@ -68,10 +71,10 @@ extern "C" {
  *
  * This documentation describes utility, applicative and hardware control functions included into the library.<br>
  * Each section and component is documented for general usage.
-*/
-/**@{
-  * \defgroup Defs Defines
-  * @{*/
+*
+* \{
+* \defgroup Defs Types
+* \{*/
 
 ///Motor coils phase winding configuration
 typedef enum {
@@ -248,12 +251,15 @@ SkywatcherSpeedMode Speed;
 SkywatcherDirection Direction;
 } SkywatcherAxisStatus;
 
+/**\}
+ * \defgroup Defines Defines
+ *\{*/
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
 
-/**@}
+/**\}
  * \defgroup Conn Connection
- * @{*/
+ * \{*/
 
  /**
  * \brief Obtain the current libahp-gt version
@@ -302,9 +308,9 @@ DLL_EXPORT unsigned int ahp_gt_is_connected();
 */
 DLL_EXPORT int ahp_gt_get_mc_version(void);
 
-/**@}
+/**\}
  * \defgroup SG Parametrization
- * @{*/
+ * \{*/
 
 /**
 * \brief Get the current GT mount type
@@ -592,9 +598,9 @@ DLL_EXPORT void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value);
 */
 DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
-/**@}
+/**\}
  * \defgroup Adr Multi-device addressing
- * @{*/
+ * \{*/
 
 /**
 * \brief Select a device on a serial bus
@@ -615,9 +621,9 @@ DLL_EXPORT void ahp_gt_set_address(int address);
 */
 DLL_EXPORT int ahp_gt_get_address();
 
-/**@}
+/**\}
 * \defgroup Cfg Configuration
-* @{*/
+* \{*/
 
 /**
 * \brief Write values from the GT controller
@@ -633,9 +639,9 @@ DLL_EXPORT void ahp_gt_ahp_gt_write_values(int axis, int *percent, int *finished
 */
 DLL_EXPORT void ahp_gt_read_values(int axis);
 
- /**@}
+ /**\}
   * \defgroup Move Movement control
-  * @{*/
+  * \{*/
 
 /**
 * \brief Get an axis status
@@ -705,6 +711,6 @@ DLL_EXPORT void ahp_gt_start_tracking(int axis);
 } // extern "C"
 #endif
 
-/**@}
- * @}*/
+/**\}
+ * \}*/
 #endif //_AHP_GT_H
