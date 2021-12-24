@@ -1,20 +1,27 @@
-/*
-    libahp_gt library to drive the AHP GT controllers
-    Copyright (C) 2020  Ilia Platone
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+/**
+* \license
+*    MIT License
+*
+*    libahp_xc library to drive the AHP GT controllers
+*    Copyright (C) 2021  Ilia Platone
+*
+*    Permission is hereby granted, free of charge, to any person obtaining a copy
+*    of this software and associated documentation files (the "Software"), to deal
+*    in the Software without restriction, including without limitation the rights
+*    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+*    copies of the Software, and to permit persons to whom the Software is
+*    furnished to do so, subject to the following conditions:
+*
+*    The above copyright notice and this permission notice shall be included in all
+*    copies or substantial portions of the Software.
+*
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+*    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+*    SOFTWARE.
 */
 
 #ifndef _AHP_GT_H
@@ -36,59 +43,126 @@ extern "C" {
 #include <math.h>
 #include <unistd.h>
 
-///GT1 coil configuration
+/**
+* \mainpage AHP® GT Controllers driver library API Documentation
+* \section Introduction
+*
+* The AHP GT controllers series drive stepping motors for usage in astronomy.<br>
+* A GT controller can drive small NEMA14 or NEMA17 stepper motors, can drive
+* Step/Dir external drives and can be reconfigured to fit gear ratios, maximum
+* speed and acceleration rates of various mounts. Can also receive commands and
+* instructions from a SynScan handset.<br>
+* The Sky-Watcher command protocol used by the GT controllers was extended to allow
+* reconfiguration of the controller parameters, keeping itself backwards compatible.<br>
+* <br>
+* This software is meant to work with the GT series motor controllers
+* visit https://www.iliaplatone.com/gt1 for more informations and purchase options.
+*
+* \author Ilia Platone
+*/
+
+/**
+ * \defgroup GT_API AHP® GT Controllers API
+ *
+ * This library contains functions for direct low-level usage of the AHP motor controllers.<br>
+ *
+ * This documentation describes utility, applicative and hardware control functions included into the library.<br>
+ * Each section and component is documented for general usage.
+*/
+/**@{
+  * \defgroup Defs Defines
+  * @{*/
+
+///Motor coils phase winding configuration
 typedef enum {
+///AABB Motor winding
     AABB             = 0,
+///ABAB Motor winding
     ABAB             = 1,
+///ABBA Motor winding
     ABBA             = 2,
 } GT1SteppingConfiguration;
 
-///GT1 stepping mode
+///Stepping mode
 typedef enum {
-    Mixed            = 0,
-    Microstep        = 1,
-    HalfStep         = 2,
+///Microstepping in low speed, Half-stepping in high speed
+Mixed            = 0,
+///Microstepping in low speed, Microstepping in high speed
+Microstep        = 1,
+///Half-stepping in low speed, Half-stepping in high speed
+HalfStep         = 2,
 } GT1SteppingMode;
 
-///GT1Feature AHP GT default features
+///ST-4 port configuration
 typedef enum  {
-    GpioUnused             = 0x0000,
-    GpioAsST4              = 0x0001,
-    GpioAsEncoder          = 0x0002,
-    GpioAsPulseDrive       = 0x0003,
+///The ST4 port will remain unused
+GpioUnused             = 0x0000,
+///The ST4 port will work as autoguider
+GpioAsST4              = 0x0001,
+///The ST4 port will be connected to an encoder
+GpioAsEncoder          = 0x0002,
+///The ST4 port will drive an external Step/Dir power drive
+GpioAsPulseDrive       = 0x0003,
 } GT1Feature;
 
-///SkywatcherFeature Skywatcher default features
+///GT1 custom flags
 typedef enum {
-    inPPECTraining         = 0x000010,
-    inPPEC                 = 0x000020,
-    hasEncoder             = 0x000001,
-    hasPPEC                = 0x000002,
-    hasHomeIndexer         = 0x000004,
-    isAZEQ                 = 0x000008,
-    hasPolarLed            = 0x001000,
-    hasCommonSlewStart     = 0x002000, // supports :J3
-    hasHalfCurrentTracking = 0x004000,
-    hasWifi                = 0x008000,
+///Fork mount, will avoid meridian flip
+isForkMount = 0x1,
+} GT1Flags;
+
+///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only
+typedef enum {
+///PPEC training in progress
+inPPECTraining         = 0x000010,
+///PPEC correction in progress
+inPPEC                 = 0x000020,
+///Mount has an encoder
+hasEncoder             = 0x000001,
+///Mount has PPEC
+hasPPEC                = 0x000002,
+///Mount has an home indexer
+hasHomeIndexer         = 0x000004,
+///Mount is an AZEQ
+isAZEQ                 = 0x000008,
+///Mount has a polar scope led
+hasPolarLed            = 0x001000,
+///Mount has a common slew start
+hasCommonSlewStart     = 0x002000,
+///Mount allows half-current tracking
+hasHalfCurrentTracking = 0x004000,
+///Mount provides a WiFi communication
+hasWifi                = 0x008000,
 } SkywatcherFeature;
 
-///MountType Default Mount type
+///Default Mount types
 typedef enum {
-    isEQ6 = 0x00,
-    isHEQ5 = 0x01,
-    isEQ5 = 0x02,
-    isEQ3 = 0x03,
-    isEQ8 = 0x04,
-    isAZEQ6 = 0x05,
-    isAZEQ5 = 0x06,
-    isGT = 0x80,
-    isMF = 0x81,
-    is114GT = 0x82,
-    isDOB = 0x90,
-    isCustom = 0xF0,
+///Sky-Watcher EQ6
+isEQ6 = 0x00,
+///Sky-Watcher HEQ5
+isHEQ5 = 0x01,
+///Sky-Watcher EQ5
+isEQ5 = 0x02,
+///Sky-Watcher EQ3
+isEQ3 = 0x03,
+///Sky-Watcher EQ8
+isEQ8 = 0x04,
+///Sky-Watcher AZEQ6
+isAZEQ6 = 0x05,
+///Sky-Watcher AZEQ5
+isAZEQ5 = 0x06,
+///Sky-Watcher GT
+isGT = 0x80,
+///Fork Mount
+isMF = 0x81,
+///114GT
+is114GT = 0x82,
+///Dobsonian mount
+isDOB = 0x90,
+///Custom mount
+isCustom = 0xF0,
 } MountType;
 
-///SkywatcherCommand Taken from INDIlib
 typedef enum {
     Null                      = '\0',
     Initialize                = 'F',
@@ -124,66 +198,87 @@ typedef enum {
     SetAddress                = '=',
 } SkywatcherCommand;
 
-///SkywatcherMotionMode
+///Motion Mode
 typedef enum {
-    MODE_GOTO_HISPEED = 0x00,
-    MODE_SLEW_LOSPEED = 0x10,
-    MODE_GOTO_LOSPEED = 0x20,
-    MODE_SLEW_HISPEED = 0x30,
+///High-speed (half-stepping mostly) Goto
+MODE_GOTO_HISPEED = 0x00,
+///Low-speed (microstepping possibly) Slew
+MODE_SLEW_LOSPEED = 0x10,
+///Low-speed (microstepping possibly) Goto
+MODE_GOTO_LOSPEED = 0x20,
+///High-speed (half-stepping mostly) Slew
+MODE_SLEW_HISPEED = 0x30,
 } SkywatcherMotionMode;
 
-///SkywatcherSlewMode
+///Slew Mode
 typedef enum {
-    MODE_SLEW = 0x1,
-    MODE_GOTO = 0x0,
+///Slew, no target, will stop upon request only
+MODE_SLEW = 0x1,
+///Goto, targeted, will stop upon request or on target reached
+MODE_GOTO = 0x0,
 } SkywatcherSlewMode;
 
-///SkywatcherSpeedMode
+///Speed Mode
 typedef enum {
-    SPEED_LOW = 0x0,
-    SPEED_HIGH = 0x1,
+///Low-speed (microstepping possibly)
+SPEED_LOW = 0x0,
+///High-speed (half-stepping mostly)
+SPEED_HIGH = 0x1,
 } SkywatcherSpeedMode;
 
-///SkywatcherDirection
+///Direction
 typedef enum {
-    DIRECTION_FORWARD = 0x00,
-    DIRECTION_BACKWARD = 0x01,
+///Move forward
+DIRECTION_FORWARD = 0x00,
+///Move backward
+DIRECTION_BACKWARD = 0x01,
 } SkywatcherDirection;
 
-///SkywatcherAxisStatus
+///Axis Status
 typedef struct {
-    int Initialized;
-    int Running;
-    SkywatcherSlewMode Mode;
-    SkywatcherSpeedMode Speed;
-    SkywatcherDirection Direction;
+///Motor was initialized
+int Initialized;
+///Motor is running
+int Running;
+///Current slew mode
+SkywatcherSlewMode Mode;
+///Current speed mode
+SkywatcherSpeedMode Speed;
+///Current direction
+SkywatcherDirection Direction;
 } SkywatcherAxisStatus;
 
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
 
-/**
-* \brief Write values from the GT controller
-*/
-DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
+/**@}
+ * \defgroup Conn Connection
+ * @{*/
 
-/**
-* \brief Read values from the GT controller
-*/
-DLL_EXPORT void ahp_gt_read_values(int axis);
+ /**
+ * \brief Obtain the current libahp-gt version
+ * \return The current API version
+ */
+ DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
 
 /**
 * \brief Connect to the GT controller
+* \param port The serial port filename
+* \return non-zero on failure
 */
 DLL_EXPORT int ahp_gt_connect(const char* port);
 
 /**
 * \brief Connect to the GT controller using an existing file descriptor
+* \param fd The serial stream file descriptor
+* \return non-zero on failure
 */
 DLL_EXPORT int ahp_gt_connect_fd(int fd);
 
 /**
 * \brief Return the file descriptor of the port connected to the GT controllers
+* \param fd The serial stream file descriptor
+* \return The serial stream file descriptor
 */
 DLL_EXPORT int ahp_gt_get_fd();
 
@@ -194,6 +289,7 @@ DLL_EXPORT void ahp_gt_disconnect();
 
 /**
 * \brief Report connection status
+* \return non-zero if already connected
 * \sa ahp_gt_connect
 * \sa ahp_gt_connect_fd
 * \sa ahp_gt_disconnect
@@ -202,302 +298,413 @@ DLL_EXPORT unsigned int ahp_gt_is_connected();
 
 /**
 * \brief Get the GT firmware version
+* \return The GT controller firmware
 */
 DLL_EXPORT int ahp_gt_get_mc_version(void);
 
+/**@}
+ * \defgroup SG Parametrization
+ * @{*/
+
 /**
-* \brief Get the current GT features
+* \brief Get the current GT mount type
+* \return The GT controller MountType configuration
 */
 DLL_EXPORT MountType ahp_gt_get_mount_type(void);
 
 /**
 * \brief Get the current GT features
+* \param axis The motor to query
+* \return The GT controller GT1Feature configuration
 */
 DLL_EXPORT GT1Feature ahp_gt_get_feature(int axis);
 
 /**
 * \brief Get the current SkyWatcher features
+* \param axis The motor to query
+* \return The GT controller SkywatcherFeature configuration
 */
 DLL_EXPORT SkywatcherFeature ahp_gt_get_features(int axis);
 
 /**
 * \brief Get the current motor steps number
+* \param axis The motor to query
+* \return The GT controller configured motor steps
 */
 DLL_EXPORT double ahp_gt_get_motor_steps(int axis);
 
 /**
 * \brief Get the current motor gear teeth number
+* \param axis The motor to query
+* \return The GT controller configured motor teeth
 */
 DLL_EXPORT double ahp_gt_get_motor_teeth(int axis);
 
 /**
 * \brief Get the current worm gear teeth number
+* \param axis The motor to query
+* \return The GT controller configured worm gear teeth
 */
 DLL_EXPORT double ahp_gt_get_worm_teeth(int axis);
 
 /**
 * \brief Get the current crown gear teeth number
+* \param axis The motor to query
+* \return The GT controller configured crown gear teeth
 */
 DLL_EXPORT double ahp_gt_get_crown_teeth(int axis);
 
 /**
 * \brief Get the divider in the current configuration
+* \param axis The motor to query
+* \return The calculated stepping divider
 */
 DLL_EXPORT double ahp_gt_get_divider(int axis);
 
 /**
 * \brief Get the multiplier in the current configuration
+* \param axis The motor to query
+* \return The calculated stepping multiplier
 */
 DLL_EXPORT double ahp_gt_get_multiplier(int axis);
 
 /**
 * \brief Get the total number of steps
+* \param axis The motor to query
+* \return The calculated total steps number
 */
 DLL_EXPORT int ahp_gt_get_totalsteps(int axis);
 
 /**
 * \brief Get the worm number of steps
+* \param axis The motor to query
+* \return The calculated worm steps number
 */
 DLL_EXPORT int ahp_gt_get_wormsteps(int axis);
 
 /**
-* \brief Get the guiding speed
+* \brief Get the guiding rate
+* \param axis The motor to query
+* \return The current ST4 port guide rate in sidereal speeds
 */
 DLL_EXPORT double ahp_gt_get_guide_steps(int axis);
 
 /**
 * \brief Get the acceleration increment steps number
+* \param axis The motor to query
+* \return The calculated acceleration steps
 */
 DLL_EXPORT double ahp_gt_get_acceleration_steps(int axis);
 
 /**
-* \brief Get the acceleration
+* \brief Get the acceleration angle
+* \param axis The motor to query
+* \return The angle in radians the GT controller will cover to reach the desired rate
 */
 DLL_EXPORT double ahp_gt_get_acceleration_angle(int axis);
 
 /**
 * \brief Get the rs232 port polarity
+* \return Non-zero if inverted polarity was configured for the communication port
 */
 DLL_EXPORT int ahp_gt_get_rs232_polarity(void);
 
 /**
 * \brief Get the microstepping pwm frequency
+* \return The PWM frequency index - microstepping only
 */
 DLL_EXPORT int ahp_gt_get_pwm_frequency(void);
 
 /**
 * \brief Get the forward direction
+* \param axis The motor to query
+* \return Non-zero if the direction of this axis is inverted
 */
 DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
 
 /**
 * \brief Get the mount flags
+* \return Custom 10bit GT1Flags - for future usage
 */
-DLL_EXPORT int ahp_gt_get_mount_flags();
+DLL_EXPORT GT1Flags ahp_gt_get_mount_flags();
 
 /**
 * \brief Get the stepping configuration
+* \param axis The motor to query
+* \return The GT1SteppingConfiguration of the given axis - the coil polarization order
 */
 DLL_EXPORT GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis);
 
 /**
 * \brief Get the stepping mode
+* \param axis The motor to query
+* \return The GT1SteppingMode of the given axis
 */
 DLL_EXPORT GT1SteppingMode ahp_gt_get_stepping_mode(int axis);
 
 /**
 * \brief Get the maximum speed
+* \param axis The motor to query
+* \return The maximum speed in sidereal rates
 */
 DLL_EXPORT double ahp_gt_get_max_speed(int axis);
 
 /**
 * \brief Get the speed limit
+* \param axis The motor to query
+* \return The speed limit allowed by autoconfiguration, in sidereal rates
 */
 DLL_EXPORT double ahp_gt_get_speed_limit(int axis);
 
 /**
 * \brief Set the mount type
+* \param value The MountType after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
 /**
 * \brief Set the Skywatcher features
+* \param axis The motor to reconfigure
+* \param value The SkywatcherFeature after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_features(int axis, SkywatcherFeature value);
 
 /**
 * \brief Set the GT features
+* \param axis The motor to reconfigure
+* \param value The GT1Feature after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_feature(int axis, GT1Feature value);
 
 /**
 * \brief Set the motor steps number
+* \param axis The motor to reconfigure
+* \param value The motor steps for autoconfiguration after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_motor_steps(int axis, double value);
 
 /**
 * \brief Set the motor gear teeth number
+* \param axis The motor to reconfigure
+* \param value The motor teeth for autoconfiguration after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_motor_teeth(int axis, double value);
 
 /**
 * \brief Set the worm gear teeth number
+* \param axis The motor to reconfigure
+* \param value The worm gear teeth for autoconfiguration after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_worm_teeth(int axis, double value);
 
 /**
 * \brief Set the crown gear teeth number
+* \param axis The motor to reconfigure
+* \param value The crown gear teeth for autoconfiguration after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_crown_teeth(int axis, double value);
 
 /**
 * \brief Set the divider in the current configuration
+* \param axis The motor to reconfigure
+* \param value The step divider value after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_divider(int axis, int value);
 
 /**
 * \brief Set the multiplier in the current configuration
+* \param axis The motor to reconfigure
+* \param value The microsteps each step in high-speed mode after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_multiplier(int axis, int value);
 
 /**
 * \brief Set the total number of steps
+* \param axis The motor to reconfigure
+* \param value The total number of steps after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_totalsteps(int axis, int value);
 
 /**
 * \brief Set the worm number of steps
+* \param axis The motor to reconfigure
+* \param value The worm number of steps after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_wormsteps(int axis, int value);
 
 /**
 * \brief Set the guiding speed
+* \param axis The motor to reconfigure
+* \param value The guiding speed in sidereal rates after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
 
 /**
 * \brief Set the acceleration in high speed mode
+* \param axis The motor to reconfigure
+* \param value The angle in radians to cover to reach full speed after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_acceleration_angle(int axis, double value);
 
 /**
 * \brief Set the rs232 port polarity
+* \param value If 1 is passed communication port polarity will be inverted after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_rs232_polarity(int value);
 
 /**
 * \brief Set the microstepping pwm frequency
+* \param value The microstepping PWM frequency index after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_pwm_frequency(int value);
 
 /**
-* \brief Set the high speed stepping behavior
-*/
-DLL_EXPORT void ahp_gt_set_microspeed(int axis, int value);
-
-/**
 * \brief Set the forward direction
+* \param axis The motor to reconfigure
+* \param value If 1 is passed the direction of this axis will be inverted after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_direction_invert(int axis, int value);
 
 /**
 * \brief Set the mount flags
+* \param value Only isForkMount is supported at the moment
 */
-DLL_EXPORT void ahp_gt_set_mount_flags(int value);
+DLL_EXPORT void ahp_gt_set_mount_flags(GT1Flags value);
 
 /**
 * \brief Set the stepping configuration
+* \param axis The motor to reconfigure
+* \param value The GT1SteppingConfiguration of this axis after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value);
 
 /**
 * \brief Set the stepping mode
+* \param axis The motor to reconfigure
+* \param value The GT1SteppingMode of this axis after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value);
 
 /**
 * \brief Set the maximum goto speed
+* \param axis The motor to reconfigure
+* \param value The maximum speed of this axis in sidereal rates after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
+/**@}
+ * \defgroup Adr Multi-device addressing
+ * @{*/
+
 /**
 * \brief Select a device on a serial bus
+* \param address The address to query on bus
 * \return -1 if no devices with such address, 0 if a device with the given address is present
 */
 DLL_EXPORT int ahp_gt_select_device(int address);
 
 /**
 * \brief Change the current device address
-* \return -1 if no devices with such address, 0 if a device with the given address is present
+* \param address The bus address to set on the connected GT Controller
 */
 DLL_EXPORT void ahp_gt_set_address(int address);
 
 /**
 * \brief Get the current device address
-* \return the address of the current device
+* \return the address of the connected GT Controller
 */
 DLL_EXPORT int ahp_gt_get_address();
 
+/**@}
+* \defgroup Cfg Configuration
+* @{*/
+
+/**
+* \brief Write values from the GT controller
+* \param axis The motor to configure
+* \param percent Operation progress indication int32_t poiner.
+* \param finished Operation completed flag int32_t poiner.
+*/
+DLL_EXPORT void ahp_gt_ahp_gt_write_values(int axis, int *percent, int *finished);
+
+/**
+* \brief Read values from the GT controller
+* \param axis The motor to query
+*/
+DLL_EXPORT void ahp_gt_read_values(int axis);
+
+ /**@}
+  * \defgroup Move Movement control
+  * @{*/
+
 /**
 * \brief Get an axis status
-* \return the axis status value
+* \param axis The motor to query
+* \return The current SkywatcherAxisStatus of this axis
 */
 DLL_EXPORT SkywatcherAxisStatus ahp_gt_get_status(int axis);
 
 /**
-* \brief Get an axis position
-* \return the position of the specified axis in radians
+* \brief Get the axis position
+* \param axis The motor to query
+* \return The position of the specified axis in radians
 */
 DLL_EXPORT double ahp_gt_get_position(int axis);
 
 /**
-* \brief Set an axis position in radians
+* \brief Set the axis position in radians
+* \param axis The motor to configure
+* \param value The position to set on the specified axis in radians
 */
 DLL_EXPORT void ahp_gt_set_position(int axis, double value);
 
 /**
-* \brief Determine if an axis is in motion
+* \brief Determine if an axis is moving
+* \param axis The motor to query
 * \return 1 if the axis is in motion, 0 if it's stopped
 */
 DLL_EXPORT int ahp_gt_is_axis_moving(int axis);
 
 /**
-* \brief Start an absolute goto motion on an axis in radians
-*/
-DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
-
-/**
-* \brief Start a relative goto motion on an axis in radians
-*/
-DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
-
-/**
-* \brief Start a slew motion on an axis
-*/
-DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
-
-/**
 * \brief Stop an axis motion
+* \param axis The motor to stop
+* \param wait If 1 this function will block until the axis stops completely, 0 code flow will continue
 */
 DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 
 /**
-* \brief Set the slew speed
+* \brief Move an axis
+* \param axis The motor to move
+* \param speed The radial speed in sidereal rates
 */
-DLL_EXPORT void ahp_gt_set_axis_speed(int axis, SkywatcherMotionMode mode, double speed);
+DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
+
+/**
+* \brief Move an axis by an offset
+* \param axis The motor to move
+* \param increment The position offset to cover by the specified axis in radians
+* \param speed The radial speed in sidereal rates
+*/
+DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
+
+/**
+* \brief Move an axis to a position
+* \param axis The motor to move
+* \param target The position to reach by the specified axis in radians
+* \param speed The radial speed in sidereal rates
+*/
+DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
 /**
 * \brief Start a test tracking motion
+* \param axis The motor to move at sidereal speed
 */
 DLL_EXPORT void ahp_gt_start_tracking(int axis);
-
-/**
-* \brief Obtain the current libahp-gt version
-*/
-DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
+/**@}
+ * @}*/
 #endif //_AHP_GT_H

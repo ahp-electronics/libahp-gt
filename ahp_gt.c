@@ -31,7 +31,7 @@ static double divider[num_axes] = { 1, 1 };
 static int multiplier[num_axes] = { 0, 0 };
 static int address_value = 0;
 static int dividers = 0;
-static int mount_flags = 0;
+static GT1Flags mount_flags = 0;
 static double crown[num_axes] = { 180, 180 };
 static double steps[num_axes] = { 200, 200 };
 static double motor[num_axes] = { 10, 10 };
@@ -484,7 +484,7 @@ int ahp_gt_get_direction_invert(int axis)
     return direction_invert[axis];
 }
 
-int ahp_gt_get_mount_flags()
+GT1Flags ahp_gt_get_mount_flags()
 {
     return mount_flags;
 }
@@ -579,7 +579,7 @@ void ahp_gt_set_direction_invert(int axis, int value)
     direction_invert[axis] = value&1;
 }
 
-void ahp_gt_set_mount_flags(int value)
+void ahp_gt_set_mount_flags(GT1Flags value)
 {
     mount_flags = value;
 }

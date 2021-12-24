@@ -37,7 +37,7 @@ static pthread_mutexattr_t mutex_attr;
 static pthread_mutex_t read_mutex;
 static pthread_mutex_t send_mutex;
 static int mutexes_initialized = 0;
-static int baudrate = -1;
+static int baudrate = 1000;
 static char mode[4] = { 0, 0, 0, 0 };
 static int flowctrl = -1;
 static int fd = -1;
@@ -191,10 +191,8 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     new_port_settings.c_lflag = 0;
     new_port_settings.c_cc[VMIN] = 0;      /* block untill n bytes are received */
     new_port_settings.c_cc[VTIME] = 0;     /* block untill a timer expires (n * 100 mSec.) */
-
     cfsetispeed(&new_port_settings, (speed_t)baudr);
     cfsetospeed(&new_port_settings, (speed_t)baudr);
-
     error = tcsetattr(fd, TCSANOW, &new_port_settings);
     if(error==-1)
     {
@@ -257,9 +255,9 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
 
     Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
     Cptimeouts.ReadTotalTimeoutMultiplier  = 0;
-    Cptimeouts.ReadTotalTimeoutConstant    = 0;
+    Cptimeouts.ReadTotalTimeoutConstant    = 10000000/bauds;
     Cptimeouts.WriteTotalTimeoutMultiplier = 0;
-    Cptimeouts.WriteTotalTimeoutConstant   = 0;
+    Cptimeouts.WriteTotalTimeoutConstant   = 10000000/bauds;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
@@ -267,16 +265,8 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
-    DCB port_settings;
-    memset(&port_settings, 0, sizeof(DCB));
-    port_settings.DCBlength = sizeof(DCB);
-
-    if(!GetCommState(pHandle, &port_settings))
-    {
-        printf("unable to get comport cfg settings\n");
-        return 1;
-    }
-    port_settings.DCBlength = sizeof(DCB);
+    DCB port_settings = { 0 };
+    port_settings.DCBlength = sizeof(port_settings);
     port_settings.BaudRate = baudrate;
     port_settings.XonChar = 0x13;
     port_settings.XoffChar = 0x19;
@@ -287,8 +277,9 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     port_settings.fInX = 0;
     port_settings.fErrorChar = 0;
     port_settings.fBinary = 0;
+    port_settings.fParity = 0;
     port_settings.fNull = 0;
-    port_settings.fAbortOnError = 0;
+    port_settings.fAbortOnError = 1;
     port_settings.XonLim = 0;
     port_settings.XoffLim = 0;
     port_settings.fTXContinueOnXoff = 1;
@@ -314,7 +305,7 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     case '1': port_settings.StopBits = ONESTOPBIT; break;
     case '2': port_settings.StopBits = TWOSTOPBITS; break;
     default:
-        fprintf(stderr, "invalid stop bits\n");
+        fprintf(stderr, "unable stop bits\n");
     return 1;
     }
 
@@ -401,11 +392,10 @@ void RS232_CloseComport()
         pthread_mutex_destroy(&send_mutex);
         pthread_mutexattr_destroy(&mutex_attr);
         mutexes_initialized = 0;
-
     }
     strcpy(mode, "   ");
     flowctrl = -1;
-    baudrate = -1;
+    baudrate = 57600;
     fd = -1;
 }
 
@@ -417,24 +407,25 @@ int RS232_RecvBuf(unsigned char *buf, int size)
     int to_read = size;
     if(mutexes_initialized) {
         while(pthread_mutex_trylock(&read_mutex))
-            usleep(10000000/baudrate);
+            usleep(100);
         while(to_read > 0 && ntries-->0) {
-            usleep(10000000/baudrate);
+            usleep(100);
             n = read(fd, buf+nread, (size_t)to_read);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
-                else {
-                    n = -errno;
+                else if(n<0) {
+                    nread = -errno;
                     break;
                 }
+            } else {
+                nread += n;
+                to_read -= n;
             }
-            nread += n;
-            to_read -= n;
         }
         pthread_mutex_unlock(&read_mutex);
     }
-    return n;
+    return nread;
 }
 
 int RS232_SendBuf(unsigned char *buf, int size)
@@ -445,24 +436,24 @@ int RS232_SendBuf(unsigned char *buf, int size)
     int to_send = size;
     if(mutexes_initialized) {
         while(pthread_mutex_trylock(&send_mutex))
-            usleep(10000000/baudrate);
+            usleep(100);
         while(to_send > 0 && ntries-->0) {
             n = write(fd, buf+nsent, (size_t)to_send);
-            usleep(10000000/baudrate);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
-                else {
+                else if(n<0) {
                     n = -errno;
                     break;
                 }
+            } else {
+                nsent += n;
+                to_send -= n;
             }
-            nsent += n;
-            to_send -= n;
         }
         pthread_mutex_unlock(&send_mutex);
     }
-    return n;
+    return nsent;
 }
 
 int RS232_AlignFrame(int sof, int maxtries)
