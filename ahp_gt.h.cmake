@@ -294,6 +294,13 @@ DLL_EXPORT int ahp_gt_get_fd();
 DLL_EXPORT void ahp_gt_disconnect();
 
 /**
+* \brief Get the file descriptor that links to the controller
+* \return The file descriptor
+* \sa ahp_xc_connect
+*/
+DLL_EXPORT int ahp_gt_get_fd();
+
+/**
 * \brief Report connection status
 * \return non-zero if already connected
 * \sa ahp_gt_connect
@@ -631,7 +638,7 @@ DLL_EXPORT int ahp_gt_get_address();
 * \param percent Operation progress indication int32_t poiner.
 * \param finished Operation completed flag int32_t poiner.
 */
-DLL_EXPORT void ahp_gt_ahp_gt_write_values(int axis, int *percent, int *finished);
+DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
 
 /**
 * \brief Read values from the GT controller

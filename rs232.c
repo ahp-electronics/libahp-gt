@@ -409,7 +409,7 @@ int RS232_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&read_mutex))
             usleep(100);
         while(to_read > 0 && ntries-->0) {
-            usleep(100);
+            usleep(10000000/baudrate);
             n = read(fd, buf+nread, (size_t)to_read);
             if(n<1) {
                 if(errno == EAGAIN)
@@ -438,6 +438,7 @@ int RS232_SendBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&send_mutex))
             usleep(100);
         while(to_send > 0 && ntries-->0) {
+            usleep(100);
             n = write(fd, buf+nsent, (size_t)to_send);
             if(n<1) {
                 if(errno == EAGAIN)

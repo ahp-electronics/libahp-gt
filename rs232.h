@@ -60,11 +60,11 @@ extern "C" {
 
 int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);
 int RS232_OpenComport(const char *comport);
-void RS232_SetFD(int f, int baudrate);
+void RS232_SetFD(int f, int bauds);
 int RS232_GetFD();
 int RS232_AlignFrame(int sof, int maxtries);
-int RS232_RecvByte();
 int RS232_RecvBuf(unsigned char *buf, int size);
+int RS232_RecvByte();
 int RS232_SendByte(unsigned char byte);
 int RS232_SendBuf(unsigned char *buf, int size);
 void RS232_CloseComport(void);
