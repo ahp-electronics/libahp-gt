@@ -33,11 +33,13 @@
 #include "rs232.h"
 #include <pthread.h>
 
+#define BASE_RATE 9600
+
 static pthread_mutexattr_t mutex_attr;
 static pthread_mutex_t read_mutex;
 static pthread_mutex_t send_mutex;
 static int mutexes_initialized = 0;
-static int baudrate = 1000;
+static int baudrate = BASE_RATE;
 static char mode[4] = { 0, 0, 0, 0 };
 static int flowctrl = -1;
 static int fd = -1;
@@ -395,7 +397,7 @@ void RS232_CloseComport()
     }
     strcpy(mode, "   ");
     flowctrl = -1;
-    baudrate = 57600;
+    baudrate = BASE_RATE;
     fd = -1;
 }
 
@@ -438,8 +440,8 @@ int RS232_SendBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&send_mutex))
             usleep(100);
         while(to_send > 0 && ntries-->0) {
-            usleep(100);
             n = write(fd, buf+nsent, (size_t)to_send);
+            usleep(10000000/baudrate);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
