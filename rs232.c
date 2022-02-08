@@ -448,7 +448,6 @@ int RS232_SendBuf(unsigned char *buf, int size)
             usleep(10000000/baudrate);
         while(to_send > 0 && ntries-->0) {
             n = write(fd, buf+nsent, (size_t)to_send);
-            usleep(10000000/baudrate);
             if(n<1) {
                 if(errno == EAGAIN)
                     continue;
