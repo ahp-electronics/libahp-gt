@@ -269,7 +269,6 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
 
     DCB port_settings;
     memset(&port_settings, 0, sizeof(DCB));
-    port_settings.DCBlength = sizeof(DCB);
 
     if(!GetCommState(pHandle, &port_settings))
     {
@@ -328,6 +327,8 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
         port_settings.fDtrControl = DTR_CONTROL_DISABLE;
         port_settings.fRtsControl = RTS_CONTROL_DISABLE;
     }
+
+    port_settings.DCBlength = sizeof(port_settings);
 
     if(!SetCommState(pHandle, &port_settings))
     {
