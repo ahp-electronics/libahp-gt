@@ -369,7 +369,7 @@ int RS232_OpenComport(const char* devname)
     char dev_name[128];
     sprintf(dev_name, "%s", devname);
     if(fd == -1)
-        fd = open(dev_name, O_RDWR);
+        fd = open(dev_name, O_RDWR|O_NONBLOCK);
 
     if(fd==-1) {
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
@@ -412,13 +412,13 @@ int RS232_RecvBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     timeout.tv_sec = 0;
-    timeout.tv_usec = 10000000/baudrate;
 
     if(mutexes_initialized) {
         while(pthread_mutex_trylock(&read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(10000000/baudrate);
+            timeout.tv_usec = 10000000*bytes_left/baudrate;
             if(select(fd + 1, &set, NULL, NULL, &timeout) > 0)
                 n = read(fd, buf+nbytes, bytes_left);
             else
