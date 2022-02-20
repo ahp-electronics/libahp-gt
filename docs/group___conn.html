@@ -90,6 +90,9 @@ DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el"
 <tr class="memitem:gaf9c012c542d3149fb673c42fb609f995"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#gaf9c012c542d3149fb673c42fb609f995">ahp_gt_is_connected</a> ()</td></tr>
 <tr class="memdesc:gaf9c012c542d3149fb673c42fb609f995"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report connection status.  <a href="group___conn.html#gaf9c012c542d3149fb673c42fb609f995">More...</a><br /></td></tr>
 <tr class="separator:gaf9c012c542d3149fb673c42fb609f995"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2113bf70117d172911ba348ab85322b6"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#ga2113bf70117d172911ba348ab85322b6">ahp_gt_is_detected</a> (int index)</td></tr>
+<tr class="memdesc:ga2113bf70117d172911ba348ab85322b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report detection status.  <a href="group___conn.html#ga2113bf70117d172911ba348ab85322b6">More...</a><br /></td></tr>
+<tr class="separator:ga2113bf70117d172911ba348ab85322b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa52b57fb5380f952ede54e901c167fd6"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#gaa52b57fb5380f952ede54e901c167fd6">ahp_gt_get_mc_version</a> (void)</td></tr>
 <tr class="memdesc:gaa52b57fb5380f952ede54e901c167fd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the GT firmware version.  <a href="group___conn.html#gaa52b57fb5380f952ede54e901c167fd6">More...</a><br /></td></tr>
 <tr class="separator:gaa52b57fb5380f952ede54e901c167fd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -170,7 +173,7 @@ DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el"
 <dl class="section return"><dt>Returns</dt><dd>The serial stream file descriptor</dd>
 <dd>
 The file descriptor </dd></dl>
-<dl class="section see"><dt>See also</dt><dd>ahp_xc_connect </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___conn.html#ga7e8e4895ebb9e33a76581c0f59d61ab2" title="Connect to the GT controller.">ahp_gt_connect</a> </dd></dl>
 
 </div>
 </div>
@@ -243,10 +246,44 @@ The file descriptor </dd></dl>
 
 </div>
 </div>
+<a id="ga2113bf70117d172911ba348ab85322b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2113bf70117d172911ba348ab85322b6">&#9670;&nbsp;</a></span>ahp_gt_is_detected()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT unsigned int ahp_gt_is_detected </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>the address to check </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>non-zero if already detected </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___adr.html#ga3b819cc20e5c4666366188fa283b5750" title="Select a device on a serial bus.">ahp_gt_select_device</a> </dd>
+<dd>
+<a class="el" href="group___adr.html#ga77eda5b5c0411c42a766c3c2b9262b22" title="Obtain the current device selection.">ahp_gt_get_current_device</a> </dd>
+<dd>
+<a class="el" href="group___conn.html#ga7e8e4895ebb9e33a76581c0f59d61ab2" title="Connect to the GT controller.">ahp_gt_connect</a> </dd>
+<dd>
+<a class="el" href="group___conn.html#gaf9c805cc7ee97b0071388fafa72d9aee" title="Connect to the GT controller using an existing file descriptor.">ahp_gt_connect_fd</a> </dd>
+<dd>
+<a class="el" href="group___conn.html#ga411a1993fbac9f4d0e74779792d1a1c5" title="Disconnect from the GT controller.">ahp_gt_disconnect</a> </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 9 2022 15:31:10 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Feb 19 2022 16:57:38 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

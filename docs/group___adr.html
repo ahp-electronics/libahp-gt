@@ -74,6 +74,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga3b819cc20e5c4666366188fa283b5750"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#ga3b819cc20e5c4666366188fa283b5750">ahp_gt_select_device</a> (int address)</td></tr>
 <tr class="memdesc:ga3b819cc20e5c4666366188fa283b5750"><td class="mdescLeft">&#160;</td><td class="mdescRight">Select a device on a serial bus.  <a href="group___adr.html#ga3b819cc20e5c4666366188fa283b5750">More...</a><br /></td></tr>
 <tr class="separator:ga3b819cc20e5c4666366188fa283b5750"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga77eda5b5c0411c42a766c3c2b9262b22"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#ga77eda5b5c0411c42a766c3c2b9262b22">ahp_gt_get_current_device</a> ()</td></tr>
+<tr class="memdesc:ga77eda5b5c0411c42a766c3c2b9262b22"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain the current device selection.  <a href="group___adr.html#ga77eda5b5c0411c42a766c3c2b9262b22">More...</a><br /></td></tr>
+<tr class="separator:ga77eda5b5c0411c42a766c3c2b9262b22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa606a01cd27ae929d26b3fe3908d03fd"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#gaa606a01cd27ae929d26b3fe3908d03fd">ahp_gt_set_address</a> (int address)</td></tr>
 <tr class="memdesc:gaa606a01cd27ae929d26b3fe3908d03fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the current device address.  <a href="group___adr.html#gaa606a01cd27ae929d26b3fe3908d03fd">More...</a><br /></td></tr>
 <tr class="separator:gaa606a01cd27ae929d26b3fe3908d03fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -98,6 +101,30 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>the address of the connected GT Controller </dd></dl>
+
+</div>
+</div>
+<a id="ga77eda5b5c0411c42a766c3c2b9262b22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga77eda5b5c0411c42a766c3c2b9262b22">&#9670;&nbsp;</a></span>ahp_gt_get_current_device()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_gt_get_current_device </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">address</td><td>The address to query on bus </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>-1 if no devices with such address, 0 if a device with the given address is present </dd></dl>
 
 </div>
 </div>
@@ -153,7 +180,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 9 2022 15:31:10 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Sat Feb 19 2022 16:57:38 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
