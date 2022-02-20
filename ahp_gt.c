@@ -1,3 +1,28 @@
+/**
+*    MIT License
+*
+*    libahp_gt library to drive the AHP GT controllers
+*    Copyright (C) 2021  Ilia Platone
+*
+*    Permission is hereby granted, free of charge, to any person obtaining a copy
+*    of this software and associated documentation files (the "Software"), to deal
+*    in the Software without restriction, including without limitation the rights
+*    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+*    copies of the Software, and to permit persons to whom the Software is
+*    furnished to do so, subject to the following conditions:
+*
+*    The above copyright notice and this permission notice shall be included in all
+*    copies or substantial portions of the Software.
+*
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+*    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+*    SOFTWARE.
+*/
+
 #include "ahp_gt.h"
 #include "rs232.h"
 #include <pthread.h>
@@ -49,7 +74,9 @@ static SkywatcherAxisStatus axisstatus[2] = { { 0, 0, 0, 0, 0}, { 0, 0, 0, 0, 0}
 static GT1Feature gt1feature[num_axes] = { GpioUnused, GpioUnused };
 static double accelsteps[num_axes]  = { 1, 1 };
 static unsigned char pwmfreq = 0;
+static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
+static unsigned int ahp_gt_detected[128] = { 0 };
 
 static int Revu24str2long(char *s)
 {
@@ -187,7 +214,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
 static void optimize_values(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     double sidereal_period = SIDEREAL_DAY / crown[axis];
     double baseclock = 186250;
@@ -269,7 +296,7 @@ int WriteAndCheck(int axis, int pos, int val)
 
 void ahp_gt_write_values(int axis, int *percent, int *finished)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     int offset = axis * 8;
     *finished = 0;
@@ -355,19 +382,19 @@ int ahp_gt_connect_fd(int fd)
         return 0;
     if(fd != -1) {
         RS232_SetFD(fd, 9600);
-        ahp_gt_get_mc_version();
-        if(version > 0) {
-            fprintf(stderr, "MC Version: %02X\n", version);
-            ahp_gt_read_values(0);
-            ahp_gt_read_values(1);
-            ahp_gt_connected = 1;
-            return 0;
+        ahp_gt_connected = 1;
+        if(!ahp_gt_select_device(ahp_gt_get_current_device())) {
+            ahp_gt_get_mc_version();
+            if(version > 0) {
+                fprintf(stderr, "MC Version: %02X\n", version);
+                return 0;
+            }
         }
     }
     return 1;
 }
 
-int ahp_xc_get_fd()
+int ahp_gt_get_fd()
 {
     if(!ahp_gt_is_connected())
         return -1;
@@ -380,13 +407,13 @@ int ahp_gt_connect(const char* port)
         return 0;
     if(!RS232_OpenComport(port)) {
         if(!RS232_SetupPort(9600, "8N1", 0)) {
-            ahp_gt_get_mc_version();
-            if(version > 0) {
-                fprintf(stderr, "MC Version: %02X\n", version);
-                ahp_gt_read_values(0);
-                ahp_gt_read_values(1);
-                ahp_gt_connected = 1;
-                return 0;
+            ahp_gt_connected = 1;
+            if(!ahp_gt_select_device(ahp_gt_get_current_device())) {
+                ahp_gt_get_mc_version();
+                if(version > 0) {
+                    fprintf(stderr, "MC Version: %02X\n", version);
+                    return 0;
+                }
             }
         }
         RS232_CloseComport();
@@ -413,6 +440,11 @@ unsigned int ahp_gt_is_connected()
     return ahp_gt_connected;
 }
 
+unsigned int ahp_gt_is_detected(int index)
+{
+    return ahp_gt_detected[index];
+}
+
 int ahp_gt_get_mc_version()
 {
     int v = dispatch_command(InquireMotorBoardVersion, 0, -1);
@@ -426,168 +458,168 @@ int ahp_gt_get_mc_version()
 
 MountType ahp_gt_get_mount_type()
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return type;
 }
 
 GT1Feature ahp_gt_get_feature(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return gt1feature[axis];
 }
 
 SkywatcherFeature ahp_gt_get_features(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return (SkywatcherFeature)features[axis];
 }
 
 double ahp_gt_get_motor_steps(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return steps[axis];
 }
 
 double ahp_gt_get_motor_teeth(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return motor[axis];
 }
 
 double ahp_gt_get_worm_teeth(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return worm[axis];
 }
 
 double ahp_gt_get_crown_teeth(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return crown[axis];
 }
 
 double ahp_gt_get_multiplier(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return multiplier[axis];
 }
 
 double ahp_gt_get_divider(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return divider[axis];
 }
 
 int ahp_gt_get_totalsteps(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return totalsteps[axis];
 }
 
 int ahp_gt_get_wormsteps(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return wormsteps[axis];
 }
 
 double ahp_gt_get_guide_steps(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return guide[axis];
 }
 
 double ahp_gt_get_acceleration_steps(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return accelsteps[axis];
 }
 
 double ahp_gt_get_acceleration_angle(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return acceleration[axis];
 }
 
 int ahp_gt_get_rs232_polarity()
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return rs232_polarity;
 }
 
 int ahp_gt_get_pwm_frequency()
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return pwmfreq;
 }
 
 int ahp_gt_get_direction_invert(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return direction_invert[axis];
 }
 
 GT1Flags ahp_gt_get_mount_flags()
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return mount_flags;
 }
 
 GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return (GT1SteppingConfiguration)stepping_conf[axis];
 }
 
 GT1SteppingMode ahp_gt_get_stepping_mode(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return (GT1SteppingMode)stepping_mode[axis];
 }
 
 double ahp_gt_get_max_speed(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return maxspeed[axis];
 }
 
 double ahp_gt_get_speed_limit(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
     return speed_limit[axis];
 }
 
 void ahp_gt_set_mount_type(MountType value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     type = value;
 }
 
 void ahp_gt_set_features(int axis, SkywatcherFeature value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     features[axis] &= ~value;
     features[axis] |= value;
@@ -595,7 +627,7 @@ void ahp_gt_set_features(int axis, SkywatcherFeature value)
 
 void ahp_gt_set_feature(int axis, GT1Feature value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     gt1feature[axis] = value & 7;
     optimize_values(axis);
@@ -603,7 +635,7 @@ void ahp_gt_set_feature(int axis, GT1Feature value)
 
 void ahp_gt_set_motor_steps(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     steps[axis] = value;
     optimize_values(axis);
@@ -611,7 +643,7 @@ void ahp_gt_set_motor_steps(int axis, double value)
 
 void ahp_gt_set_motor_teeth(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     motor[axis] = value;
     optimize_values(axis);
@@ -619,7 +651,7 @@ void ahp_gt_set_motor_teeth(int axis, double value)
 
 void ahp_gt_set_worm_teeth(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     worm[axis] = value;
     optimize_values(axis);
@@ -627,7 +659,7 @@ void ahp_gt_set_worm_teeth(int axis, double value)
 
 void ahp_gt_set_crown_teeth(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     crown[axis] = value;
     optimize_values(axis);
@@ -635,7 +667,7 @@ void ahp_gt_set_crown_teeth(int axis, double value)
 
 void ahp_gt_set_guide_steps(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     guide[axis] = value;
     optimize_values(axis);
@@ -643,7 +675,7 @@ void ahp_gt_set_guide_steps(int axis, double value)
 
 void ahp_gt_set_pwm_frequency(int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     value = fmin(0xb, fmax(0, value));
     pwmfreq = value;
@@ -651,7 +683,7 @@ void ahp_gt_set_pwm_frequency(int value)
 
 void ahp_gt_set_acceleration_angle(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     acceleration [axis] = value;
     optimize_values(axis);
@@ -659,7 +691,7 @@ void ahp_gt_set_acceleration_angle(int axis, double value)
 
 void ahp_gt_set_rs232_polarity(int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     rs232_polarity = value;
     dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5) | (address_value << 9);
@@ -667,28 +699,28 @@ void ahp_gt_set_rs232_polarity(int value)
 
 void ahp_gt_set_direction_invert(int axis, int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     direction_invert[axis] = value&1;
 }
 
 void ahp_gt_set_mount_flags(GT1Flags value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     mount_flags = value;
 }
 
 void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     stepping_conf[axis] = (int)value;
 }
 
 void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     stepping_mode[axis] = (int)value;
     optimize_values(axis);
@@ -696,7 +728,7 @@ void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value)
 
 void ahp_gt_set_max_speed(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     maxspeed[axis] = fabs(value);
     optimize_values(axis);
@@ -704,7 +736,7 @@ void ahp_gt_set_max_speed(int axis, double value)
 
 void ahp_gt_set_divider(int axis, int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     divider[axis] = abs(value);
     dividers = rs232_polarity | ((unsigned char)divider [0] << 1) | ((unsigned char)divider [1] << 5) | (address_value << 9);
@@ -712,33 +744,39 @@ void ahp_gt_set_divider(int axis, int value)
 
 void ahp_gt_set_multiplier(int axis, int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     multiplier[axis] = abs(value);
 }
 
 void ahp_gt_set_totalsteps(int axis, int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     totalsteps[axis] = abs(value);
 }
 
 void ahp_gt_set_wormsteps(int axis, int value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     wormsteps[axis] = abs(value);
+}
+
+int ahp_gt_get_current_device() {
+    return ahp_gt_current_device;
 }
 
 int ahp_gt_select_device(int address) {
     if(!ahp_gt_is_connected())
         return -1;
-    address &= 0x7f;
-    dispatch_command(SetAddress, 0, address);
-    if(ahp_gt_get_version() > 0) {
+    ahp_gt_current_device = address&0x7f;
+    ahp_gt_detected[ahp_gt_current_device] = 0;
+    dispatch_command(SetAddress, 0, address_value);
+    if(ahp_gt_get_mc_version() > 0) {
         ahp_gt_read_values(Ra);
         ahp_gt_read_values(Dec);
+        ahp_gt_detected[ahp_gt_current_device] = 1;
         return 0;
     }
     return -1;
@@ -746,7 +784,7 @@ int ahp_gt_select_device(int address) {
 
 void ahp_gt_set_address(int address)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     address_value = address;
     optimize_values(0);
@@ -754,14 +792,14 @@ void ahp_gt_set_address(int address)
 
 int ahp_gt_get_address()
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return address_value;
 }
 
 SkywatcherAxisStatus ahp_gt_get_status(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return (SkywatcherAxisStatus){ 0, 0, 0, 0, 0 };
     SkywatcherAxisStatus status;
     int response = dispatch_command(GetAxisStatus, axis, -1);
@@ -785,14 +823,14 @@ SkywatcherAxisStatus ahp_gt_get_status(int axis)
 
 void ahp_gt_set_position(int axis, double value)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     dispatch_command(SetAxisPositionCmd, axis, (int)(value*totalsteps[axis]/M_PI/2.0)+0x800000);
 }
 
 double ahp_gt_get_position(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     int steps = dispatch_command(GetAxisPosition, axis, -1);
     steps -= 0x800000;
@@ -801,13 +839,13 @@ double ahp_gt_get_position(int axis)
 
 int ahp_gt_is_axis_moving(int axis)
 {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return axisstatus[axis].Running;
 }
 
 void ahp_gt_goto_absolute(int axis, double target, double speed) {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     double position = ahp_gt_get_position(axis);
     speed = fabs(speed);
@@ -837,7 +875,7 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
 }
 
 void ahp_gt_goto_relative(int axis, double increment, double speed) {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     speed = fabs(speed);
     speed *= (increment < 0 ? -1 : 1);
@@ -864,7 +902,7 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
 }
 
 void ahp_gt_start_motion(int axis, double speed) {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     double period = SIDEREAL_DAY * multiplier[axis] * wormsteps[axis] / totalsteps[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
@@ -884,7 +922,7 @@ void ahp_gt_start_motion(int axis, double speed) {
 }
 
 void ahp_gt_stop_motion(int axis, int wait) {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     dispatch_command(InstantAxisStop, axis, -1);
     if(wait) {
@@ -894,7 +932,7 @@ void ahp_gt_stop_motion(int axis, int wait) {
 }
 
 void ahp_gt_start_tracking(int axis) {
-    if(!ahp_gt_is_connected())
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     ahp_gt_stop_motion(axis, 1);
     double period = SIDEREAL_DAY * wormsteps[axis] / totalsteps[axis];

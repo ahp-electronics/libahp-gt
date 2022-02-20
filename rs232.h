@@ -1,33 +1,27 @@
 /*
-***************************************************************************
+*    MIT License
 *
-* Author: Teunis van Beelen
+*    rs232 sources serial communication driver
+*    Copyright (C) 2022  Ilia Platone
 *
-* Copyright (C) 2005 - 2020 Teunis van Beelen
+*    Permission is hereby granted, free of charge, to any person obtaining a copy
+*    of this software and associated documentation files (the "Software"), to deal
+*    in the Software without restriction, including without limitation the rights
+*    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+*    copies of the Software, and to permit persons to whom the Software is
+*    furnished to do so, subject to the following conditions:
 *
-* Email: teuniz@protonmail.com
+*    The above copyright notice and this permission notice shall be included in all
+*    copies or substantial portions of the Software.
 *
-***************************************************************************
-*
-* This program is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License.
-*
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*
-***************************************************************************
+*    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+*    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+*    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+*    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+*    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+*    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+*    SOFTWARE.
 */
-
-/* Last revision: August 6, 2020 */
-
-/* For more info and how to use this library, visit: http://www.teuniz.net/RS-232/ */
-
 
 #ifndef rs232_INCLUDED
 #define rs232_INCLUDED
@@ -56,6 +50,7 @@ extern "C" {
 #include <windows.h>
 #undef UNICODE
 #undef _UNICODE
+#include <winsock2.h>
 #endif
 
 int RS232_SetupPort(int baudrate, const char *mode, int flowctrl);

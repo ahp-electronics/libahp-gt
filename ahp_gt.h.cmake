@@ -2,7 +2,7 @@
 * \license
 *    MIT License
 *
-*    libahp_xc library to drive the AHP GT controllers
+*    libahp_gt library to drive the AHP GT controllers
 *    Copyright (C) 2021  Ilia Platone
 *
 *    Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -296,7 +296,7 @@ DLL_EXPORT void ahp_gt_disconnect();
 /**
 * \brief Get the file descriptor that links to the controller
 * \return The file descriptor
-* \sa ahp_xc_connect
+* \sa ahp_gt_connect
 */
 DLL_EXPORT int ahp_gt_get_fd();
 
@@ -308,6 +308,18 @@ DLL_EXPORT int ahp_gt_get_fd();
 * \sa ahp_gt_disconnect
 */
 DLL_EXPORT unsigned int ahp_gt_is_connected();
+
+/**
+* \brief Report detection status
+* \param index the address to check
+* \return non-zero if already detected
+* \sa ahp_gt_select_device
+* \sa ahp_gt_get_current_device
+* \sa ahp_gt_connect
+* \sa ahp_gt_connect_fd
+* \sa ahp_gt_disconnect
+*/
+DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 
 /**
 * \brief Get the GT firmware version
@@ -615,6 +627,13 @@ DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 * \return -1 if no devices with such address, 0 if a device with the given address is present
 */
 DLL_EXPORT int ahp_gt_select_device(int address);
+
+/**
+* \brief Obtain the current device selection
+* \param address The address to query on bus
+* \return -1 if no devices with such address, 0 if a device with the given address is present
+*/
+DLL_EXPORT int ahp_gt_get_current_device();
 
 /**
 * \brief Change the current device address
