@@ -23,37 +23,59 @@
 *    SOFTWARE.
 */
 
-#include "rs232.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+
+#ifndef _WIN32
+
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <limits.h>
+#include <sys/file.h>
+
+#else
+#include <winsock2.h>
+#include <windows.h>
+#undef UNICODE
+#undef _UNICODE
+#endif
 #include <pthread.h>
 
-static pthread_mutexattr_t mutex_attr;
-static pthread_mutex_t read_mutex;
-static pthread_mutex_t send_mutex;
-static int mutexes_initialized = 0;
-static int baudrate = -1;
-static char mode[4] = { 0, 0, 0, 0 };
-static int flowctrl = -1;
-static int fd = -1;
+static pthread_mutexattr_t ahp_serial_mutex_attr;
+static pthread_mutex_t ahp_serial_read_mutex;
+static pthread_mutex_t ahp_serial_send_mutex;
+static int ahp_serial_mutexes_initialized = 0;
+static int ahp_serial_baudrate = -1;
+static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
+static int ahp_serial_flowctrl = -1;
+static int ahp_serial_fd = -1;
 
 static fd_set set;
-static struct timeval timeout;
+static struct timeval ahp_serial_timeout;
 
 #ifndef _WIN32   /* Linux & FreeBSD */
-static int error = 0;
+static int ahp_serial_error = 0;
 
-static struct termios new_port_settings, old_port_settings;
+static struct termios ahp_serial_new_port_settings, ahp_serial_old_port_settings;
 
-int RS232_SetupPort(int bauds, const char *m, int fc)
+static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
 {
-    if(baudrate == bauds && !strcmp(mode, m) && fc == flowctrl)
-        return 0;
     FD_ZERO(&set);
-    FD_SET(fd, &set);
-    strcpy(mode, m);
-    flowctrl = fc;
-    baudrate = bauds;
+    FD_SET(ahp_serial_fd, &set);
+    strcpy(ahp_serial_mode, m);
+    ahp_serial_flowctrl = fc;
+    ahp_serial_baudrate = bauds;
     int baudr, status;
-    switch(baudrate)
+    switch(ahp_serial_baudrate)
     {
     case      50 : baudr = B50;
                    break;
@@ -117,19 +139,19 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     case 4000000 : baudr = B4000000;
                    break;
 #endif
-    default      : printf("invalid baudrate\n");
+    default      : printf("invalid ahp_serial_baudrate\n");
                    return 1;
   }
 
   int cbits=CS8,  cpar=0, ipar=IGNPAR, bstop=0;
 
-    if(strlen(mode) != 3)
+    if(strlen(ahp_serial_mode) != 3)
     {
-        printf("invalid mode \"%s\"\n", mode);
+        printf("invalid ahp_serial_mode \"%s\"\n", ahp_serial_mode);
         return 1;
     }
 
-    switch(mode[0])
+    switch(ahp_serial_mode[0])
     {
     case '8': cbits = CS8;
               break;
@@ -139,11 +161,11 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
               break;
     case '5': cbits = CS5;
               break;
-    default : printf("invalid number of data-bits '%c'\n", mode[0]);
+    default : printf("invalid number of data-bits '%c'\n", ahp_serial_mode[0]);
               return 1;
     }
 
-    switch(mode[1])
+    switch(ahp_serial_mode[1])
     {
     case 'N':
     case 'n': cpar = 0;
@@ -157,55 +179,55 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     case 'o': cpar = (PARENB | PARODD);
               ipar = INPCK;
               break;
-    default : printf("invalid parity '%c'\n", mode[1]);
+    default : printf("invalid parity '%c'\n", ahp_serial_mode[1]);
               return 1;
     }
 
-    switch(mode[2])
+    switch(ahp_serial_mode[2])
     {
     case '1': bstop = 0;
               break;
     case '2': bstop = CSTOPB;
               break;
-    default : printf("invalid number of stop bits '%c'\n", mode[2]);
+    default : printf("invalid number of stop bits '%c'\n", ahp_serial_mode[2]);
               return 1;
     }
 
-    error = tcgetattr(fd, &old_port_settings);
-    if(error==-1)
+    ahp_serial_error = tcgetattr(ahp_serial_fd, &ahp_serial_old_port_settings);
+    if(ahp_serial_error==-1)
     {
         fprintf(stderr, "unable to read portsettings \n");
         return 1;
     }
-    memset(&new_port_settings, 0, sizeof(new_port_settings));  /* clear the new struct */
+    memset(&ahp_serial_new_port_settings, 0, sizeof(ahp_serial_new_port_settings));  /* clear the new struct */
 
-    new_port_settings.c_cflag = (tcflag_t)(cbits | cpar | bstop | CLOCAL | CREAD);
-    if(flowctrl)
+    ahp_serial_new_port_settings.c_cflag = (tcflag_t)(cbits | cpar | bstop | CLOCAL | CREAD);
+    if(ahp_serial_flowctrl)
     {
-        new_port_settings.c_cflag |= CRTSCTS;
+        ahp_serial_new_port_settings.c_cflag |= CRTSCTS;
     }
-    new_port_settings.c_iflag = (tcflag_t)ipar;
-    new_port_settings.c_oflag = 0;
-    new_port_settings.c_lflag = 0;
-    new_port_settings.c_cc[VMIN] = 0;      /* block untill n bytes are received */
-    new_port_settings.c_cc[VTIME] = 0;     /* block untill a timer expires (n * 100 mSec.) */
+    ahp_serial_new_port_settings.c_iflag = (tcflag_t)ipar;
+    ahp_serial_new_port_settings.c_oflag = 0;
+    ahp_serial_new_port_settings.c_lflag = 0;
+    ahp_serial_new_port_settings.c_cc[VMIN] = 0;      /* block untill n bytes are received */
+    ahp_serial_new_port_settings.c_cc[VTIME] = 0;     /* block untill a timer expires (n * 100 mSec.) */
 
-    cfsetispeed(&new_port_settings, (speed_t)baudr);
-    cfsetospeed(&new_port_settings, (speed_t)baudr);
+    cfsetispeed(&ahp_serial_new_port_settings, (speed_t)baudr);
+    cfsetospeed(&ahp_serial_new_port_settings, (speed_t)baudr);
 
-    error = tcsetattr(fd, TCSANOW, &new_port_settings);
-    if(error==-1)
+    ahp_serial_error = tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_new_port_settings);
+    if(ahp_serial_error==-1)
     {
-        tcsetattr(fd, TCSANOW, &old_port_settings);
+        tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
         fprintf(stderr, "unable to adjust portsettings \n");
         return 1;
     }
 
 /* http://man7.org/linux/man-pages/man4/tty_ioctl.4.html */
 
-    if(ioctl(fd, TIOCMGET, &status) == -1)
+    if(ioctl(ahp_serial_fd, TIOCMGET, &status) == -1)
     {
-        tcsetattr(fd, TCSANOW, &old_port_settings);
+        tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
         fprintf(stderr, "unable to get portstatus\n");
         return 1;
     }
@@ -213,9 +235,9 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     status |= TIOCM_DTR;    /* turn on DTR */
     status |= TIOCM_RTS;    /* turn on RTS */
 
-    if(ioctl(fd, TIOCMSET, &status) == -1)
+    if(ioctl(ahp_serial_fd, TIOCMSET, &status) == -1)
     {
-        tcsetattr(fd, TCSANOW, &old_port_settings);
+        tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
         fprintf(stderr, "unable to set portstatus\n");
         return 1;
     }
@@ -223,41 +245,41 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
     return 0;
 }
 
-void RS232_flushRX()
+static void ahp_serial_flushRX()
 {
-    tcflush(fd, TCIFLUSH);
+    tcflush(ahp_serial_fd, TCIFLUSH);
 }
 
 
-void RS232_flushTX()
+static void ahp_serial_flushTX()
 {
-    tcflush(fd, TCOFLUSH);
+    tcflush(ahp_serial_fd, TCOFLUSH);
 }
 
 
-void RS232_flushRXTX()
+static void ahp_serial_flushRXTX()
 {
-    tcflush(fd, TCIOFLUSH);
+    tcflush(ahp_serial_fd, TCIOFLUSH);
 }
 
 #else
 
-int RS232_SetupPort(int bauds, const char *m, int fc)
+static DCB ahp_serial_new_port_settings, ahp_serial_old_port_settings;
+
+static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
 {
-    if(baudrate == bauds && !strcmp(mode, m) && fc == flowctrl)
-        return 0;
-    strcpy(mode, m);
-    flowctrl = fc;
-    baudrate = bauds;
-    HANDLE pHandle = (HANDLE)_get_osfhandle(fd);
+    strcpy(ahp_serial_mode, m);
+    ahp_serial_flowctrl = fc;
+    ahp_serial_baudrate = bauds;
+    HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
 
     COMMTIMEOUTS Cptimeouts;
 
     Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
     Cptimeouts.ReadTotalTimeoutMultiplier  = 10;
-    Cptimeouts.ReadTotalTimeoutConstant    = 0;
+    Cptimeouts.ReadTotalTimeoutConstant    = 10;
     Cptimeouts.WriteTotalTimeoutMultiplier = 10;
-    Cptimeouts.WriteTotalTimeoutConstant   = 0;
+    Cptimeouts.WriteTotalTimeoutConstant   = 10;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
@@ -265,70 +287,70 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
-    DCB port_settings;
-    memset(&port_settings, 0, sizeof(DCB));
+    memset(&ahp_serial_old_port_settings, 0, sizeof(DCB));
 
-    if(!GetCommState(pHandle, &port_settings))
+    if(!GetCommState(pHandle, &ahp_serial_old_port_settings))
     {
         printf("unable to get comport cfg settings\n");
         return 1;
     }
-    port_settings.DCBlength = sizeof(DCB);
-    port_settings.BaudRate = baudrate;
-    port_settings.XonChar = 0x13;
-    port_settings.XoffChar = 0x19;
-    port_settings.fOutxCtsFlow = 0;
-    port_settings.fOutxDsrFlow = 0;
-    port_settings.fDsrSensitivity = 0;
-    port_settings.fOutX = 0;
-    port_settings.fInX = 0;
-    port_settings.fErrorChar = 0;
-    port_settings.fBinary = 1;
-    port_settings.fNull = 0;
-    port_settings.fAbortOnError = 0;
-    port_settings.XonLim = 0;
-    port_settings.XoffLim = 0;
-    port_settings.fTXContinueOnXoff = 1;
+    memset(&ahp_serial_new_port_settings, 0, sizeof(DCB));
+    ahp_serial_new_port_settings.DCBlength = sizeof(DCB);
+    ahp_serial_new_port_settings.BaudRate = ahp_serial_baudrate;
+    ahp_serial_new_port_settings.XonChar = 0x13;
+    ahp_serial_new_port_settings.XoffChar = 0x19;
+    ahp_serial_new_port_settings.fOutxCtsFlow = 0;
+    ahp_serial_new_port_settings.fOutxDsrFlow = 0;
+    ahp_serial_new_port_settings.fDsrSensitivity = 0;
+    ahp_serial_new_port_settings.fOutX = 0;
+    ahp_serial_new_port_settings.fInX = 0;
+    ahp_serial_new_port_settings.fErrorChar = 0;
+    ahp_serial_new_port_settings.fBinary = 1;
+    ahp_serial_new_port_settings.fNull = 0;
+    ahp_serial_new_port_settings.fAbortOnError = 0;
+    ahp_serial_new_port_settings.XonLim = 0;
+    ahp_serial_new_port_settings.XoffLim = 0;
+    ahp_serial_new_port_settings.fTXContinueOnXoff = 1;
 
-    switch(mode[0]) {
-    case '5': port_settings.ByteSize = DATABITS_5; break;
-    case '6': port_settings.ByteSize = DATABITS_6; break;
-    case '7': port_settings.ByteSize = DATABITS_7; break;
-    case '8': port_settings.ByteSize = DATABITS_8; break;
+    switch(ahp_serial_mode[0]) {
+    case '5': ahp_serial_new_port_settings.ByteSize = DATABITS_5; break;
+    case '6': ahp_serial_new_port_settings.ByteSize = DATABITS_6; break;
+    case '7': ahp_serial_new_port_settings.ByteSize = DATABITS_7; break;
+    case '8': ahp_serial_new_port_settings.ByteSize = DATABITS_8; break;
     default:
         fprintf(stderr, "invalid byte size\n");
     return 1;
     }
-    switch(tolower(mode[1])) {
-    case 'n': port_settings.Parity = NOPARITY; port_settings.fParity = 0; break;
-    case 'o': port_settings.Parity = ODDPARITY; port_settings.fParity = 1; break;
-    case 'e': port_settings.Parity = EVENPARITY; port_settings.fParity = 1; break;
+    switch(tolower(ahp_serial_mode[1])) {
+    case 'n': ahp_serial_new_port_settings.Parity = NOPARITY; ahp_serial_new_port_settings.fParity = 0; break;
+    case 'o': ahp_serial_new_port_settings.Parity = ODDPARITY; ahp_serial_new_port_settings.fParity = 1; break;
+    case 'e': ahp_serial_new_port_settings.Parity = EVENPARITY; ahp_serial_new_port_settings.fParity = 1; break;
     default:
         fprintf(stderr, "invalid parity\n");
     return 1;
     }
-    switch(mode[2]) {
-    case '1': port_settings.StopBits = ONESTOPBIT; break;
-    case '2': port_settings.StopBits = TWOSTOPBITS; break;
+    switch(ahp_serial_mode[2]) {
+    case '1': ahp_serial_new_port_settings.StopBits = ONESTOPBIT; break;
+    case '2': ahp_serial_new_port_settings.StopBits = TWOSTOPBITS; break;
     default:
         fprintf(stderr, "invalid stop bits\n");
     return 1;
     }
 
-    if(flowctrl)
+    if(ahp_serial_flowctrl)
     {
-        port_settings.fOutxCtsFlow = TRUE;
-        port_settings.fDtrControl = DTR_CONTROL_HANDSHAKE;
-        port_settings.fRtsControl = RTS_CONTROL_HANDSHAKE;
+        ahp_serial_new_port_settings.fOutxCtsFlow = TRUE;
+        ahp_serial_new_port_settings.fDtrControl = DTR_CONTROL_HANDSHAKE;
+        ahp_serial_new_port_settings.fRtsControl = RTS_CONTROL_HANDSHAKE;
     } else {
-        port_settings.fOutxCtsFlow = FALSE;
-        port_settings.fDtrControl = DTR_CONTROL_DISABLE;
-        port_settings.fRtsControl = RTS_CONTROL_DISABLE;
+        ahp_serial_new_port_settings.fOutxCtsFlow = FALSE;
+        ahp_serial_new_port_settings.fDtrControl = DTR_CONTROL_DISABLE;
+        ahp_serial_new_port_settings.fRtsControl = RTS_CONTROL_DISABLE;
     }
 
-    port_settings.DCBlength = sizeof(port_settings);
+    ahp_serial_new_port_settings.DCBlength = sizeof(ahp_serial_new_port_settings);
 
-    if(!SetCommState(pHandle, &port_settings))
+    if(!SetCommState(pHandle, &ahp_serial_new_port_settings))
     {
         fprintf(stderr, "unable to set comport cfg settings\n");
         return 1;
@@ -341,88 +363,87 @@ int RS232_SetupPort(int bauds, const char *m, int fc)
 https://msdn.microsoft.com/en-us/library/windows/desktop/aa363428%28v=vs.85%29.aspx
 */
 
-void RS232_flushRX()
+static void ahp_serial_flushRX()
 {
-    HANDLE pHandle = (HANDLE)_get_osfhandle(fd);
+    HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
     PurgeComm(pHandle, PURGE_RXCLEAR | PURGE_RXABORT);
 }
 
 
-void RS232_flushTX()
+static void ahp_serial_flushTX()
 {
-    HANDLE pHandle = (HANDLE)_get_osfhandle(fd);
+    HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
     PurgeComm(pHandle, PURGE_TXCLEAR | PURGE_TXABORT);
 }
 
 
-void RS232_flushRXTX()
+static void ahp_serial_flushRXTX()
 {
-    HANDLE pHandle = (HANDLE)_get_osfhandle(fd);
+    HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
     PurgeComm(pHandle, PURGE_RXCLEAR | PURGE_RXABORT);
     PurgeComm(pHandle, PURGE_TXCLEAR | PURGE_TXABORT);
 }
 
 #endif
 
-int RS232_OpenComport(const char* devname)
+static int ahp_serial_OpenComport(const char* devname)
 {
     char dev_name[128];
     sprintf(dev_name, "%s", devname);
-    if(fd == -1)
-        fd = open(dev_name, O_RDWR|O_NONBLOCK);
+    if(ahp_serial_fd == -1)
+        ahp_serial_fd = open(dev_name, O_RDWR);
 
-    if(fd==-1) {
+    if(ahp_serial_fd==-1) {
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
         return 1;
     }
-    if(!mutexes_initialized) {
-        pthread_mutexattr_init(&mutex_attr);
-        pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(&read_mutex, &mutex_attr);
-        pthread_mutex_init(&send_mutex, &mutex_attr);
-        mutexes_initialized = 1;
+    if(!ahp_serial_mutexes_initialized) {
+        pthread_mutexattr_init(&ahp_serial_mutex_attr);
+        pthread_mutexattr_settype(&ahp_serial_mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+        pthread_mutex_init(&ahp_serial_read_mutex, &ahp_serial_mutex_attr);
+        pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
+        ahp_serial_mutexes_initialized = 1;
     }
     return 0;
 }
 
-void RS232_CloseComport()
+static void ahp_serial_CloseComport()
 {
-    if(fd != -1)
-        close(fd);
-    if(mutexes_initialized) {
-        pthread_mutex_unlock(&read_mutex);
-        pthread_mutex_destroy(&read_mutex);
-        pthread_mutex_unlock(&send_mutex);
-        pthread_mutex_destroy(&send_mutex);
-        pthread_mutexattr_destroy(&mutex_attr);
-        mutexes_initialized = 0;
+    if(ahp_serial_fd != -1)
+        close(ahp_serial_fd);
+    if(ahp_serial_mutexes_initialized) {
+        pthread_mutex_unlock(&ahp_serial_read_mutex);
+        pthread_mutex_destroy(&ahp_serial_read_mutex);
+        pthread_mutex_unlock(&ahp_serial_send_mutex);
+        pthread_mutex_destroy(&ahp_serial_send_mutex);
+        pthread_mutexattr_destroy(&ahp_serial_mutex_attr);
+        ahp_serial_mutexes_initialized = 0;
 
     }
-    strcpy(mode, "   ");
-    flowctrl = -1;
-    baudrate = -1;
-    fd = -1;
+    strcpy(ahp_serial_mode, "   ");
+    ahp_serial_flowctrl = -1;
+    ahp_serial_baudrate = -1;
+    ahp_serial_fd = -1;
 }
 
-int RS232_RecvBuf(unsigned char *buf, int size)
+static int ahp_serial_RecvBuf(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
-    timeout.tv_sec = 0;
+    ahp_serial_timeout.tv_sec = 0;
+    ahp_serial_timeout.tv_usec = 10000000*bytes_left/ahp_serial_baudrate;
 
-    if(mutexes_initialized) {
-        while(pthread_mutex_trylock(&read_mutex))
+    if(ahp_serial_mutexes_initialized) {
+        while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000/baudrate);
-            timeout.tv_usec = 10000000*bytes_left/baudrate;
-            if(select(fd + 1, &set, NULL, NULL, &timeout) > 0)
-                n = read(fd, buf+nbytes, bytes_left);
-            else
-                continue;
+#ifndef _WIN32
+            usleep(10000000/ahp_serial_baudrate);
+#endif
+            n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
                 continue;
@@ -430,26 +451,28 @@ int RS232_RecvBuf(unsigned char *buf, int size)
             nbytes += n;
             bytes_left -= n;
         }
-        pthread_mutex_unlock(&read_mutex);
+        pthread_mutex_unlock(&ahp_serial_read_mutex);
     }
     if(nbytes < size)
         return err;
     return nbytes;
 }
 
-int RS232_SendBuf(unsigned char *buf, int size)
+static int ahp_serial_SendBuf(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
-    if(mutexes_initialized) {
-        while(pthread_mutex_trylock(&send_mutex))
+    if(ahp_serial_mutexes_initialized) {
+        while(pthread_mutex_trylock(&ahp_serial_send_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-            usleep(10000000/baudrate);
-            n = write(fd, buf+nbytes, bytes_left);
+#ifndef _WIN32
+            usleep(10000000/ahp_serial_baudrate);
+#endif
+            n = write(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
                 continue;
@@ -457,33 +480,17 @@ int RS232_SendBuf(unsigned char *buf, int size)
             nbytes += n;
             bytes_left -= n;
         }
-        pthread_mutex_unlock(&send_mutex);
+        pthread_mutex_unlock(&ahp_serial_send_mutex);
     }
     if(nbytes < size)
         return err;
     return nbytes;
 }
 
-int RS232_AlignFrame(int sof, int maxtries)
-{
-    int c = 0;
-    RS232_flushRX();
-    while(c != sof && maxtries-- > 0) {
-        c = RS232_RecvByte();
-        if(c < 0) {
-          if(errno == EAGAIN)
-              continue;
-          else
-              return -errno;
-        }
-    }
-    return 0;
-}
-
-int RS232_RecvByte()
+static int ahp_serial_RecvByte()
 {
     int byte = 0;
-    int n = RS232_RecvBuf((unsigned char*)&byte, 1);
+    int n = ahp_serial_RecvBuf((unsigned char*)&byte, 1);
     if(n < 1)
     {
         return -errno;
@@ -491,9 +498,9 @@ int RS232_RecvByte()
     return byte;
 }
 
-int RS232_SendByte(unsigned char byte)
+static int ahp_serial_SendByte(unsigned char byte)
 {
-    int n = RS232_SendBuf(&byte, 1);
+    int n = ahp_serial_SendBuf(&byte, 1);
     if(n < 1)
     {
         return -errno;
@@ -501,20 +508,40 @@ int RS232_SendByte(unsigned char byte)
     return 0;
 }
 
-void RS232_SetFD(int f, int bauds)
+static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
-    if(!mutexes_initialized) {
-        pthread_mutexattr_init(&mutex_attr);
-        pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(&read_mutex, &mutex_attr);
-        pthread_mutex_init(&send_mutex, &mutex_attr);
-        mutexes_initialized = 1;
+    int c = 0;
+    ahp_serial_flushRX();
+    while(c != sof && maxtries-- > 0) {
+        c = ahp_serial_RecvByte();
+        if(c < 0) {
+          if(errno == EAGAIN)
+              continue;
+          else
+              return errno;
+        }
     }
-    fd = f;
-    baudrate = bauds;
+    return 0;
 }
 
-int RS232_GetFD()
+static void ahp_serial_SetFD(int f, int bauds)
 {
-    return fd;
+    if(!ahp_serial_mutexes_initialized) {
+        pthread_mutexattr_init(&ahp_serial_mutex_attr);
+        pthread_mutexattr_settype(&ahp_serial_mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
+        pthread_mutex_init(&ahp_serial_read_mutex, &ahp_serial_mutex_attr);
+        pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
+        ahp_serial_mutexes_initialized = 1;
+    }
+    ahp_serial_fd = f;
+    ahp_serial_baudrate = bauds;
 }
+
+static int ahp_serial_GetFD()
+{
+    return ahp_serial_fd;
+}
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif

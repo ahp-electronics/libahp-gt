@@ -24,7 +24,7 @@
 */
 
 #include "ahp_gt.h"
-#include "rs232.h"
+#include "rs232.c"
 #include <pthread.h>
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
@@ -126,7 +126,7 @@ static int read_eqmod()
     response[0] = '\0';
     char c = 0;
     while(c != '\r' && err_code < max_err) {
-        if(1 == RS232_RecvBuf(&c, 1) && c != 0)
+        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0)
                 response[nbytes_read++] = c;
         else
             err_code++;
@@ -187,8 +187,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         }
         fprintf(stderr, "%s\n", command);
 
-        RS232_flushRXTX();
-        if ((RS232_SendBuf((unsigned char*)command, n)) < n)
+        ahp_serial_flushRXTX();
+        if ((ahp_serial_SendBuf((unsigned char*)command, n)) < n)
         {
             if (i == 9)
             {
@@ -381,7 +381,7 @@ int ahp_gt_connect_fd(int fd)
     if(ahp_gt_is_connected())
         return 0;
     if(fd != -1) {
-        RS232_SetFD(fd, 9600);
+        ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
         if(!ahp_gt_select_device(ahp_gt_get_current_device())) {
             ahp_gt_get_mc_version();
@@ -398,15 +398,15 @@ int ahp_gt_get_fd()
 {
     if(!ahp_gt_is_connected())
         return -1;
-    return RS232_GetFD();
+    return ahp_serial_GetFD();
 }
 
 int ahp_gt_connect(const char* port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    if(!RS232_OpenComport(port)) {
-        if(!RS232_SetupPort(9600, "8N1", 0)) {
+    if(!ahp_serial_OpenComport(port)) {
+        if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
             ahp_gt_connected = 1;
             if(!ahp_gt_select_device(ahp_gt_get_current_device())) {
                 ahp_gt_get_mc_version();
@@ -416,7 +416,7 @@ int ahp_gt_connect(const char* port)
                 }
             }
         }
-        RS232_CloseComport();
+        ahp_serial_CloseComport();
     }
     return 1;
 }
@@ -424,7 +424,7 @@ int ahp_gt_connect(const char* port)
 void ahp_gt_disconnect()
 {
     if(ahp_gt_is_connected()) {
-        RS232_CloseComport();
+        ahp_serial_CloseComport();
         if(mutexes_initialized) {
             pthread_mutex_unlock(&mutex);
             pthread_mutex_destroy(&mutex);
