@@ -113,9 +113,9 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
                    break;
     case  230400 : baudr = B230400;
                    break;
+#if defined(__linux__)
     case  460800 : baudr = B460800;
                    break;
-#if defined(__linux__)
     case  500000 : baudr = B500000;
                    break;
     case  576000 : baudr = B576000;
