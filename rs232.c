@@ -276,10 +276,10 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     COMMTIMEOUTS Cptimeouts;
 
     Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
-    Cptimeouts.ReadTotalTimeoutMultiplier  = 10;
-    Cptimeouts.ReadTotalTimeoutConstant    = 10;
-    Cptimeouts.WriteTotalTimeoutMultiplier = 10;
-    Cptimeouts.WriteTotalTimeoutConstant   = 10;
+    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
+    Cptimeouts.ReadTotalTimeoutConstant    = 1;
+    Cptimeouts.WriteTotalTimeoutMultiplier = 1;
+    Cptimeouts.WriteTotalTimeoutConstant   = 1;
 
     if(!SetCommTimeouts(pHandle, &Cptimeouts))
     {
@@ -434,15 +434,13 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     ahp_serial_timeout.tv_sec = 0;
-    ahp_serial_timeout.tv_usec = 10000000*bytes_left/ahp_serial_baudrate;
+    ahp_serial_timeout.tv_usec = 10000000/ahp_serial_baudrate;
 
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-#ifndef _WIN32
-            usleep(10000000/ahp_serial_baudrate);
-#endif
+            usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
@@ -469,9 +467,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_send_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
-#ifndef _WIN32
-            usleep(10000000/ahp_serial_baudrate);
-#endif
+            usleep(12000000/ahp_serial_baudrate);
             n = write(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
