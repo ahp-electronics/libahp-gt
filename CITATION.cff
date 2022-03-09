@@ -5,7 +5,7 @@ authors:
   given-names: "Ilia"
   orcid: "https://orcid.org/0000-0002-8527-4611"
 title: "libahp-gt"
-version: 1.4.5
+version: 1.4.7
 doi: 10.5281/zenodo.6025154
 date-released: 2022-02-09
 url: "https://github.com/ahp-electronics/libahp-gt"
