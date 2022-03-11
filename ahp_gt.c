@@ -383,7 +383,7 @@ int ahp_gt_connect_fd(int fd)
     if(fd != -1) {
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
-        if(!ahp_gt_select_device(ahp_gt_get_current_device())) {
+        if(!ahp_gt_detect_device(ahp_gt_get_current_device())) {
             ahp_gt_get_mc_version();
             if(version > 0) {
                 fprintf(stderr, "MC Version: %02X\n", version);
@@ -408,7 +408,7 @@ int ahp_gt_connect(const char* port)
     if(!ahp_serial_OpenComport(port)) {
         if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
             ahp_gt_connected = 1;
-            if(!ahp_gt_select_device(ahp_gt_get_current_device())) {
+            if(!ahp_gt_detect_device()) {
                 ahp_gt_get_mc_version();
                 if(version > 0) {
                     fprintf(stderr, "MC Version: %02X\n", version);
@@ -764,13 +764,12 @@ void ahp_gt_set_wormsteps(int axis, int value)
 }
 
 int ahp_gt_get_current_device() {
-    return ahp_gt_current_device;
+    return ahp_gt_current_device&0x7f;
 }
 
-int ahp_gt_select_device(int address) {
+int ahp_gt_detect_device() {
     if(!ahp_gt_is_connected())
         return -1;
-    ahp_gt_current_device = address&0x7f;
     ahp_gt_detected[ahp_gt_current_device] = 0;
     dispatch_command(SetAddress, 0, address_value);
     if(ahp_gt_get_mc_version() > 0) {
@@ -780,6 +779,11 @@ int ahp_gt_select_device(int address) {
         return 0;
     }
     return -1;
+}
+
+int ahp_gt_select_device(int address) {
+    ahp_gt_current_device = address&0x7f;
+    return ahp_gt_detected[ahp_gt_current_device];
 }
 
 void ahp_gt_set_address(int address)

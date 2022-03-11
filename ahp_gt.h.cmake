@@ -313,7 +313,7 @@ DLL_EXPORT unsigned int ahp_gt_is_connected();
 * \brief Report detection status
 * \param index the address to check
 * \return non-zero if already detected
-* \sa ahp_gt_select_device
+* \sa ahp_gt_detect_device
 * \sa ahp_gt_get_current_device
 * \sa ahp_gt_connect
 * \sa ahp_gt_connect_fd
@@ -622,9 +622,15 @@ DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
  * \{*/
 
 /**
+* \brief Detect the currently selected device
+* \return -1 if no devices were detected, 0 if a device with the current address is present
+*/
+DLL_EXPORT int ahp_gt_detect_device();
+
+/**
 * \brief Select a device on a serial bus
 * \param address The address to query on bus
-* \return -1 if no devices with such address, 0 if a device with the given address is present
+* \return -1 if no devices with such address are currently detected, 0 if a device with the given address was already detected
 */
 DLL_EXPORT int ahp_gt_select_device(int address);
 
