@@ -630,9 +630,8 @@ DLL_EXPORT int ahp_gt_detect_device();
 /**
 * \brief Select a device on a serial bus
 * \param address The address to query on bus
-* \return -1 if no devices with such address are currently detected, 0 if a device with the given address was already detected
 */
-DLL_EXPORT int ahp_gt_select_device(int address);
+DLL_EXPORT void ahp_gt_select_device(int address);
 
 /**
 * \brief Obtain the current device selection

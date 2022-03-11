@@ -771,7 +771,7 @@ int ahp_gt_detect_device() {
     if(!ahp_gt_is_connected())
         return -1;
     ahp_gt_detected[ahp_gt_current_device] = 0;
-    dispatch_command(SetAddress, 0, address_value);
+    dispatch_command(SetAddress, 0, ahp_gt_current_device);
     if(ahp_gt_get_mc_version() > 0) {
         ahp_gt_read_values(Ra);
         ahp_gt_read_values(Dec);
@@ -781,9 +781,9 @@ int ahp_gt_detect_device() {
     return -1;
 }
 
-int ahp_gt_select_device(int address) {
+void ahp_gt_select_device(int address) {
     ahp_gt_current_device = address&0x7f;
-    return ahp_gt_detected[ahp_gt_current_device];
+    dispatch_command(SetAddress, 0, ahp_gt_current_device);
 }
 
 void ahp_gt_set_address(int address)
