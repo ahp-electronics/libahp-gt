@@ -825,6 +825,7 @@ SkywatcherAxisStatus ahp_gt_get_status(int axis)
         status.Speed = SPEED_HIGH;
     else
         status.Speed = SPEED_LOW;
+    devices[ahp_gt_current_device].axisstatus[axis] = status;
     return status;
 }
 
