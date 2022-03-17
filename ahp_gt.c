@@ -52,8 +52,8 @@ typedef struct {
     double minperiod[num_axes];
     double speed_limit[num_axes];
     double acceleration[num_axes];
-    double acceleration_value[num_axes];
-    double divider[num_axes];
+    int acceleration_value[num_axes];
+    int divider[num_axes];
     int multiplier[num_axes];
     int address_value;
     int dividers;
@@ -223,11 +223,12 @@ static void optimize_values(int axis)
     double baseclock = 1500000;
     double usteps = 62.0;
     double maxdiv = 14.0;
-    int maxsteps = 0x1fffff;
-    if(devices[ahp_gt_current_device].stepping_mode[axis] != HalfStep)
-        maxsteps /= usteps;
     devices[ahp_gt_current_device].wormsteps [axis] = (int)(devices[ahp_gt_current_device].steps [axis] * devices[ahp_gt_current_device].worm [axis] / devices[ahp_gt_current_device].motor [axis]);
     devices[ahp_gt_current_device].totalsteps [axis] = (int)(devices[ahp_gt_current_device].crown [axis] * devices[ahp_gt_current_device].wormsteps [axis]);
+    int maxsteps = 0xffffff;
+    if(devices[ahp_gt_current_device].stepping_mode[axis] != HalfStep) {
+        maxsteps >>= 8;
+    }
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
         d += fmin(maxdiv, (double)devices[ahp_gt_current_device].totalsteps [axis] / maxsteps);
@@ -242,7 +243,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_current_device].speed_limit [axis] = (int)(800);
     devices[ahp_gt_current_device].minperiod [axis] = 1;
     devices[ahp_gt_current_device].maxspeed [axis] = fmin(devices[ahp_gt_current_device].speed_limit [axis], devices[ahp_gt_current_device].maxspeed [axis]);
-    devices[ahp_gt_current_device].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_current_device].minperiod [axis], (devices[ahp_gt_current_device].maxperiod [axis] / devices[ahp_gt_current_device].maxspeed [axis]));
+    devices[ahp_gt_current_device].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_current_device].minperiod [axis], (devices[ahp_gt_current_device].multiplier [axis] * devices[ahp_gt_current_device].maxperiod [axis] / devices[ahp_gt_current_device].maxspeed [axis]));
     devices[ahp_gt_current_device].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_current_device].totalsteps [axis]);
 
     double accel = devices[ahp_gt_current_device].acceleration[axis] / (M_PI * 2.0);
