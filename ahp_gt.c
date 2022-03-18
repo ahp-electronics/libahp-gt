@@ -227,7 +227,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_current_device].totalsteps [axis] = (int)(devices[ahp_gt_current_device].crown [axis] * devices[ahp_gt_current_device].wormsteps [axis]);
     int maxsteps = 0xffffff;
     if(devices[ahp_gt_current_device].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 8;
+        maxsteps >>= 5;
     }
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
@@ -246,8 +246,8 @@ static void optimize_values(int axis)
     devices[ahp_gt_current_device].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_current_device].minperiod [axis], (devices[ahp_gt_current_device].multiplier [axis] * devices[ahp_gt_current_device].maxperiod [axis] / devices[ahp_gt_current_device].maxspeed [axis]));
     devices[ahp_gt_current_device].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_current_device].totalsteps [axis]);
 
-    double accel = devices[ahp_gt_current_device].acceleration[axis] / (M_PI * 2.0);
-    int degrees = (int)(accel * (double)devices[ahp_gt_current_device].totalsteps [axis] * (double)devices[ahp_gt_current_device].divider [axis] / (double)devices[ahp_gt_current_device].multiplier [axis]);
+    double accel = devices[ahp_gt_current_device].acceleration [axis] / (M_PI * 2.0);
+    int degrees = (int)(accel * (double)devices[ahp_gt_current_device].totalsteps [axis] / (double)devices[ahp_gt_current_device].multiplier [axis]);
     for (devices[ahp_gt_current_device].acceleration_value [axis] = 0; devices[ahp_gt_current_device].acceleration_value [axis] < 63 && degrees > 0; devices[ahp_gt_current_device].acceleration_value [axis]++, degrees -= devices[ahp_gt_current_device].acceleration_value [axis])
         ;
     devices[ahp_gt_current_device].accelsteps [axis] = 0;
