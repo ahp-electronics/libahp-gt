@@ -1,2 +1,3 @@
 usr/include/ahp
 usr/lib/*/libahp_gt*.so*
+usr/share/cmake-*/Modules/FindAHPGT.cmake
