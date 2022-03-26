@@ -129,7 +129,7 @@ static int read_eqmod()
     response[0] = '\0';
     char c = 0;
     while(c != '\r' && err_code < max_err) {
-        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0 && (nbytes_read > 0 && (c == 0 || c == 13 || (c <= 'F' && c >= 'A') || (c <= '9' && c >= '0'))))
+        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0)
                 response[nbytes_read++] = c;
         else
             err_code++;
