@@ -129,9 +129,11 @@ static int read_eqmod()
     response[0] = '\0';
     unsigned char c = 0;
     while(c != '\r' && err_code < max_err) {
-        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0)
-                response[nbytes_read++] = c;
-        else
+        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
+            if(nbytes_read > 0 && !((c  >= 'A' && c <= 'F') || (c >= '0' && c <= '9') || (c >= 0 && c <= 9) || c == '\r'))
+                return -2;
+            response[nbytes_read++] = c;
+        } else
             err_code++;
     }
     if (err_code == max_err)
@@ -165,6 +167,7 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
+    int maxtries = 10;
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -173,7 +176,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     while(pthread_mutex_trylock(&mutex))
         usleep(100);
-    for (unsigned char i = 0; i < 10; i++)
+    for (unsigned char i = 0; i < maxtries; i++)
     {
         // Clear string
         command[0] = '\0';
@@ -193,7 +196,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         ahp_serial_flushRXTX();
         if ((ahp_serial_SendBuf((unsigned char*)command, n)) < n)
         {
-            if (i == 9)
+            if (i == maxtries-1)
             {
                 ret = -1;
                 break;
@@ -204,11 +207,13 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
                 continue;
             }
         }
-        usleep(100);
+        usleep(10000);
 
         command[n-1] = '\0';
 
         ret = read_eqmod();
+        if(ret == -2)
+            continue;
         break;
     }
     pthread_mutex_unlock(&mutex);
