@@ -251,14 +251,11 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].multiplier [axis] * devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
     devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
-    double accel = devices[ahp_gt_get_current_device()].acceleration [axis] / (M_PI * 2.0);
-    double degrees = (int)(accel * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / devices[ahp_gt_get_current_device()].divider [axis]);
+    double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
     for (devices[ahp_gt_get_current_device()].acceleration_value [axis] = 1; devices[ahp_gt_get_current_device()].acceleration_value [axis] < 63 && degrees > 0; devices[ahp_gt_get_current_device()].acceleration_value [axis]++, degrees -= devices[ahp_gt_get_current_device()].acceleration_value [axis])
         ;
-    devices[ahp_gt_get_current_device()].accelsteps [axis] = 0;
-    if (devices[ahp_gt_get_current_device()].acceleration_value [axis] > 0) {
-        devices[ahp_gt_get_current_device()].accelsteps [axis] = (int)fmax (1, fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] * devices[ahp_gt_get_current_device()].acceleration_value [axis] * devices[ahp_gt_get_current_device()].multiplier [axis] * devices[ahp_gt_get_current_device()].divider [axis]));
-    }
+    devices[ahp_gt_get_current_device()].acceleration_value [axis] = (int)fmin (0x3f, devices[ahp_gt_get_current_device()].acceleration_value [axis]);
+    devices[ahp_gt_get_current_device()].accelsteps [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] * devices[ahp_gt_get_current_device()].acceleration_value [axis] * devices[ahp_gt_get_current_device()].divider [axis] * devices[ahp_gt_get_current_device()].multiplier [axis]);
     if (devices[ahp_gt_get_current_device()].version > 0x30) {
         devices[ahp_gt_get_current_device()].address_value &= 0x7f;
         devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
