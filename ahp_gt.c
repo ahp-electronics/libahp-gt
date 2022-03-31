@@ -39,7 +39,7 @@ typedef struct {
     int rs232_polarity;
     int totalsteps[num_axes];
     int wormsteps[num_axes];
-    int acceleration_value[num_axes];
+    int accel_steps[num_axes];
     int divider[num_axes];
     int multiplier[num_axes];
     int address_value;
@@ -61,7 +61,7 @@ typedef struct {
     double guide[num_axes];
     double maxspeed[num_axes];
     double maxspeed_value[num_axes];
-    double accelsteps[num_axes];
+    double accel_increment[num_axes];
     SkywatcherMotionMode motionmode[num_axes];
     SkywatcherAxisStatus axisstatus[num_axes];
     GT1Feature gt1feature[num_axes];
@@ -251,11 +251,11 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].multiplier [axis] * devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
     devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
-    double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
-    for (devices[ahp_gt_get_current_device()].acceleration_value [axis] = 1; devices[ahp_gt_get_current_device()].acceleration_value [axis] < 63 && degrees > 0; devices[ahp_gt_get_current_device()].acceleration_value [axis]++, degrees -= devices[ahp_gt_get_current_device()].acceleration_value [axis])
+    double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
+    for (devices[ahp_gt_get_current_device()].accel_steps [axis] = 1; devices[ahp_gt_get_current_device()].accel_steps [axis] < 63 && degrees > 0; devices[ahp_gt_get_current_device()].accel_steps [axis]++, degrees -= devices[ahp_gt_get_current_device()].accel_steps [axis]) {
         ;
-    devices[ahp_gt_get_current_device()].acceleration_value [axis] = (int)fmin (0x3f, devices[ahp_gt_get_current_device()].acceleration_value [axis]);
-    devices[ahp_gt_get_current_device()].accelsteps [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] * devices[ahp_gt_get_current_device()].acceleration_value [axis] * devices[ahp_gt_get_current_device()].divider [axis] * devices[ahp_gt_get_current_device()].multiplier [axis]);
+    }
+    devices[ahp_gt_get_current_device()].accel_increment [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].accel_steps [axis]);
     if (devices[ahp_gt_get_current_device()].version > 0x30) {
         devices[ahp_gt_get_current_device()].address_value &= 0x7f;
         devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
@@ -336,7 +336,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = axis * 50 + 32.25;
-    if (!WriteAndCheck (axis, offset + 5, ((int)devices[ahp_gt_get_current_device()].acceleration_value [axis] << 18) | ((int)devices[ahp_gt_get_current_device()].accelsteps [axis] << 10) | (((int)devices[ahp_gt_get_current_device()].multiplier [axis] & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].stepping_conf[axis] & 0x03) << 1) | (devices[ahp_gt_get_current_device()].direction_invert[axis] & 1))) {
+    if (!WriteAndCheck (axis, offset + 5, ((int)devices[ahp_gt_get_current_device()].accel_steps [axis] << 18) | ((int)devices[ahp_gt_get_current_device()].accel_increment [axis] << 10) | (((int)devices[ahp_gt_get_current_device()].multiplier [axis] & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].stepping_conf[axis] & 0x03) << 1) | (devices[ahp_gt_get_current_device()].direction_invert[axis] & 1))) {
         *finished = -1;
         return;
     }
@@ -365,8 +365,8 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].maxspeed [axis] = dispatch_command(GetVars, offset + 2, -1);
     devices[ahp_gt_get_current_device()].guide [axis] = dispatch_command(GetVars, offset + 3, -1);
     int tmp = dispatch_command(GetVars, offset + 5, -1);
-    devices[ahp_gt_get_current_device()].acceleration_value [axis] = ((tmp >> 18) & 0x3f)*64;
-    devices[ahp_gt_get_current_device()].accelsteps [axis] =  (tmp >> 18) & 0xff;
+    devices[ahp_gt_get_current_device()].accel_steps [axis] = ((tmp >> 18) & 0x3f)*64;
+    devices[ahp_gt_get_current_device()].accel_increment [axis] =  (tmp >> 18) & 0xff;
     devices[ahp_gt_get_current_device()].multiplier [axis] = (tmp >> 3) & 0x7f;
     devices[ahp_gt_get_current_device()].direction_invert [axis] = (tmp >> 2) & 0x1;
     devices[ahp_gt_get_current_device()].stepping_conf [axis] = (tmp & 0x06)>>1;
@@ -555,7 +555,7 @@ double ahp_gt_get_acceleration_steps(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
-    return devices[ahp_gt_get_current_device()].accelsteps[axis];
+    return devices[ahp_gt_get_current_device()].accel_increment[axis];
 }
 
 double ahp_gt_get_acceleration_angle(int axis)
