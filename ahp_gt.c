@@ -232,7 +232,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
     int maxsteps = 0xffffff;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 5;
+        maxsteps /= 31;
     }
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
@@ -255,7 +255,7 @@ static void optimize_values(int axis)
     for (devices[ahp_gt_get_current_device()].accel_steps [axis] = 1; devices[ahp_gt_get_current_device()].accel_steps [axis] < 63 && degrees > 0; devices[ahp_gt_get_current_device()].accel_steps [axis]++, degrees -= devices[ahp_gt_get_current_device()].accel_steps [axis]) {
         ;
     }
-    devices[ahp_gt_get_current_device()].accel_increment [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].accel_steps [axis]);
+    devices[ahp_gt_get_current_device()].accel_increment [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] * devices[ahp_gt_get_current_device()].divider [axis] / (devices[ahp_gt_get_current_device()].accel_steps [axis] * (devices[ahp_gt_get_current_device()].accel_steps [axis]-1) / 2));
     if (devices[ahp_gt_get_current_device()].version > 0x30) {
         devices[ahp_gt_get_current_device()].address_value &= 0x7f;
         devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
