@@ -230,9 +230,9 @@ static void optimize_values(int axis)
     double maxdiv = 14.0;
     devices[ahp_gt_get_current_device()].wormsteps [axis] = (int)(devices[ahp_gt_get_current_device()].steps [axis] * devices[ahp_gt_get_current_device()].worm [axis] / devices[ahp_gt_get_current_device()].motor [axis]);
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
-    int maxsteps = 0xffffff;
+    int maxsteps = 0x7fffff;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 5;
+        maxsteps >>= 8;
     }
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
