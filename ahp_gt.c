@@ -231,7 +231,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
     int maxsteps = 0xffffff;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 8;
+        maxsteps >>= 5;
     }
     double d = 1.0;
     if (ahp_gt_get_mc_version() > 0x30)
