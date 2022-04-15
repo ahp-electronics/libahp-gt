@@ -133,8 +133,10 @@ static int read_eqmod()
             if(nbytes_read > 0 && !((c  >= 'A' && c <= 'F') || (c >= '0' && c <= '9') || (c >= 0 && c <= 9) || c == '\r'))
                 return -2;
             response[nbytes_read++] = c;
-        } else
+        } else {
+            usleep(10000);
             err_code++;
+        }
     }
     if (err_code == max_err)
     {
