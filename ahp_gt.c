@@ -124,14 +124,13 @@ static void long2Revu24str(unsigned int n, char *str)
 static int read_eqmod()
 {
     int err_code = 0, nbytes_read = 0;
-    int max_err = 10;
+    int max_err = 100;
     // Clear string
     response[0] = '\0';
     unsigned char c = 0;
+    usleep(100000);
     while(c != '\r' && err_code < max_err) {
         if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
-            if(nbytes_read > 0 && !((c  >= 'A' && c <= 'F') || (c >= '0' && c <= '9') || (c >= 0 && c <= 9) || c == '\r'))
-                return -2;
             response[nbytes_read++] = c;
         } else {
             usleep(10000);
@@ -236,8 +235,7 @@ static void optimize_values(int axis)
         maxsteps >>= 5;
     }
     double d = 1.0;
-    if (ahp_gt_get_mc_version() > 0x30)
-        d += fmin(maxdiv, (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / maxsteps);
+    d += fmin(maxdiv, (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / maxsteps);
     devices[ahp_gt_get_current_device()].divider [axis] = floor(d);
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
@@ -257,11 +255,9 @@ static void optimize_values(int axis)
     for (devices[ahp_gt_get_current_device()].accel_steps [axis] = 0; devices[ahp_gt_get_current_device()].accel_steps [axis] < 63 && degrees > 0; devices[ahp_gt_get_current_device()].accel_steps [axis]++, degrees -= devices[ahp_gt_get_current_device()].accel_steps [axis]) {
         devices[ahp_gt_get_current_device()].accel_increment [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] / (devices[ahp_gt_get_current_device()].accel_steps [axis] * (devices[ahp_gt_get_current_device()].accel_steps [axis] - 1) / 2));
     }
-    if (devices[ahp_gt_get_current_device()].version > 0x30) {
-        devices[ahp_gt_get_current_device()].address_value &= 0x7f;
-        devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
-        devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
-    }
+    devices[ahp_gt_get_current_device()].address_value &= 0x7f;
+    devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
+    devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
 }
 
 int Check(int pos)
@@ -461,8 +457,8 @@ int ahp_gt_get_mc_version()
 {
     int v = dispatch_command(InquireMotorBoardVersion, 0, -1);
     v >>= 8;
-    v &= 0xff;
-    if (v < 0x24 || v == 0xff)
+    v &= 0xffff;
+    if (v == 0xffff)
         v = -1;
     devices[ahp_gt_get_current_device()].version = v;
     return devices[ahp_gt_get_current_device()].version;

@@ -6,7 +6,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
 include(GNUInstallDirs)
 
 find_package(M REQUIRED)
-
+find_package(Threads REQUIRED)
 
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(AHP_GT_VERSION_MAJOR 1)
@@ -17,8 +17,8 @@ set(AHP_GT_VERSION 0x${AHP_GT_VERSION_MAJOR}${AHP_GT_VERSION_MINOR}${AHP_GT_VERS
 set(AHPGT_SOVERSION ${AHP_GT_VERSION_MAJOR})
 
 set(SOURCES
-    ${CMAKE_SOURCE_DIR}/rs232.c
-    ${CMAKE_SOURCE_DIR}/ahp_gt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
@@ -32,7 +32,7 @@ execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DI
 add_library(ahp_gt SHARED ${SOURCES})
 set_target_properties(ahp_gt PROPERTIES VERSION ${AHPGT_VERSION} SOVERSION ${AHPGT_SOVERSION})
 
-target_link_libraries(ahp_gt ${M_LIB})
+target_link_libraries(ahp_gt ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
 install(TARGETS ahp_gt LIBRARY DESTINATION ${LIB_INSTALL_DIR})
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
