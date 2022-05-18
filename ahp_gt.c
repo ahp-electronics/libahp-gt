@@ -169,6 +169,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
     int maxtries = 10;
+    unsigned char i;
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -177,7 +178,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     while(pthread_mutex_trylock(&mutex))
         usleep(100);
-    for (unsigned char i = 0; i < maxtries; i++)
+    for(i = 0; i < maxtries; i++)
     {
         // Clear string
         command[0] = '\0';
