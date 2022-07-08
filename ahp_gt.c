@@ -439,7 +439,6 @@ static int read_eqmod()
         if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
             response[nbytes_read++] = c;
         } else {
-            usleep(10000);
             err_code++;
         }
     }
@@ -614,7 +613,7 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
     struct sockaddr_in servaddr;
 
     if(*interrupt) return 0;
-    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+    if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
         fprintf(stderr, "socket creation failed");
         return -1;
     }
