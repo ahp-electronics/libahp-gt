@@ -94,7 +94,7 @@ static int sockfd;
 static time_t ts;
 static double ra, dec, lat, lon, alt, az;
 static SkywatcherAxisStatus status;
-static int is_aligned = 0;
+static int is_aligned = 1;
 static int in_goto = 0;
 static int is_fork = 0;
 static int flipped;
