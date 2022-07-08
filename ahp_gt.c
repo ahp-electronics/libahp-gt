@@ -638,12 +638,24 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
 
 
     while(!*interrupt) {
+        struct timeval tv;
+        int connfd = -1;
+        fd_set rfds;
+        FD_ZERO(&rfds);
+        FD_SET(sockfd, &rfds);
+
+        tv.tv_sec = (long)5;
+        tv.tv_usec = 0;
         struct sockaddr client;
         socklen_t len = sizeof(client);
-        int connfd = accept(sockfd, &client, &len);
-        while(!*interrupt)
-            synscan_poll(connfd);
-        close(connfd);
+        if(select(sockfd+1, &rfds, (fd_set *) 0, (fd_set *) 0, &tv) > 0) {
+            connfd = accept(sockfd, &client, &len);
+            if(connfd > -1) {
+                while(!*interrupt)
+                    synscan_poll(connfd);
+                close(connfd);
+            }
+        }
     }
     close(sockfd);
     return 0;
