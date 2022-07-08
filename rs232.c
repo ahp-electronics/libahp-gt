@@ -37,7 +37,6 @@ extern "C" {
 
 #include <termios.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <limits.h>
 #include <sys/file.h>
@@ -59,9 +58,6 @@ static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 static int ahp_serial_flowctrl = -1;
 static int ahp_serial_fd = -1;
 
-static fd_set set;
-static struct timeval ahp_serial_timeout;
-
 #ifndef _WIN32   /* Linux & FreeBSD */
 static int ahp_serial_error = 0;
 
@@ -69,8 +65,6 @@ static struct termios ahp_serial_new_port_settings, ahp_serial_old_port_settings
 
 static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
 {
-    FD_ZERO(&set);
-    FD_SET(ahp_serial_fd, &set);
     strcpy(ahp_serial_mode, m);
     ahp_serial_flowctrl = fc;
     ahp_serial_baudrate = bauds;
@@ -433,8 +427,6 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
-    ahp_serial_timeout.tv_sec = 0;
-    ahp_serial_timeout.tv_usec = 10000000/ahp_serial_baudrate;
 
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))

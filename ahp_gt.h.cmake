@@ -201,6 +201,75 @@ typedef enum {
     SetAddress                = '=',
 } SkywatcherCommand;
 
+/// Commands for the SynScan protocol implementation
+typedef enum {
+/// Get RA/DEC
+    GetRaDec = 'E', // < '34AB,12CE#'
+/// Get precise RA/DEC
+    GetPreciseRaDec = 'e', // < 34AB0500,12CE0500#
+/// Get AZM-ALT
+    GetAzAlt = 'Z', // < 12AB,4000#
+/// Get precise AZM-ALT
+    GetPreciseAzAlt = 'z', // < 12AB0500,40000500#
+/// GOTO RA/DEC
+    GotoRaDec = 'R', // > 'R34AB,12CE' < #
+/// GOTO precise RA/DEC
+    GotoPreciseRaDec = 'r', // > r'34AB0500,12CE0500', < #
+/// GOTO AZM-ALT
+    GotoAzAlt = 'B', // > 'B12AB,4000', < '#'
+/// GOTO precise AZM-ALT
+    GotoPreciseAzAlt = 'b', // >  'b12AB0500,40000500', < #
+/// Sync RA/DEC
+    SyncRaDec = 'S', // > 'S34AB,12CE', < '#'
+/// Sync precise RA/DEC
+    SyncPreciseRaDec = 's', // > 's34AB0500,12CE0500', < #
+/// Get Tracking Mode
+    GetTrackingMode = 't', // < chr:mode #
+/// Set Tracking Mode
+    SetTrackingMode = 'T', // > chr:mode #
+/// Variable rate Azm (or RA) slew in positive direction
+/// 'P' & chr:3 & chr:16 & chr:6 & chr:trackRateHigh & chr:trackRateLow & chr:0 & chr:0 < '#'
+/// Variable rate Azm (or RA) slew in negative direction
+/// 'P' & chr:3 & chr:16 & chr:7 & chr:trackRateHigh & chr:trackRateLow  & chr:0 & chr:0 < '#'
+/// Variable rate Alt (or Dec) slew in positive direction
+/// 'P' & chr:3 & chr:17 & chr:6 & chr:trackRateHigh & chr:trackRateLow  & chr:0 & chr:0 < '#'
+/// Variable rate Alt (or Dec) slew in negative direction
+/// 'P' & chr:3 & chr:17 & chr:7 & chr:trackRateHigh & chr:trackRateLow  & chr:0 & chr:0 < '#'
+/// Fixed rate Azm (or RA) slew in positive direction
+/// 'P' & chr:2 & chr:16 & chr:36 & chr:rate & chr:0 & chr:0 & chr:0 < '#'
+/// Fixed rate Azm (or RA) slew in negative direction
+/// 'P' & chr:2 & chr:16 & chr:37 & '#' < chr:rate & chr:0 & chr:0 & chr:0
+/// Fixed rate ALT (or DEC) slew in positive direction
+/// 'P' & chr:2 & chr:17 & chr:36 & chr:rate & chr:0 & chr:0 & chr:0 < '#'
+/// Fixed rate ALT (or DEC) slew in negative direction
+/// 'P' & chr:2 & chr:17 & chr:37 & chr:rate & chr:0 & chr:0 & chr:0 < '#'
+/// Get Device Version Devices include: 16 = AZM/RA Motor 17 = ALT/DEC Motor
+/// 'P' & chr:1 & chr:dev & chr:254 & chr:0 & chr:0 & chr:0 & chr:2 chr:major & chr:minor & '#' Hand Control responses the motor controller firmware version.
+    Slew = 'P',
+/// Get Location
+    GetLocation = 'w', // < chr:A & chr:B & chr:C & chr:D & chr:E & chr:F & chr:G & chr:H & '#'
+/// Set Location
+    SetLocation = 'W', // > & chr:A & chr:B & chr:C & chr:D & chr:E & chr:F & chr:G & chr:H '#'
+/// Get Time
+    GetTime = 'h', // < chr:Q & chr:R & chr:S & chr:T & chr:U & chr:V & chr:W & chr:X & '#'
+/// Set Time
+    SetTime = 'H', // > & chr:Q & chr:R & chr:S & chr:T & chr:U & chr:V & chr:W & chr:X
+/// Get Version
+    GetVersion = 'V', // Replies 6 hexadecimal digits in ASCII and ends with '#', i.e. if the version is 04.37.07, then the hand control will responses '042507#', Hand Control responses its firmware version in 6 hexadecimal digits in ASCII. Each hexadecimal digits will be one of ‘0’~ ‘9’ and ‘A’~ ‘F’.
+/// Get Model 0 = EQ6 GOTO Series 1 = HEQ5 GOTO Series 2 = EQ5 GOTO Series 3 = EQ3 GOTO Series 4 = EQ8 GOTO Series 5 = AZ-EQ6 GOTO Series 6 = AZ-EQ5 GOTO Series 128 ~ 143 = AZ GOTO Series 144 ~ 159 = DOB GOTO Series 160 = AllView GOTO Series
+    GetModel = 'm', // < chr:model & '#' Hand Control responses the model of mount.
+/// Echo - useful to check communication
+    Echo = 'K', // > & chr:x chr:x & '#'
+/// Is Alignment Complete? - align=1 if aligned and 0 if not
+    AlignmentComplete = 'J', // chr:align & #
+/// Is GOTO in Progress? - Response is ASCII'0' or '1'& '#'
+    GOTOinProgress = 'L',
+/// Cancel GOTO
+    CancelGOTO = 'M', // < '#'
+/// Get Mount Pointing State
+    GetMountPointingState = 'p', // < 'E' or 'W' & '#' Hand Control responses the mount current pointing state. For northern 'E' means no flipping (OTA is on the eastern side of meridian), 'W' means flipped (OTA is on the western side). For southern hemisphere, 'E' means flipped, 'W' means not flipped.
+} SynscanCommand;
+
 ///Motion Mode
 typedef enum {
 ///High-speed (half-stepping mostly) Goto
@@ -326,6 +395,14 @@ DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 * \return The GT controller firmware
 */
 DLL_EXPORT int ahp_gt_get_mc_version(void);
+
+/**
+* \brief Start an UDP server on the given port and stop after interrupt equals to 1
+* \param port The UDP port of the server
+* \param interrupt Stop when interrupt is non-zero - passed by reference
+* \return non-zero on failure
+*/
+DLL_EXPORT int ahp_gt_start_synscan_server(int port, int *interrupt);
 
 /**\}
  * \defgroup SG Parametrization

@@ -26,8 +26,17 @@
 #include "ahp_gt.h"
 #include "rs232.c"
 #include <pthread.h>
+#include <time.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
+
+#ifndef GAMMAJ2000
+///Right ascension of the meridian at J2000 zero at Greenwich
+#define GAMMAJ2000 18.6971378528
+#endif
 
 typedef enum {
     Ra = 0,
@@ -69,6 +78,7 @@ typedef struct {
     GT1Flags mount_flags;
 } gt1_info;
 
+const double rates[9] = { 1, 4, 8, 16, 32, 64, 600, 700, 800 };
 static int mutexes_initialized = 0;
 static pthread_mutexattr_t mutex_attr;
 static pthread_mutex_t mutex;
@@ -80,6 +90,296 @@ static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
 static unsigned int ahp_gt_detected[128] = { 0 };
 static gt1_info devices[128];
+static int sockfd;
+static time_t ts;
+static double ra, dec, lat, lon, alt, az;
+static SkywatcherAxisStatus status;
+static int is_aligned = 0;
+static int in_goto = 0;
+static int is_fork = 0;
+static int flipped;
+
+time_t mktime_t(int year, int month, int dom, int hour, int minute, int second)
+{
+    struct tm t_tm;
+    time_t t_time;
+    t_tm.tm_sec = second;
+    t_tm.tm_min = minute;
+    t_tm.tm_hour = hour;
+    t_tm.tm_mday = dom;
+    t_tm.tm_mon = month - 1;
+    t_tm.tm_year = year - 1900;
+    t_time = mktime(&t_tm);
+    return t_time;
+}
+
+time_t string_to_time_t(const char *time)
+{
+    char *timestr = (char *)malloc(strlen(time)+1);
+    strcpy(timestr, time);
+    timestr[4] = 0;
+    timestr[7] = 0;
+    timestr[10] = 0;
+    timestr[13] = 0;
+    timestr[16] = 0;
+    int Y = (int)atoi(timestr);
+    int M = (int)atoi(&timestr[5]);
+    int D = (int)atoi(&timestr[8]);
+    int H = (int)atoi(&timestr[11]);
+    int m = (int)atoi(&timestr[14]);
+    double s = (double)atof(&timestr[17]);
+    free(timestr);
+    return mktime_t(Y, M, D, H, m, floor(s));
+}
+
+static double time_to_J2000time(time_t tp)
+{
+    char time[64];
+    strcpy(time, "2000-01-01T12:00:00Z");
+    time_t j2000 = string_to_time_t(time);
+    return (double)(tp - j2000);
+}
+
+static double J2000time_to_lst(double secs_since_J2000, double Long)
+{
+    Long *= 24.0 / 360.0;
+    return fmod(24.0 * secs_since_J2000 / SIDEREAL_DAY + Long + GAMMAJ2000, 24.0);
+}
+
+static double get_local_hour_angle(double Lst, double Ra)
+{
+    double Ha = (fmod(Lst, 24.0) - Ra);
+    if (Ha < -12)
+        Ha += 24.0;
+    if (Ha >= 12.0)
+        Ha -= 24.0;
+    return Ha;
+}
+
+static void get_alt_az_coordinates(double Ha, double Dec, double Lat, double* Alt, double *Az)
+{
+    double alt, az;
+    Ha *= M_PI / 12.0;
+    Dec *= M_PI / 180.0;
+    Lat *= M_PI / 180.0;
+    alt = asin(sin(Dec) * sin(Lat) + cos(Dec) * cos(Lat) * cos(Ha));
+    az = acos((sin(Dec) - sin(alt)*sin(Lat)) / (cos(alt) * cos(Lat)));
+    alt *= 180.0 / M_PI;
+    az *= 180.0 / M_PI;
+    if (sin(Ha) > 0.0)
+        az = 360 - az;
+    *Alt = alt;
+    *Az = az;
+}
+
+static void alt_az_from_ra_dec(double J2000time, double Ra, double Dec, double Lat, double Long, double* Alt, double *Az)
+{
+    double lst = J2000time_to_lst(J2000time, Long);
+    double ha = get_local_hour_angle(lst, Ra);
+    get_alt_az_coordinates(ha, Dec, Lat, Alt, Az);
+}
+
+void ahp_gt_goto_radec(double ra, double dec)
+{
+    if(ahp_gt_is_connected()) {
+        if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
+            switch (ahp_gt_get_mount_type()) {
+            case isMF:
+            case isDOB:
+                is_fork = 1;
+                break;
+            default:
+                is_fork = 0;
+                break;
+            }
+            gmtime(&ts);
+            double j2000 = time_to_J2000time(ts);
+            double lst = J2000time_to_lst(j2000, lat);
+            double ha = get_local_hour_angle(lst, ra);
+            ha *= M_PI / 12.0;
+            ha += M_PI / 2.0;
+            dec *= M_PI / 180.0;
+            dec -= M_PI / 2.0;
+            if(!is_fork) {
+                if(ha < M_PI * 3.0 / 2.0 && ha > M_PI / 2.0)
+                    dec = -dec;
+                if((ha > M_PI / 2.0 && ha < M_PI) || (ha > M_PI * 3.0 / 2.0 && ha < M_PI * 2.0)) {
+                    flipped = 1;
+                    ha = M_PI - ha;
+                    dec = -dec;
+                } else {
+                    flipped = 0;
+                }
+                if(ha > M_PI) {
+                    ha -= M_PI;
+                }
+            }
+            ahp_gt_select_device(ahp_gt_get_current_device());
+            ahp_gt_goto_absolute(0, ha, 800.0);
+            ahp_gt_goto_absolute(1, dec, 800.0);
+        }
+    }
+}
+
+static void synscan_poll(int connfd)
+{
+    char msg[128];
+    char cmd[128];
+    if(ahp_gt_is_connected()) {
+        if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
+            int n = read(connfd, cmd, 1);
+            switch(cmd[0]) {
+            case GetRaDec:
+                ra = ahp_gt_get_position(0) * 32768 / M_PI;
+                dec = ahp_gt_get_position(1) * 32768 / M_PI;
+                sprintf(msg, "%04X,%04X#", (int)ra, (int)dec);
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetPreciseRaDec:
+                ra = ahp_gt_get_position(0) * 8388608 / M_PI;
+                dec = ahp_gt_get_position(1) * 8388608 / M_PI;
+                sprintf(msg, "%06X,%06X#", (int)ra, (int)dec);
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetAzAlt:
+                gmtime(&ts);
+                ra = ahp_gt_get_position(0) * 12.0 / M_PI;
+                dec = ahp_gt_get_position(1) * 180.0 / M_PI;
+                alt_az_from_ra_dec(time_to_J2000time(ts), ra, dec, lat, lon, &alt, &az);
+                alt *= 32768 / 180.0;
+                az *= 32768 / 180.0;
+                sprintf(msg, "%06X,%06X#", (int)az, (int)alt);
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetPreciseAzAlt:
+                gmtime(&ts);
+                ra = ahp_gt_get_position(0) * 12.0 / M_PI;
+                dec = ahp_gt_get_position(1) * 180.0 / M_PI;
+                alt_az_from_ra_dec(time_to_J2000time(ts), ra, dec, lat, lon, &alt, &az);
+                sprintf(msg, "%06X,%06X#", (int)az, (int)alt);
+                write(connfd, msg, strlen(msg));
+                break;
+            case SyncRaDec:
+                n = read(connfd, cmd, 4);
+                ahp_gt_set_position(0, (double)strtol(cmd, NULL, 16) * M_PI / 32768);
+                n = read(connfd, cmd, 1);
+                n = read(connfd, cmd, 4);
+                ahp_gt_set_position(1, (double)strtol(cmd, NULL, 16) * M_PI / 32768);
+                sprintf(msg, "#");
+                break;
+            case SyncPreciseRaDec:
+                n = read(connfd, cmd, 6);
+                ahp_gt_set_position(0, (double)strtol(cmd, NULL, 16) * M_PI / 8388608);
+                n = read(connfd, cmd, 1);
+                n = read(connfd, cmd, 6);
+                ahp_gt_set_position(1, (double)strtol(cmd, NULL, 16) * M_PI / 8388608);
+                sprintf(msg, "#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case GotoRaDec:
+                n = read(connfd, cmd, 4);
+                ra = (double)strtol(cmd, NULL, 16) * M_PI / 32768;
+                n = read(connfd, cmd, 1);
+                n = read(connfd, cmd, 4);
+                dec = (double)strtol(cmd, NULL, 16) * M_PI / 32768;
+                ahp_gt_goto_radec(ra, dec);
+                sprintf(msg, "#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case GotoPreciseRaDec:
+                n = read(connfd, cmd, 6);
+                ra = (double)strtol(cmd, NULL, 16) * M_PI / 8388608;
+                n = read(connfd, cmd, 1);
+                n = read(connfd, cmd, 6);
+                dec = (double)strtol(cmd, NULL, 16) * M_PI / 8388608;
+                ahp_gt_goto_radec(ra, dec);
+                sprintf(msg, "#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetTrackingMode:
+                sprintf(msg, "%c#", ahp_gt_is_axis_moving(0) * 2);
+                write(connfd, msg, strlen(msg));
+                break;
+            case SetTrackingMode:
+                n = read(connfd, cmd, 1);
+                switch(cmd[0]) {
+                case 0:
+                    ahp_gt_stop_motion(0, 1);
+                    break;
+                case 2:
+                    ahp_gt_start_tracking(0);
+                    break;
+                default:
+                    break;
+                }
+                sprintf(msg, "#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case Slew:
+                n = read(connfd, cmd, 7);
+                switch(cmd[0]) {
+                case 1:
+                    sprintf(msg, "%c%c#", 0, ahp_gt_get_mc_version());
+                    write(connfd, msg, strlen(msg));
+                case 2:
+                    ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*rates[cmd[3]-1]);
+                    break;
+                case 3:
+                    ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*(double)strtol(&cmd[3], NULL, 16)/15.0);
+                    break;
+                }
+                sprintf(msg, "#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case SetLocation:
+                n = read(connfd, cmd, 8);
+                lat = 0.0;
+                lat += (double)cmd[0];
+                lat += (double)cmd[1] / 60.0;
+                lat += (double)cmd[2] / 3600.0;
+                lat *= cmd[3] ? -1 : 1;
+                lon = 0.0;
+                lon += (double)cmd[0];
+                lon += (double)cmd[1] / 60.0;
+                lon += (double)cmd[2] / 3600.0;
+                lon *= cmd[3] ? -1 : 1;
+                sprintf(msg, "#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetVersion:
+                sprintf(msg, "042507#");
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetModel:
+                sprintf(msg, "%c#", ahp_gt_get_mount_type());
+                write(connfd, msg, strlen(msg));
+                break;
+            case Echo:
+                n = read(connfd, cmd, 1);
+                sprintf(msg, "%c#", cmd[0]);
+                write(connfd, msg, strlen(msg));
+                break;
+            case AlignmentComplete:
+                sprintf(msg, "%c#", is_aligned);
+                write(connfd, msg, strlen(msg));
+                break;
+            case GOTOinProgress:
+                status = ahp_gt_get_status(0);
+                in_goto |= status.Mode == MODE_GOTO && status.Running;
+                status = ahp_gt_get_status(1);
+                in_goto |= status.Mode == MODE_GOTO && status.Running;
+                sprintf(msg, "%c#", in_goto + '0');
+                write(connfd, msg, strlen(msg));
+                break;
+            case GetMountPointingState:
+                sprintf(msg, "%c#", flipped ? 'W' : 'E');
+                write(connfd, msg, strlen(msg));
+                break;
+            default: break;
+            }
+        }
+    }
+}
 
 static int Revu24str2long(char *s)
 {
@@ -301,6 +601,47 @@ int WriteAndCheck(int axis, int pos, int val)
          }
      }
      return ret;
+}
+
+int ahp_gt_start_synscan_server(int port, int *interrupt)
+{
+    struct sockaddr_in servaddr;
+
+    if(*interrupt) return 0;
+    if ( (sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+        fprintf(stderr, "socket creation failed");
+        return -1;
+    }
+
+    memset(&servaddr, 0, sizeof(servaddr));
+
+    servaddr.sin_family    = AF_INET;
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_port = htons(port);
+
+    if ( bind(sockfd, (const struct sockaddr *)&servaddr,
+            sizeof(servaddr)) < 0 )
+    {
+        fprintf(stderr, "bind failed");
+        return -1;
+    }
+
+    if ((listen(sockfd, 5)) != 0) {
+        fprintf(stderr, "Listen failed...\n");
+        return -1;
+    }
+
+
+    while(!*interrupt) {
+        struct sockaddr client;
+        socklen_t len = sizeof(client);
+        int connfd = accept(sockfd, &client, &len);
+        while(!*interrupt)
+            synscan_poll(connfd);
+        close(connfd);
+    }
+    close(sockfd);
+    return 0;
 }
 
 void ahp_gt_write_values(int axis, int *percent, int *finished)
