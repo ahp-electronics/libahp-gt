@@ -304,7 +304,7 @@ static void synscan_poll(int connfd)
                 n = read(connfd, cmd, 1);
                 switch(cmd[0]) {
                 case 0:
-                    ahp_gt_stop_motion(0, 1);
+                    ahp_gt_stop_motion(0, 0);
                     break;
                 case 2:
                     ahp_gt_start_tracking(0);
@@ -322,10 +322,16 @@ static void synscan_poll(int connfd)
                     sprintf(msg, "%c%c#", 0, ahp_gt_get_mc_version());
                     write(connfd, msg, strlen(msg));
                 case 2:
-                    ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*rates[cmd[3]-1]);
+                    if(cmd[3] == 0)
+                        ahp_gt_stop_motion((cmd[1] == 16 ? 0 : 1), 0);
+                    else
+                        ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*rates[cmd[3]-1]);
                     break;
                 case 3:
-                    ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*(double)strtol(&cmd[3], NULL, 16)/15.0);
+                    if(strtol(&cmd[3], NULL, 16) == 0)
+                        ahp_gt_stop_motion((cmd[1] == 16 ? 0 : 1), 0);
+                    else
+                        ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*(double)strtol(&cmd[3], NULL, 16)/15.0);
                     break;
                 }
                 sprintf(msg, "#");
