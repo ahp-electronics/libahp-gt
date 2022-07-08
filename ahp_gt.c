@@ -221,26 +221,28 @@ void ahp_gt_goto_radec(double ra, double dec)
     }
 }
 
-static void synscan_poll(int connfd)
+static int synscan_poll(int connfd)
 {
     char msg[128];
     char cmd[128];
     if(ahp_gt_is_connected()) {
         if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
+            memset(cmd, 0, 128);
             int n = read(connfd, cmd, 1);
-
+            if(n <= 0)
+                goto err_end;
             switch(cmd[0]) {
             case GetRaDec:
                 ra = ahp_gt_get_position(0) * 32768 / M_PI;
                 dec = ahp_gt_get_position(1) * 32768 / M_PI;
                 sprintf(msg, "%04X,%04X#", (int)ra, (int)dec);
-                write(connfd, msg, 10);
+                send(connfd, msg, 10, MSG_NOSIGNAL);
                 break;
             case GetPreciseRaDec:
                 ra = ahp_gt_get_position(0) * 8388608 / M_PI;
                 dec = ahp_gt_get_position(1) * 8388608 / M_PI;
                 sprintf(msg, "%06X,%06X#", (int)ra, (int)dec);
-                write(connfd, msg, 14);
+                send(connfd, msg, 14, MSG_NOSIGNAL);
                 break;
             case GetAzAlt:
                 gmtime(&ts);
@@ -250,7 +252,7 @@ static void synscan_poll(int connfd)
                 alt *= 32768 / 180.0;
                 az *= 32768 / 180.0;
                 sprintf(msg, "%04X,%04X#", (int)az, (int)alt);
-                write(connfd, msg, 10);
+                send(connfd, msg, 10, MSG_NOSIGNAL);
                 break;
             case GetPreciseAzAlt:
                 gmtime(&ts);
@@ -258,52 +260,65 @@ static void synscan_poll(int connfd)
                 dec = ahp_gt_get_position(1) * 180.0 / M_PI;
                 alt_az_from_ra_dec(time_to_J2000time(ts), ra, dec, lat, lon, &alt, &az);
                 sprintf(msg, "%06X,%06X#", (int)az, (int)alt);
-                write(connfd, msg, 14);
+                send(connfd, msg, 14, MSG_NOSIGNAL);
                 break;
             case SyncRaDec:
-                n = read(connfd, cmd, 4);
+                if(read(connfd, cmd, 4) < 0)
+                    goto err_end;
                 ahp_gt_set_position(0, (double)strtol(cmd, NULL, 16) * M_PI / 32768);
-                n = read(connfd, cmd, 1);
-                n = read(connfd, cmd, 4);
+                if(read(connfd, cmd, 1) < 0)
+                    goto err_end;
+                if(read(connfd, cmd, 4) < 0)
+                    goto err_end;
                 ahp_gt_set_position(1, (double)strtol(cmd, NULL, 16) * M_PI / 32768);
                 sprintf(msg, "#");
-                write(connfd, msg, 1);
+                send(connfd, msg, 1, MSG_NOSIGNAL);
                 break;
             case SyncPreciseRaDec:
-                n = read(connfd, cmd, 6);
+                if(read(connfd, cmd, 6) < 0)
+                    goto err_end;
                 ahp_gt_set_position(0, (double)strtol(cmd, NULL, 16) * M_PI / 8388608);
-                n = read(connfd, cmd, 1);
-                n = read(connfd, cmd, 6);
+                if(read(connfd, cmd, 1) < 0)
+                    goto err_end;
+                if(read(connfd, cmd, 6) < 0)
+                    goto err_end;
                 ahp_gt_set_position(1, (double)strtol(cmd, NULL, 16) * M_PI / 8388608);
                 sprintf(msg, "#");
-                write(connfd, msg, 1);
+                send(connfd, msg, 1, MSG_NOSIGNAL);
                 break;
             case GotoRaDec:
-                n = read(connfd, cmd, 4);
+                if(read(connfd, cmd, 4) < 0)
+                    goto err_end;
                 ra = (double)strtol(cmd, NULL, 16) * M_PI / 32768;
-                n = read(connfd, cmd, 1);
-                n = read(connfd, cmd, 4);
+                if(read(connfd, cmd, 1) < 0)
+                    goto err_end;
+                if(read(connfd, cmd, 4) < 0)
+                    goto err_end;
                 dec = (double)strtol(cmd, NULL, 16) * M_PI / 32768;
                 ahp_gt_goto_radec(ra, dec);
                 sprintf(msg, "#");
-                write(connfd, msg, 1);
+                send(connfd, msg, 1, MSG_NOSIGNAL);
                 break;
             case GotoPreciseRaDec:
-                n = read(connfd, cmd, 6);
+                if(read(connfd, cmd, 6) < 0)
+                    goto err_end;
                 ra = (double)strtol(cmd, NULL, 16) * M_PI / 8388608;
-                n = read(connfd, cmd, 1);
-                n = read(connfd, cmd, 6);
+                if(read(connfd, cmd, 1) < 0)
+                    goto err_end;
+                if(read(connfd, cmd, 6) < 0)
+                    goto err_end;
                 dec = (double)strtol(cmd, NULL, 16) * M_PI / 8388608;
                 ahp_gt_goto_radec(ra, dec);
                 sprintf(msg, "#");
-                write(connfd, msg, 1);
+                send(connfd, msg, 1, MSG_NOSIGNAL);
                 break;
             case GetTrackingMode:
                 sprintf(msg, "%c#", ahp_gt_is_axis_moving(0) * 2);
-                write(connfd, msg, 2);
+                send(connfd, msg, 2, MSG_NOSIGNAL);
                 break;
             case SetTrackingMode:
-                n = read(connfd, cmd, 1);
+                if(read(connfd, cmd, 1) < 0)
+                    goto err_end;
                 switch(cmd[0]) {
                 case 0:
                     ahp_gt_stop_motion(0, 0);
@@ -315,32 +330,36 @@ static void synscan_poll(int connfd)
                     break;
                 }
                 sprintf(msg, "#");
-                write(connfd, msg, 1);
+                send(connfd, msg, 1, MSG_NOSIGNAL);
                 break;
             case Slew:
-                n = read(connfd, cmd, 7);
+                if(read(connfd, cmd, 7) < 0)
+                    goto err_end;
                 switch(cmd[0]) {
                 case 1:
                     sprintf(msg, "%c%c#", 0, ahp_gt_get_mc_version());
-                    write(connfd, msg, 3);
+                    send(connfd, msg, 3, MSG_NOSIGNAL);
                 case 2:
                     if(cmd[3] == 0)
                         ahp_gt_stop_motion((cmd[1] == 16 ? 0 : 1), 0);
                     else
                         ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*rates[cmd[3]-1]);
+                    sprintf(msg, "#");
+                    send(connfd, msg, 1, MSG_NOSIGNAL);
                     break;
                 case 3:
                     if(strtol(&cmd[3], NULL, 16) == 0)
                         ahp_gt_stop_motion((cmd[1] == 16 ? 0 : 1), 0);
                     else
                         ahp_gt_start_motion((cmd[1] == 16 ? 0 : 1), (cmd[2] == 6 ? 1 : -1)*(double)strtol(&cmd[3], NULL, 16)/15.0);
+                    sprintf(msg, "#");
+                    send(connfd, msg, 1, MSG_NOSIGNAL);
                     break;
                 }
-                sprintf(msg, "#");
-                write(connfd, msg, 1);
                 break;
             case SetLocation:
-                n = read(connfd, cmd, 8);
+                if(read(connfd, cmd, 8) < 0)
+                    goto err_end;
                 lat = 0.0;
                 lat += (double)cmd[0];
                 lat += (double)cmd[1] / 60.0;
@@ -352,24 +371,25 @@ static void synscan_poll(int connfd)
                 lon += (double)cmd[2] / 3600.0;
                 lon *= cmd[3] ? -1 : 1;
                 sprintf(msg, "#");
-                write(connfd, msg, 1);
+                send(connfd, msg, 1, MSG_NOSIGNAL);
                 break;
             case GetVersion:
                 sprintf(msg, "042507#");
-                write(connfd, msg, 7);
+                send(connfd, msg, 7, MSG_NOSIGNAL);
                 break;
             case GetModel:
                 sprintf(msg, "%c#", ahp_gt_get_mount_type());
-                write(connfd, msg, 2);
+                send(connfd, msg, 2, MSG_NOSIGNAL);
                 break;
             case Echo:
-                n = read(connfd, cmd, 1);
+                if(read(connfd, cmd, 1) < 0)
+                    goto err_end;
                 sprintf(msg, "%c#", cmd[0]);
-                write(connfd, msg, 2);
+                send(connfd, msg, 2, MSG_NOSIGNAL);
                 break;
             case AlignmentComplete:
                 sprintf(msg, "%c#", is_aligned);
-                write(connfd, msg, 2);
+                send(connfd, msg, 2, MSG_NOSIGNAL);
                 break;
             case GOTOinProgress:
                 status = ahp_gt_get_status(0);
@@ -377,16 +397,19 @@ static void synscan_poll(int connfd)
                 status = ahp_gt_get_status(1);
                 in_goto |= status.Mode == MODE_GOTO && status.Running;
                 sprintf(msg, "%c#", in_goto + '0');
-                write(connfd, msg, 2);
+                send(connfd, msg, 2, MSG_NOSIGNAL);
                 break;
             case GetMountPointingState:
                 sprintf(msg, "%c#", flipped ? 'W' : 'E');
-                write(connfd, msg, 2);
+                send(connfd, msg, 2, MSG_NOSIGNAL);
                 break;
             default: break;
             }
         }
     }
+    return 0;
+    err_end:
+    return -1;
 }
 
 static int Revu24str2long(char *s)
@@ -637,29 +660,28 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
         return -1;
     }
 
-    if ((listen(sockfd, 5)) != 0) {
+    if ((listen(sockfd, 1)) != 0) {
         fprintf(stderr, "Listen failed...\n");
         close(sockfd);
         return -1;
     }
 
+    struct timeval tv;
+    fd_set rfds;
+    FD_ZERO(&rfds);
+    FD_SET(sockfd, &rfds);
 
     while(!(*interrupt)) {
-        struct timeval tv;
         int connfd = -1;
-        fd_set rfds;
-        FD_ZERO(&rfds);
-        FD_SET(sockfd, &rfds);
-
+        struct sockaddr client;
         tv.tv_sec = (long)5;
         tv.tv_usec = 0;
-        struct sockaddr client;
         socklen_t len = sizeof(client);
         if(select(sockfd+1, &rfds, (fd_set *) 0, (fd_set *) 0, &tv) > 0) {
             connfd = accept(sockfd, &client, &len);
             if(connfd > -1) {
-                while(!(*interrupt))
-                    synscan_poll(connfd);
+                while(!(*interrupt) && !synscan_poll(connfd))
+                    usleep(100);
                 close(connfd);
             }
         }
