@@ -40,8 +40,12 @@ extern "C" {
 #include <sys/stat.h>
 #include <limits.h>
 #include <sys/file.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #else
+#include <ws2tcpip.h>
 #include <winsock2.h>
 #include <windows.h>
 #undef UNICODE

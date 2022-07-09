@@ -255,7 +255,7 @@ typedef enum {
 /// Set Time
     SetTime = 'H', // > & chr:Q & chr:R & chr:S & chr:T & chr:U & chr:V & chr:W & chr:X
 /// Get Version
-    GetVersion = 'V', // Replies 6 hexadecimal digits in ASCII and ends with '#', i.e. if the version is 04.37.07, then the hand control will responses '042507#', Hand Control responses its firmware version in 6 hexadecimal digits in ASCII. Each hexadecimal digits will be one of ‘0’~ ‘9’ and ‘A’~ ‘F’.
+    GetSynScanVersion = 'V', // Replies 6 hexadecimal digits in ASCII and ends with '#', i.e. if the version is 04.37.07, then the hand control will responses '042507#', Hand Control responses its firmware version in 6 hexadecimal digits in ASCII. Each hexadecimal digits will be one of ‘0’~ ‘9’ and ‘A’~ ‘F’.
 /// Get Model 0 = EQ6 GOTO Series 1 = HEQ5 GOTO Series 2 = EQ5 GOTO Series 3 = EQ3 GOTO Series 4 = EQ8 GOTO Series 5 = AZ-EQ6 GOTO Series 6 = AZ-EQ5 GOTO Series 128 ~ 143 = AZ GOTO Series 144 ~ 159 = DOB GOTO Series 160 = AllView GOTO Series
     GetModel = 'm', // < chr:model & '#' Hand Control responses the model of mount.
 /// Echo - useful to check communication
@@ -349,6 +349,13 @@ DLL_EXPORT int ahp_gt_connect(const char* port);
 * \return non-zero on failure
 */
 DLL_EXPORT int ahp_gt_connect_fd(int fd);
+
+/**
+* \brief Connect to the GT controller throught an UDP connection
+* \param port The port on which the server should connect
+* \return non-zero on failure
+*/
+DLL_EXPORT int ahp_gt_connect_udp(int port);
 
 /**
 * \brief Return the file descriptor of the port connected to the GT controllers
@@ -747,9 +754,37 @@ DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
 */
 DLL_EXPORT void ahp_gt_read_values(int axis);
 
- /**\}
-  * \defgroup Move Movement control
-  * \{*/
+/**\}
+* \defgroup Move Movement control
+* \{*/
+
+/**
+* \brief Set current time
+* \param tm Current time
+*/
+DLL_EXPORT void ahp_gt_set_time(time_t tm);
+
+/**
+* \brief Get current time
+* \return Current time
+*/
+DLL_EXPORT time_t ahp_gt_get_time();
+
+/**
+* \brief Set geographic coordinates
+* \param latitude The latitude coordinate in degrees
+* \param longitude The longitude coordinate in degrees
+* \param elevation The elevation on sea level
+*/
+DLL_EXPORT void ahp_gt_set_location(double latitude, double longitude, double elevation);
+
+/**
+* \brief Get geographic coordinates
+* \param latitude The latitude coordinate in degrees
+* \param longitude The longitude coordinate in degrees
+* \param elevation The elevation on sea level
+*/
+DLL_EXPORT void ahp_gt_get_location(double *latitude, double *longitude, double *elevation);
 
 /**
 * \brief Get an axis status
@@ -792,6 +827,13 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 * \param speed The radial speed in sidereal rates
 */
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
+
+/**
+* \brief Move both axes to celestial coordinates
+* \param ra Right ascension in hours
+* \param dec Declination in degrees
+*/
+DLL_EXPORT void ahp_gt_goto_radec(double ra, double dec);
 
 /**
 * \brief Move an axis by an offset
