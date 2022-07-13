@@ -759,6 +759,19 @@ DLL_EXPORT void ahp_gt_read_values(int axis);
 * \{*/
 
 /**
+* \brief Set the alignment state of the current device
+* \param aligned 1 if aligned, 0 if not yet aligned
+* \return non-zero on failure
+*/
+DLL_EXPORT void ahp_gt_set_aligned(int aligned);
+
+/**
+* \brief Get the alignment state of the current device
+* \return 1 if aligned, 0 if not yet aligned
+*/
+DLL_EXPORT int ahp_gt_is_aligned();
+
+/**
 * \brief Set current time
 * \param tm Current time
 */
@@ -827,6 +840,13 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 * \param speed The radial speed in sidereal rates
 */
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
+
+/**
+* \brief Move both axes to horizontal coordinates
+* \param alt Altitude in degrees
+* \param az Azimuth in degrees
+*/
+DLL_EXPORT void ahp_gt_goto_altaz(double alt, double az);
 
 /**
 * \brief Move both axes to celestial coordinates
