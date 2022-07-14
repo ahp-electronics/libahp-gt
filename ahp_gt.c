@@ -790,7 +790,7 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
     while(!(*interrupt)) {
         devices[ahp_gt_get_current_device()].connfd = -1;
         struct sockaddr client;
-        tv.tv_sec = (long)5;
+        tv.tv_sec = 10;
         tv.tv_usec = 0;
         socklen_t len = sizeof(client);
         if(select(sockfd+1, &rfds, (fd_set *) 0, (fd_set *) 0, &tv) > 0) {
