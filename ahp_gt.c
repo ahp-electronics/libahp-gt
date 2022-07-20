@@ -27,6 +27,7 @@
 #include "rs232.c"
 #include <pthread.h>
 #include <time.h>
+#include <fcntl.h>
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 
