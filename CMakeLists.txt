@@ -30,10 +30,11 @@ link_directories(${CMAKE_LIBRARY_PATH})
 execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(ahp_gt SHARED ${SOURCES})
-set_target_properties(ahp_gt PROPERTIES VERSION ${AHPGT_VERSION} SOVERSION ${AHPGT_SOVERSION})
 
 if(MINGW)
     target_link_libraries(ahp_gt ws2_32)
+else(MINGW)
+   set_target_properties(ahp_gt PROPERTIES VERSION ${AHPGT_VERSION} SOVERSION ${AHPGT_SOVERSION})
 endif(MINGW)
 
 target_link_libraries(ahp_gt ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
