@@ -28,6 +28,9 @@
 #include <pthread.h>
 #include <time.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <winsock.h>
+#endif
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 
@@ -920,6 +923,16 @@ int ahp_gt_connect_udp(int port)
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd >= 0 ) {
+#ifdef WIN32
+        unsigned long non_blocking = 1;
+        ioctlsocket(fd, FIONBIO, &non_blocking);
+#else
+       int flags = fcntl(fd, F_GETFL, 0);
+       if(flags >= 0) {
+           flags = (flags|O_NONBLOCK);
+           fcntl(fd, F_SETFL, flags);
+       }
+#endif
         fcntl(fd, F_SETFL, O_NONBLOCK);
         int value = 4096;
         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &value, sizeof(int));
