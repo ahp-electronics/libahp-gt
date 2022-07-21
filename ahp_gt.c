@@ -910,6 +910,13 @@ int ahp_gt_connect_fd(int fd)
     return 1;
 }
 
+void ahp_gt_set_fd(int fd)
+{
+    if(!ahp_gt_is_connected())
+        return;
+    return ahp_serial_SetFD(fd, 9600);
+}
+
 int ahp_gt_get_fd()
 {
     if(!ahp_gt_is_connected())
