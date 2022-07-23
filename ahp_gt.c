@@ -924,7 +924,7 @@ int ahp_gt_get_fd()
     return ahp_serial_GetFD();
 }
 
-int ahp_gt_connect_udp(int port)
+int ahp_gt_connect_udp(const char *address, int port)
 {
     int fd = -1;
 
@@ -947,7 +947,7 @@ int ahp_gt_connect_udp(int port)
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;
         addr.sin_port = htons(port);
-        addr.sin_addr.s_addr = INADDR_ANY;
+        addr.sin_addr.s_addr = inet_addr(address);
         if(!connect(fd, (const struct sockaddr *)&addr, sizeof(addr)))
             return ahp_gt_connect_fd(fd);
     }

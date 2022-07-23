@@ -352,10 +352,11 @@ DLL_EXPORT int ahp_gt_connect_fd(int fd);
 
 /**
 * \brief Connect to the GT controller throught an UDP connection
+* \param address The ip address of the server
 * \param port The port on which the server should connect
 * \return non-zero on failure
 */
-DLL_EXPORT int ahp_gt_connect_udp(int port);
+DLL_EXPORT int ahp_gt_connect_udp(const char* address, int port);
 
 /**
 * \brief Return the file descriptor of the port connected to the GT controllers
