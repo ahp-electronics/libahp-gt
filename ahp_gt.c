@@ -897,6 +897,16 @@ int ahp_gt_connect_fd(int fd)
     if(ahp_gt_is_connected())
         return 0;
     if(fd != -1) {
+#ifdef _WIN32
+        unsigned long non_blocking = 1;
+        ioctlsocket(fd, FIONBIO, &non_blocking);
+#else
+        int flags = fcntl(fd, F_GETFL, 0);
+        if(flags >= 0) {
+            flags = (flags|O_NONBLOCK);
+            fcntl(fd, F_SETFL, flags);
+        }
+#endif
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
         if(!ahp_gt_detect_device(ahp_gt_get_current_device())) {
@@ -930,16 +940,6 @@ int ahp_gt_connect_udp(const char *address, int port)
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd >= 0 ) {
-#ifdef _WIN32
-        unsigned long non_blocking = 1;
-        ioctlsocket(fd, FIONBIO, &non_blocking);
-#else
-       int flags = fcntl(fd, F_GETFL, 0);
-       if(flags >= 0) {
-           flags = (flags|O_NONBLOCK);
-           fcntl(fd, F_SETFL, flags);
-       }
-#endif
         int value = 4096;
         setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &value, sizeof(int));
         setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &value, sizeof(int));
