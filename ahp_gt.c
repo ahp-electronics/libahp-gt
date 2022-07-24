@@ -952,7 +952,7 @@ int ahp_gt_connect_udp(const char *address, int port)
             return ahp_gt_connect_fd(fd);
     }
 
-    return -1;
+    return 1;
 }
 int ahp_gt_connect(const char* port)
 {
