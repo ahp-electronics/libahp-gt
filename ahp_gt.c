@@ -889,7 +889,6 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].divider[axis] = (devices[ahp_gt_get_current_device()].dividers >> (1+axis*4)) & 0xf;
     devices[ahp_gt_get_current_device()].address_value = (devices[ahp_gt_get_current_device()].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].dividers & 1;
-    optimize_values(axis);
 }
 
 int ahp_gt_connect_fd(int fd)
