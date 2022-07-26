@@ -700,9 +700,8 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
     double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
-    for (devices[ahp_gt_get_current_device()].accel_steps [axis] = 0; devices[ahp_gt_get_current_device()].accel_steps [axis] < 63 && degrees > 0; devices[ahp_gt_get_current_device()].accel_steps [axis]++, degrees -= devices[ahp_gt_get_current_device()].accel_steps [axis]) {
-        devices[ahp_gt_get_current_device()].accel_increment [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] / (devices[ahp_gt_get_current_device()].accel_steps [axis] * (devices[ahp_gt_get_current_device()].accel_steps [axis] - 1) / 2));
-    }
+    devices[ahp_gt_get_current_device()].accel_steps [axis] = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
+    devices[ahp_gt_get_current_device()].accel_increment [axis] = (int)fmin (0xff, devices[ahp_gt_get_current_device()].guide [axis] / (devices[ahp_gt_get_current_device()].accel_steps [axis] * (devices[ahp_gt_get_current_device()].accel_steps [axis] - 1) / 2));
     devices[ahp_gt_get_current_device()].address_value &= 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
     devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
