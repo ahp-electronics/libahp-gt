@@ -372,7 +372,7 @@ DLL_EXPORT void ahp_gt_disconnect();
 
 /**
 * \brief Set the file descriptor that links to the controller
-* \param The file descriptor
+* \param fd The file descriptor
 * \sa ahp_gt_connect
 */
 DLL_EXPORT void ahp_gt_set_fd(int fd);
