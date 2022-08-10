@@ -674,20 +674,19 @@ static void optimize_values(int axis)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     double baseclock = 375000;
-    double usteps = 62.0;
     double maxdiv = 14.0;
     devices[ahp_gt_get_current_device()].wormsteps [axis] = (int)(devices[ahp_gt_get_current_device()].steps [axis] * devices[ahp_gt_get_current_device()].worm [axis] / devices[ahp_gt_get_current_device()].motor [axis]);
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
     int maxsteps = 0xffffff;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 5;
+        maxsteps >>= 6;
     }
     double d = 1.0;
     d += fmin(maxdiv, (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / maxsteps);
     devices[ahp_gt_get_current_device()].divider [axis] = floor(d);
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
-        devices[ahp_gt_get_current_device()].multiplier [axis] += (int)(usteps-(d-floor(d))*usteps);
+        devices[ahp_gt_get_current_device()].multiplier [axis] = 63;
     devices[ahp_gt_get_current_device()].wormsteps [axis] *= (double)devices[ahp_gt_get_current_device()].multiplier [axis] / (double)devices[ahp_gt_get_current_device()].divider [axis];
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
 

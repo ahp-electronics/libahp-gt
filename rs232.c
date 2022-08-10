@@ -45,9 +45,10 @@ extern "C" {
 #include <netinet/in.h>
 
 #else
-#include <ws2tcpip.h>
 #include <winsock2.h>
 #include <windows.h>
+#include <ws2tcpip.h>
+#include <winsock.h>
 #undef UNICODE
 #undef _UNICODE
 #endif
