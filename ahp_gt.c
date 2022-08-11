@@ -28,8 +28,10 @@
 #include <pthread.h>
 #include <time.h>
 #include <fcntl.h>
-#ifdef _WIN32
+#ifdef WINDOWS
 #include <winsock.h>
+#else
+#include <sys/time.h>
 #endif
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
@@ -1555,21 +1557,39 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         return;
     double target_steps = devices[ahp_gt_get_current_device()].wormsteps [axis] / target_period;
     double one_second = 0;
+    double start_time;
     dispatch_command (SetStepPeriod, axis, target_period);
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
     dispatch_command (SetMotionMode, axis, 0x10);
     dispatch_command (StartMotion, axis, -1);
-    time_t time_passed = 0;
-    time_t now;
-    time_t start_time;
-    time (&start_time);
+#ifndef MACOS
+    struct timespec now;
+    timespec_get(&now, TIME_UTC);
+    start_time = now.tv_sec + now.tv_nsec / 1000000000.0;
+#else
+    struct timezone tz;
+    tz.tz_minuteswest = 0;
+    tz.tz_dsttime = 0;
+    struct timeval now;
+    gettimeofday(&now, &tz);
+    start_time = now.tv_sec + now.tv_usec / 1000000.0;
+#endif
     double start_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0;
     *interrupt = 0;
+    double time_passed = 0.0;
     while(!*interrupt && time_passed < target_period) {
-        usleep(1000000);
-        time (&now);
-        time_passed = now - start_time;
+        usleep(500000);
+#ifndef MACOS
+        timespec_get(&now, TIME_UTC);
+        double time_now = now.tv_sec + now.tv_nsec / 1000000000.0;
+        time_now -= start_time;
+#else
+        gettimeofday(&now, &tz);
+        double time_now = now.tv_sec + now.tv_usec / 1000000.0;
+        time_now -= start_time;
+#endif
+        time_passed = time_now - start_time;
         double current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;
         one_second = (steps_s / target_steps);
