@@ -1565,7 +1565,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     dispatch_command (StartMotion, axis, -1);
 #ifndef MACOS
     struct timespec now;
-    timespec_get(&now, TIME_UTC);
+    timespec_get(&now, 0);
     start_time = now.tv_sec + now.tv_nsec / 1000000000.0;
 #else
     struct timezone tz;
@@ -1581,15 +1581,13 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     while(!*interrupt && time_passed < target_period) {
         usleep(500000);
 #ifndef MACOS
-        timespec_get(&now, TIME_UTC);
-        double time_now = now.tv_sec + now.tv_nsec / 1000000000.0;
-        time_now -= start_time;
+        timespec_get(&now, 0);
+        time_passed = now.tv_sec + now.tv_nsec / 1000000000.0;
 #else
         gettimeofday(&now, &tz);
-        double time_now = now.tv_sec + now.tv_usec / 1000000.0;
-        time_now -= start_time;
+        time_passed = now.tv_sec + now.tv_usec / 1000000.0;
 #endif
-        time_passed = time_now - start_time;
+        time_passed -= start_time;
         double current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;
         one_second = (steps_s / target_steps);
