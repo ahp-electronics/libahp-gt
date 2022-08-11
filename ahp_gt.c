@@ -900,7 +900,7 @@ int ahp_gt_connect_fd(int fd)
     if(ahp_gt_is_connected())
         return 0;
     if(fd != -1) {
-#ifdef _WIN32
+#ifdef WINDOWS
         unsigned long non_blocking = 1;
         ioctlsocket(fd, FIONBIO, &non_blocking);
 #else
