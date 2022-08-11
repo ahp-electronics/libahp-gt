@@ -873,6 +873,14 @@ DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
 DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
 /**
+* \brief Start a tracking motion correction
+* \param axis The motor to tune at sidereal speed
+* \param target_period The target sidereal period
+* \param interrupt if non-zero stop training before ending this session
+*/
+DLL_EXPORT void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt);
+
+/**
 * \brief Start a test tracking motion
 * \param axis The motor to drive at sidereal speed
 */

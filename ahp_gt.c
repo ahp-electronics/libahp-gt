@@ -78,6 +78,7 @@ typedef struct {
     double motor[num_axes];
     double worm[num_axes];
     double guide[num_axes];
+    double one_second[num_axes];
     double maxspeed[num_axes];
     double maxspeed_value[num_axes];
     double accel_increment[num_axes];
@@ -674,19 +675,21 @@ static void optimize_values(int axis)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     double baseclock = 375000;
+    double usteps = 62.0;
     double maxdiv = 14.0;
     devices[ahp_gt_get_current_device()].wormsteps [axis] = (int)(devices[ahp_gt_get_current_device()].steps [axis] * devices[ahp_gt_get_current_device()].worm [axis] / devices[ahp_gt_get_current_device()].motor [axis]);
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
     int maxsteps = 0xffffff;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 7;
+        maxsteps >>= 6;
     }
     double d = 1.0;
     d += fmin(maxdiv, (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / maxsteps);
     devices[ahp_gt_get_current_device()].divider [axis] = floor(d);
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
-        devices[ahp_gt_get_current_device()].multiplier [axis] = 32;
+        devices[ahp_gt_get_current_device()].multiplier [axis] += (int)usteps;
+    devices[ahp_gt_get_current_device()].one_second[axis] = (1200000.0);
     devices[ahp_gt_get_current_device()].wormsteps [axis] *= (double)devices[ahp_gt_get_current_device()].multiplier [axis] / (double)devices[ahp_gt_get_current_device()].divider [axis];
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
 
@@ -834,7 +837,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = axis * 50 + 25;
-    if (!WriteAndCheck (axis, offset + 4, devices[ahp_gt_get_current_device()].wormsteps [axis])) {
+    if (!WriteAndCheck (axis, offset + 4, devices[ahp_gt_get_current_device()].one_second [axis])) {
         *finished = -1;
         return;
     }
@@ -867,6 +870,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].wormsteps [axis] = dispatch_command(GetVars, offset + 1, -1);
     devices[ahp_gt_get_current_device()].maxspeed [axis] = dispatch_command(GetVars, offset + 2, -1);
     devices[ahp_gt_get_current_device()].guide [axis] = dispatch_command(GetVars, offset + 3, -1);
+    devices[ahp_gt_get_current_device()].one_second [axis] = dispatch_command(GetVars, offset + 4, -1);
     int tmp = dispatch_command(GetVars, offset + 5, -1);
     devices[ahp_gt_get_current_device()].accel_steps [axis] = ((tmp >> 18) & 0x3f)*64;
     devices[ahp_gt_get_current_device()].accel_increment [axis] =  (tmp >> 10) & 0xff;
@@ -1544,6 +1548,38 @@ void ahp_gt_start_tracking(int axis) {
     dispatch_command (ActivateMotor, axis, -1);
     dispatch_command (SetMotionMode, axis, 0x10);
     dispatch_command (StartMotion, axis, -1);
+}
+
+void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    double target_steps = devices[ahp_gt_get_current_device()].wormsteps [axis] / target_period;
+    double one_second = 0;
+    dispatch_command (SetStepPeriod, axis, target_period);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, 0x10);
+    dispatch_command (StartMotion, axis, -1);
+    time_t time_passed = 0;
+    time_t now;
+    time_t start_time;
+    time (&start_time);
+    double start_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0;
+    *interrupt = 0;
+    while(!*interrupt && time_passed < target_period) {
+        usleep(1000000);
+        time (&now);
+        time_passed = now - start_time;
+        double current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
+        double steps_s = current_steps / time_passed;
+        one_second = (steps_s / target_steps);
+    }
+    *interrupt = 1;
+    ahp_gt_stop_motion(axis, 0);
+    if(one_second > 0) {
+        devices[ahp_gt_get_current_device()].one_second[axis] = devices[ahp_gt_get_current_device()].one_second [axis] * one_second / 1000000.0;
+        WriteAndCheck (axis, axis * 8 + 4, devices[ahp_gt_get_current_device()].one_second [axis]);
+    }
 }
 
 void ahp_gt_set_aligned(int aligned) {
