@@ -874,7 +874,7 @@ DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
 /**
 * \brief Start a test tracking motion
-* \param axis The motor to move at sidereal speed
+* \param axis The motor to drive at sidereal speed
 */
 DLL_EXPORT void ahp_gt_start_tracking(int axis);
 
