@@ -679,14 +679,14 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
     int maxsteps = 0xffffff;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep) {
-        maxsteps >>= 6;
+        maxsteps >>= 7;
     }
     double d = 1.0;
     d += fmin(maxdiv, (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / maxsteps);
     devices[ahp_gt_get_current_device()].divider [axis] = floor(d);
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
-        devices[ahp_gt_get_current_device()].multiplier [axis] = 63;
+        devices[ahp_gt_get_current_device()].multiplier [axis] = 32;
     devices[ahp_gt_get_current_device()].wormsteps [axis] *= (double)devices[ahp_gt_get_current_device()].multiplier [axis] / (double)devices[ahp_gt_get_current_device()].divider [axis];
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
 
