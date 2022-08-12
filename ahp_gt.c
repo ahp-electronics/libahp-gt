@@ -1579,8 +1579,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     start_time = now.tv_sec + now.tv_usec / 1000000.0;
 #endif
     *interrupt = 0;
-    double current_steps = 0;
-    while(!*interrupt && current_steps < 256) {
+    while(!*interrupt && time_passed < target_period) {
         usleep(1000000);
 #ifndef MACOS
         clock_gettime(CLOCK_REALTIME, &now);
@@ -1590,7 +1589,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         time_passed = now.tv_sec + now.tv_usec / 1000000.0;
 #endif
         time_passed -= start_time;
-        current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
+        double current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;
         one_second = (steps_s-target_steps) / target_steps;
     }
