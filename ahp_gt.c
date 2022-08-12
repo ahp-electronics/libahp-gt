@@ -691,7 +691,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
         devices[ahp_gt_get_current_device()].multiplier [axis] += (int)usteps;
-    devices[ahp_gt_get_current_device()].one_second[axis] = (1200000.0);
+    devices[ahp_gt_get_current_device()].one_second[axis] = (1500000.0);
     devices[ahp_gt_get_current_device()].wormsteps [axis] *= (double)devices[ahp_gt_get_current_device()].multiplier [axis] / (double)devices[ahp_gt_get_current_device()].divider [axis];
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
 
@@ -1558,6 +1558,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     double target_steps = devices[ahp_gt_get_current_device()].wormsteps [axis] / target_period;
     double one_second = 0;
     double start_time;
+    double initial_second = dispatch_command(GetVars, axis * 8 + 4, -1);
     dispatch_command (SetStepPeriod, axis, target_period);
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
@@ -1595,8 +1596,9 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     *interrupt = 1;
     ahp_gt_stop_motion(axis, 0);
     if(one_second > 0) {
-        devices[ahp_gt_get_current_device()].one_second[axis] = devices[ahp_gt_get_current_device()].one_second [axis] * one_second / 1000000.0;
-        WriteAndCheck (axis, axis * 8 + 4, devices[ahp_gt_get_current_device()].one_second [axis]);
+        one_second *= initial_second;
+        WriteAndCheck (axis, axis * 8 + 4, one_second);
+        dispatch_command (ReloadVars, axis, -1);
     }
 }
 
