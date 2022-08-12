@@ -1557,7 +1557,9 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         return;
     double target_steps = devices[ahp_gt_get_current_device()].wormsteps [axis] / target_period;
     double one_second = 0;
+    double time_passed = 0;
     double start_time;
+    double start_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0;
     double initial_second = dispatch_command(GetVars, axis * 8 + 4, -1);
     dispatch_command (SetStepPeriod, axis, target_period);
     dispatch_command (Initialize, axis, -1);
@@ -1576,11 +1578,10 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     gettimeofday(&now, &tz);
     start_time = now.tv_sec + now.tv_usec / 1000000.0;
 #endif
-    double start_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0;
     *interrupt = 0;
-    double time_passed = 0.0;
-    while(!*interrupt && time_passed < target_period) {
-        usleep(500000);
+    double current_steps = 0;
+    while(!*interrupt && current_steps < 256) {
+        usleep(1000000);
 #ifndef MACOS
         clock_gettime(CLOCK_REALTIME, &now);
         time_passed = now.tv_sec + now.tv_nsec / 1000000000.0;
@@ -1589,17 +1590,16 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         time_passed = now.tv_sec + now.tv_usec / 1000000.0;
 #endif
         time_passed -= start_time;
-        double current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
+        current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;
-        one_second = (steps_s / target_steps);
+        one_second = (steps_s-target_steps) / target_steps;
     }
     *interrupt = 1;
     ahp_gt_stop_motion(axis, 0);
-    if(one_second > 0) {
-        one_second *= initial_second;
-        WriteAndCheck (axis, axis * 8 + 4, one_second);
-        dispatch_command (ReloadVars, axis, -1);
-    }
+    one_second *= initial_second;
+    one_second += initial_second;
+    WriteAndCheck (axis, axis * 8 + 4, one_second);
+    dispatch_command (ReloadVars, axis, -1);
 }
 
 void ahp_gt_set_aligned(int aligned) {
