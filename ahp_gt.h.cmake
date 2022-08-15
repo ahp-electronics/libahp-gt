@@ -567,6 +567,20 @@ DLL_EXPORT double ahp_gt_get_max_speed(int axis);
 DLL_EXPORT double ahp_gt_get_speed_limit(int axis);
 
 /**
+* \brief Get the timing value of the axis
+* \param axis The motor to query
+* \return The timing value
+*/
+DLL_EXPORT double ahp_gt_get_timing(int axis);
+
+/**
+* \brief Set the timing value of the axis
+* \param axis The motor to query
+* \param value The timing value
+*/
+DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
+
+/**
 * \brief Set the mount type
 * \param value The MountType after ahp_gt_write_values
 */

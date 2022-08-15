@@ -1166,6 +1166,20 @@ double ahp_gt_get_speed_limit(int axis)
     return devices[ahp_gt_get_current_device()].speed_limit[axis];
 }
 
+double ahp_gt_get_timing(int axis)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return 0.0;
+    return devices[ahp_gt_get_current_device()].one_second [axis];
+}
+
+void ahp_gt_set_timing(int axis, int value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].one_second [axis] = value;
+}
+
 void ahp_gt_set_mount_type(MountType value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1555,12 +1569,13 @@ void ahp_gt_start_tracking(int axis) {
 void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    double target_steps = devices[ahp_gt_get_current_device()].wormsteps [axis] / target_period;
+    double target_steps = ahp_gt_get_wormsteps(axis) / target_period;
     double one_second = 0;
     double time_passed = 0;
     double start_time;
-    double start_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0;
-    double initial_second = dispatch_command(GetVars, axis * 8 + 4, -1);
+    double polltime = 0.1;
+    double start_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0;
+    double initial_second = ahp_gt_get_timing(axis);
     dispatch_command (SetStepPeriod, axis, target_period);
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
@@ -1580,7 +1595,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
 #endif
     *interrupt = 0;
     while(!*interrupt && time_passed < target_period) {
-        usleep(1000000);
+        usleep(polltime*1000000);
 #ifndef MACOS
         clock_gettime(CLOCK_REALTIME, &now);
         time_passed = now.tv_sec + now.tv_nsec / 1000000000.0;
@@ -1589,7 +1604,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         time_passed = now.tv_sec + now.tv_usec / 1000000.0;
 #endif
         time_passed -= start_time;
-        double current_steps = ahp_gt_get_position(axis) * devices[ahp_gt_get_current_device()].totalsteps [axis] / M_PI / 2.0 - start_steps;
+        double current_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;
         one_second = (steps_s-target_steps) / target_steps;
     }
@@ -1597,7 +1612,8 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     ahp_gt_stop_motion(axis, 0);
     one_second *= initial_second;
     one_second += initial_second;
-    WriteAndCheck (axis, axis * 8 + 4, one_second);
+    ahp_gt_set_timing(axis, one_second);
+    WriteAndCheck (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
     dispatch_command (ReloadVars, axis, -1);
 }
 
