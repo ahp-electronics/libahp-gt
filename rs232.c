@@ -71,12 +71,9 @@ static int ahp_serial_baudrate = -1;
 static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 static int ahp_serial_flowctrl = -1;
 static int ahp_serial_fd = -1;
-static int ahp_serial_error = 0;
-
-static struct termios ahp_serial_new_port_settings, ahp_serial_old_port_settings;
 static struct sp_port *serialport;
 
-static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
+static int ahp_serial_SetupPort(int bauds, const char *m)
 {
     sp_set_baudrate(serialport, bauds);
     sp_set_bits(serialport, m[0] - '0');

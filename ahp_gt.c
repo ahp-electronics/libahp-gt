@@ -962,7 +962,7 @@ int ahp_gt_connect(const char* port)
     if(ahp_gt_is_connected())
         return 0;
     if(!ahp_serial_OpenComport(port)) {
-        if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
+        if(!ahp_serial_SetupPort(9600, "8N1")) {
             ahp_gt_connected = 1;
             if(!ahp_gt_detect_device()) {
                 ahp_gt_get_mc_version();
