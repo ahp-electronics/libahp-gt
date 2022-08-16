@@ -133,7 +133,7 @@ static int ahp_serial_OpenComport(const char* devname)
 #ifdef WINDOWS
     HANDLE fHandle;
     sp_get_port_handle(serialport, fHandle);
-    ahp_serial_fd = _open_osfhandle(fHandle, 0);
+    ahp_serial_fd = _open_osfhandle((intptr_t)fHandle, 0);
 #else
     sp_get_port_handle(serialport, &ahp_serial_fd);
 #endif

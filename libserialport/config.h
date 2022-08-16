@@ -92,9 +92,6 @@
 /* Define to the version of this package. */
 #define PACKAGE_VERSION "0.1.1"
 
-/* Macro preceding public API functions */
-#define SP_API __attribute__((visibility("default")))
-
 /* . */
 #define SP_LIB_VERSION_AGE 1
 
