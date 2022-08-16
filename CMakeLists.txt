@@ -37,6 +37,7 @@ else (WIN32)
    else (APPLE)
    set(PLATFORM_SOURCES
       ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux.c
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux_termios.c
    )
    endif(APPLE)
 endif (WIN32)
