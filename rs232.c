@@ -67,7 +67,7 @@ static pthread_mutexattr_t ahp_serial_mutex_attr;
 static pthread_mutex_t ahp_serial_read_mutex;
 static pthread_mutex_t ahp_serial_send_mutex;
 static int ahp_serial_mutexes_initialized = 0;
-static int ahp_serial_baudrate = -1;
+static int ahp_serial_baudrate = 9600;
 static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 static int ahp_serial_flowctrl = -1;
 static int ahp_serial_fd = -1;
@@ -75,6 +75,7 @@ static struct sp_port *serialport;
 
 static int ahp_serial_SetupPort(int bauds, const char *m)
 {
+    ahp_serial_baudrate = bauds;
     sp_set_baudrate(serialport, bauds);
     sp_set_bits(serialport, m[0] - '0');
     int parity = SP_PARITY_NONE;
@@ -125,11 +126,7 @@ static void ahp_serial_flushRXTX()
 static int ahp_serial_OpenComport(const char* devname)
 {
     char dev_name[128];
-#ifdef WINDOWS
-    sprintf(dev_name, "\\.\\\\%s", devname);
-#else
     sprintf(dev_name, "%s", devname);
-#endif
     int err = sp_get_port_by_name(devname, &serialport);
     if (err != SP_OK) {
         fprintf(stderr, "no such comport\n");
@@ -140,13 +137,7 @@ static int ahp_serial_OpenComport(const char* devname)
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
         return 1;
     }
-#ifdef WINDOWS
-    HANDLE fHandle;
-    sp_get_port_handle(serialport, fHandle);
-    ahp_serial_fd = _open_osfhandle((intptr_t)fHandle, 0);
-#else
     sp_get_port_handle(serialport, &ahp_serial_fd);
-#endif
 
     if(ahp_serial_fd==-1) {
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));

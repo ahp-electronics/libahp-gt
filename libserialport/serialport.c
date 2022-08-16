@@ -249,12 +249,11 @@ SP_API enum sp_return sp_get_port_handle(const struct sp_port *port,
 	if (!result_ptr)
 		RETURN_ERROR(SP_ERR_ARG, "Null result pointer");
 
+    int *fd_ptr = result_ptr;
 #ifdef _WIN32
-	HANDLE *handle_ptr = result_ptr;
-	*handle_ptr = port->hdl;
+    *fd_ptr = _open_osfhandle((intptr_t)port->hdl, 0);
 #else
-	int *fd_ptr = result_ptr;
-	*fd_ptr = port->fd;
+    *fd_ptr = port->fd;
 #endif
 
 	RETURN_OK();
