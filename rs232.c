@@ -126,7 +126,11 @@ static void ahp_serial_flushRXTX()
 static int ahp_serial_OpenComport(const char* devname)
 {
     char dev_name[128];
-    sprintf(dev_name, "%s", devname);
+#ifndef _WIN32
+    sprintf(dev_name, "/dev/%s", devname);
+#else
+    sprintf(dev_name, "\\\\.\\%s", devname);
+#endif
     int err = sp_get_port_by_name(devname, &serialport);
     if (err != SP_OK) {
         fprintf(stderr, "no such comport\n");
