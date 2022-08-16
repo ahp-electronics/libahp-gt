@@ -33,7 +33,7 @@
  * TCSETX/TCGETX ioctls used with struct termiox, others do not.
  */
 
-#include <config.h>
+#include "config.h"
 #include <stdlib.h>
 #include <linux/termios.h>
 #include "linux_termios.h"
