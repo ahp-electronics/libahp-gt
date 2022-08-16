@@ -130,7 +130,7 @@ static int ahp_serial_OpenComport(const char* devname)
     if (err != SP_OK)
         return 1;
 
-#if WINDOWS
+#ifdef WINDOWS
     HANDLE fHandle;
     sp_get_port_handle(serialport, fHandle);
     ahp_serial_fd = _open_osfhandle(fHandle);
