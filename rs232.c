@@ -131,9 +131,15 @@ static int ahp_serial_OpenComport(const char* devname)
     sprintf(dev_name, "%s", devname);
 #endif
     int err = sp_get_port_by_name(devname, &serialport);
-    if (err != SP_OK)
+    if (err != SP_OK) {
+        fprintf(stderr, "no such comport\n");
         return 1;
-
+    }
+    err = sp_open(serialport, SP_MODE_READ_WRITE);
+    if (err != SP_OK) {
+        fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
+        return 1;
+    }
 #ifdef WINDOWS
     HANDLE fHandle;
     sp_get_port_handle(serialport, fHandle);
