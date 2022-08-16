@@ -131,7 +131,7 @@ static int ahp_serial_OpenComport(const char* devname)
 #else
     sprintf(dev_name, "\\\\.\\%s", devname);
 #endif
-    int err = sp_get_port_by_name(devname, &serialport);
+    int err = sp_get_port_by_name(dev_name, &serialport);
     if (err != SP_OK) {
         fprintf(stderr, "no such comport\n");
         return 1;
