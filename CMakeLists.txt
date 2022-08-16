@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 project(ahp_gt C CXX)
 
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules/")
+
 include(GNUInstallDirs)
 
 find_package(M REQUIRED)
@@ -11,15 +12,34 @@ find_package(Threads REQUIRED)
 set(LIB_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 set(AHP_GT_VERSION_MAJOR 1)
 set(AHP_GT_VERSION_MINOR 5)
-set(AHP_GT_VERSION_RELEASE 5)
+set(AHP_GT_VERSION_RELEASE 6)
 set(AHPGT_VERSION "${AHP_GT_VERSION_MAJOR}.${AHP_GT_VERSION_MINOR}.${AHP_GT_VERSION_RELEASE}")
 set(AHP_GT_VERSION 0x${AHP_GT_VERSION_MAJOR}${AHP_GT_VERSION_MINOR}${AHP_GT_VERSION_RELEASE})
 set(AHPGT_SOVERSION ${AHP_GT_VERSION_MAJOR})
 
 set(SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/serialport.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/test_timing.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
    )
+
+if (WIN32)
+set(PLATFORM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/windows.c
+   )
+else (WIN32)
+   if (APPLE)
+   set(PLATFORM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/macosx.c
+   )
+   else (APPLE)
+   set(PLATFORM_SOURCES
+      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux.c
+   )
+   endif(APPLE)
+endif (WIN32)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
@@ -30,7 +50,7 @@ link_directories(${CMAKE_LIBRARY_PATH})
 
 execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-add_library(ahp_gt SHARED ${SOURCES})
+add_library(ahp_gt SHARED ${SOURCES} ${PLATFORM_SOURCES})
 
 if(MINGW)
     target_link_libraries(ahp_gt ws2_32)
