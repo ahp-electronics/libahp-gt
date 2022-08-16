@@ -138,8 +138,7 @@ static int ahp_serial_OpenComport(const char* devname)
         return 1;
     }
     err = sp_get_port_handle(serialport, &ahp_serial_fd);
-
-    if (err != SP_OK) {
+    if (ahp_serial_fd < 0) {
         fprintf(stderr, "invalid file descriptor\n");
         return 1;
     }
