@@ -256,6 +256,8 @@ SP_API enum sp_return sp_get_port_handle(const struct sp_port *port,
     *fd_ptr = port->fd;
 #endif
 
+    if(*fd_ptr == -1)
+        RETURN_ERROR(SP_ERR_ARG, "Invalid file descriptor");
 	RETURN_OK();
 }
 

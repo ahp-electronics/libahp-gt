@@ -137,10 +137,10 @@ static int ahp_serial_OpenComport(const char* devname)
         fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
         return 1;
     }
-    sp_get_port_handle(serialport, &ahp_serial_fd);
+    err = sp_get_port_handle(serialport, &ahp_serial_fd);
 
-    if(ahp_serial_fd==-1) {
-        fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
+    if (err != SP_OK) {
+        fprintf(stderr, "invalid file descriptor\n");
         return 1;
     }
     if(!ahp_serial_mutexes_initialized) {
