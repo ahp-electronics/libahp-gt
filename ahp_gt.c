@@ -28,11 +28,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <fcntl.h>
-#ifdef WINDOWS
-#include <winsock.h>
-#else
 #include <sys/time.h>
-#endif
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 
@@ -943,9 +939,6 @@ int ahp_gt_connect_udp(const char *address, int port)
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd >= 0 ) {
-        int value = 4096;
-        setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
-        setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
         struct sockaddr_in addr;
         memset(&addr, 0, sizeof(addr));
         addr.sin_family = AF_INET;

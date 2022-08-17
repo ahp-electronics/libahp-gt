@@ -280,20 +280,6 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     ahp_serial_baudrate = bauds;
     HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
 
-    COMMTIMEOUTS Cptimeouts;
-
-    Cptimeouts.ReadIntervalTimeout         = MAXDWORD;
-    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
-    Cptimeouts.ReadTotalTimeoutConstant    = 1;
-    Cptimeouts.WriteTotalTimeoutMultiplier = 1;
-    Cptimeouts.WriteTotalTimeoutConstant   = 1;
-
-    if(!SetCommTimeouts(pHandle, &Cptimeouts))
-    {
-        printf("unable to set comport timeouts\n");
-        return 1;
-    }
-
     memset(&ahp_serial_old_port_settings, 0, sizeof(DCB));
 
     if(!GetCommState(pHandle, &ahp_serial_old_port_settings))
@@ -363,6 +349,25 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
         return 1;
     }
 
+    COMMTIMEOUTS Cptimeouts;
+    if(!GetCommTimeouts(pHandle, &Cptimeouts))
+    {
+        printf("unable to get comport timeouts\n");
+        return 1;
+    }
+
+    Cptimeouts.ReadTotalTimeoutMultiplier  = 1;
+    Cptimeouts.ReadTotalTimeoutConstant    = 1;
+    Cptimeouts.WriteTotalTimeoutMultiplier  = 1;
+    Cptimeouts.WriteTotalTimeoutConstant    = 1;
+
+    if(!SetCommTimeouts(pHandle, &Cptimeouts))
+    {
+        printf("unable to set comport timeouts\n");
+        return 1;
+    }
+
+
     return 0;
 }
 
@@ -415,6 +420,9 @@ static int ahp_serial_OpenComport(const char* devname)
         pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 1;
     }
+    int value = 0x1000;
+    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
+    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
     return 0;
 }
 
@@ -444,7 +452,6 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
-
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_read_mutex))
             usleep(100);
@@ -540,6 +547,9 @@ static void ahp_serial_SetFD(int f, int bauds)
     }
     ahp_serial_fd = f;
     ahp_serial_baudrate = bauds;
+    int value = 0x1000;
+    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
+    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
 }
 
 static int ahp_serial_GetFD()
