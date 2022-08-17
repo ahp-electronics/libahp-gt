@@ -18,28 +18,9 @@ set(AHP_GT_VERSION 0x${AHP_GT_VERSION_MAJOR}${AHP_GT_VERSION_MINOR}${AHP_GT_VERS
 set(AHPGT_SOVERSION ${AHP_GT_VERSION_MAJOR})
 
 set(SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/serialport.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/timing.c
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
     ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
    )
-
-if (WIN32)
-set(PLATFORM_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/windows.c
-   )
-else (WIN32)
-   if (APPLE)
-   set(PLATFORM_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/macosx.c
-   )
-   else (APPLE)
-   set(PLATFORM_SOURCES
-      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux.c
-      ${CMAKE_CURRENT_SOURCE_DIR}/libserialport/linux_termios.c
-   )
-   endif(APPLE)
-endif (WIN32)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
