@@ -1566,7 +1566,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     double one_second = 0;
     double time_passed = 0;
     double start_time;
-    double polltime = 0.1;
+    double polltime = 10.0 * SIDEREAL_DAY / ahp_gt_get_totalsteps(axis);
     double start_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0;
     double initial_second = ahp_gt_get_timing(axis);
     dispatch_command (SetStepPeriod, axis, target_period);
