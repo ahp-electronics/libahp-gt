@@ -237,7 +237,7 @@ static void get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *De
 
 static double get_ha()
 {
-    return range_ha(ahp_gt_get_position(0) * 12.0 / M_PI);
+    return range_ha(ahp_gt_get_position(0, NULL) * 12.0 / M_PI);
 }
 
 static double get_ra()
@@ -247,7 +247,7 @@ static double get_ra()
 
 static double get_dec()
 {
-    double dec = ahp_gt_get_position(1) * 180.0 / M_PI;
+    double dec = ahp_gt_get_position(1, NULL) * 180.0 / M_PI;
     if(dec > 90.0 && dec < 270.0)
         devices[ahp_gt_get_current_device()].flipped = 1;
      else
@@ -1412,11 +1412,13 @@ void ahp_gt_set_position(int axis, double value)
     dispatch_command(SetAxisPositionCmd, axis, (int)(value*devices[ahp_gt_get_current_device()].totalsteps[axis]/M_PI/2.0)+0x800000);
 }
 
-double ahp_gt_get_position(int axis)
+double ahp_gt_get_position(int axis, double *timestamp)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     int steps = dispatch_command(GetAxisPosition, axis, -1)-8388608;
+    if(timestamp != NULL)
+        *timestamp = get_timestamp() - 0.008333333;
     return (double)steps*M_PI*2.0/(double)devices[ahp_gt_get_current_device()].totalsteps[axis];
 }
 
@@ -1484,7 +1486,7 @@ void ahp_gt_goto_radec(double ra, double dec)
 void ahp_gt_goto_absolute(int axis, double target, double speed) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    double position = ahp_gt_get_position(axis);
+    double position = ahp_gt_get_position(axis, NULL);
     speed = fabs(speed);
     speed *= (target-position < 0 ? -1 : 1);
     double max = devices[ahp_gt_get_current_device()].totalsteps[axis];
@@ -1581,27 +1583,24 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         return;
     double target_steps = ahp_gt_get_wormsteps(axis) / target_period;
     double one_second = 0;
+    double start_time = 0;
+    double current_time = 0;
     double time_passed = 0;
-    double start_time;
     double polltime = 10.0 * SIDEREAL_DAY / ahp_gt_get_totalsteps(axis);
-    double start_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0;
     double initial_second = ahp_gt_get_timing(axis);
     dispatch_command (SetStepPeriod, axis, target_period);
     dispatch_command (Initialize, axis, -1);
     dispatch_command (ActivateMotor, axis, -1);
     dispatch_command (SetMotionMode, axis, 0x10);
     dispatch_command (StartMotion, axis, -1);
-    start_time = ahp_gt_get_time();
     *interrupt = 0;
+    double start_steps = ahp_gt_get_position(axis, &start_time) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0;
     while(!*interrupt && time_passed < target_period) {
-        double now = fmax(0, ahp_gt_get_time()-start_time);
-        double diff = (polltime+time_passed-now);
-        usleep(fmax(1, diff*1000000));
-        time_passed = now;
-        time_passed -= start_time;
-        double current_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0 - start_steps;
-        double steps_s = current_steps / time_passed;
-        one_second = (steps_s-target_steps) / target_steps;
+        double current_steps = ahp_gt_get_position(axis, &current_time) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0 - start_steps;
+        current_time = fmax(0, current_time - start_time);
+        usleep(fmax(1, fmod(polltime+time_passed-current_time, polltime)*1000000));
+        time_passed = current_time;
+        one_second = (current_steps / time_passed - target_steps) / target_steps;
     }
     *interrupt = 1;
     ahp_gt_stop_motion(axis, 0);

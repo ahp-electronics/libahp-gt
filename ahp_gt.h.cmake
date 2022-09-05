@@ -826,9 +826,10 @@ DLL_EXPORT SkywatcherAxisStatus ahp_gt_get_status(int axis);
 /**
 * \brief Get the axis position
 * \param axis The motor to query
+* \param timestamp The timestamp of the response
 * \return The position of the specified axis in radians
 */
-DLL_EXPORT double ahp_gt_get_position(int axis);
+DLL_EXPORT double ahp_gt_get_position(int axis, double *timestamp);
 
 /**
 * \brief Set the axis position in radians
