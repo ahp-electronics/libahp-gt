@@ -109,6 +109,22 @@ static unsigned int ahp_gt_detected[128] = { 0 };
 static gt1_info devices[128];
 static int sockfd;
 
+static double get_timestamp()
+{
+#ifndef MACOS
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
+   return (double) now.tv_sec + now.tv_nsec / 1000000000.0;
+#else
+    struct timezone tz;
+    tz.tz_minuteswest = 0;
+    tz.tz_dsttime = 0;
+    struct timeval now;
+    gettimeofday(&now, &tz);
+    return (double) now.tv_sec + now.tv_usec / 1000000.0;
+#endif
+}
+
 static double time_to_J2000time(time_t tp)
 {
     struct tm t_tm;
@@ -1403,15 +1419,15 @@ double ahp_gt_get_position(int axis)
     return (double)steps*M_PI*2.0/(double)devices[ahp_gt_get_current_device()].totalsteps[axis];
 }
 
-void ahp_gt_set_time(time_t tm)
+void ahp_gt_set_time(double tm)
 {
-    time_t t = time(NULL);
+    double t = get_timestamp();
     devices[ahp_gt_get_current_device()].time_offset = tm - t;
 }
 
-time_t ahp_gt_get_time()
+double ahp_gt_get_time()
 {
-    time_t t = time(NULL);
+    double t = get_timestamp();
     return devices[ahp_gt_get_current_device()].time_offset + t;
 }
 
@@ -1574,28 +1590,11 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     dispatch_command (ActivateMotor, axis, -1);
     dispatch_command (SetMotionMode, axis, 0x10);
     dispatch_command (StartMotion, axis, -1);
-#ifndef MACOS
-    struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-    start_time = now.tv_sec + now.tv_nsec / 1000000000.0;
-#else
-    struct timezone tz;
-    tz.tz_minuteswest = 0;
-    tz.tz_dsttime = 0;
-    struct timeval now;
-    gettimeofday(&now, &tz);
-    start_time = now.tv_sec + now.tv_usec / 1000000.0;
-#endif
+    start_time = ahp_gt_get_time();
     *interrupt = 0;
     while(!*interrupt && time_passed < target_period) {
         usleep(polltime*1000000);
-#ifndef MACOS
-        clock_gettime(CLOCK_REALTIME, &now);
-        time_passed = now.tv_sec + now.tv_nsec / 1000000000.0;
-#else
-        gettimeofday(&now, &tz);
-        time_passed = now.tv_sec + now.tv_usec / 1000000.0;
-#endif
+        time_passed = ahp_gt_get_time();
         time_passed -= start_time;
         double current_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;

@@ -788,15 +788,15 @@ DLL_EXPORT int ahp_gt_is_aligned();
 
 /**
 * \brief Set current time
-* \param tm Current time
+* \param seconds Current time
 */
-DLL_EXPORT void ahp_gt_set_time(time_t tm);
+DLL_EXPORT void ahp_gt_set_time(double seconds);
 
 /**
 * \brief Get current time
 * \return Current time
 */
-DLL_EXPORT time_t ahp_gt_get_time();
+DLL_EXPORT double ahp_gt_get_time();
 
 /**
 * \brief Set geographic coordinates
