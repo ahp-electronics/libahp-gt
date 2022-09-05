@@ -1382,9 +1382,10 @@ int ahp_gt_get_address()
 SkywatcherAxisStatus ahp_gt_get_status(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return (SkywatcherAxisStatus){ 0, 0, 0, 0, 0 };
+        return (SkywatcherAxisStatus){ 0, 0, 0, 0, 0, 0 };
     SkywatcherAxisStatus status;
     int response = dispatch_command(GetAxisStatus, axis, -1);
+    status.timestamp = get_timestamp() - 0.005208333;
 
     status.Initialized = (response & 0x100);
     status.Running     = (response & 0x1);

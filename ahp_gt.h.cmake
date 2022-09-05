@@ -318,6 +318,8 @@ SkywatcherSlewMode Mode;
 SkywatcherSpeedMode Speed;
 ///Current direction
 SkywatcherDirection Direction;
+//timestamp
+double timestamp;
 } SkywatcherAxisStatus;
 
 /**\}
