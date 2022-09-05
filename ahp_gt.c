@@ -1594,8 +1594,10 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     start_time = ahp_gt_get_time();
     *interrupt = 0;
     while(!*interrupt && time_passed < target_period) {
-        usleep(polltime*1000000);
-        time_passed = ahp_gt_get_time();
+        double now = fmax(0, ahp_gt_get_time()-start_time);
+        double diff = (polltime+time_passed-now);
+        usleep(fmax(1, diff*1000000));
+        time_passed = now;
         time_passed -= start_time;
         double current_steps = ahp_gt_get_position(axis) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0 - start_steps;
         double steps_s = current_steps / time_passed;
