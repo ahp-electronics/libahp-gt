@@ -1382,10 +1382,10 @@ int ahp_gt_get_address()
 SkywatcherAxisStatus ahp_gt_get_status(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return (SkywatcherAxisStatus){ 0, 0, 0, 0, 0, 0 };
+        return (SkywatcherAxisStatus){ 0, 0, 0, 0, 0, 0, 0 };
     SkywatcherAxisStatus status;
     int response = dispatch_command(GetAxisStatus, axis, -1);
-    status.timestamp = get_timestamp() - 0.005208333;
+    status.position = ahp_gt_get_position(axis, &status.timestamp);
 
     status.Initialized = (response & 0x100);
     status.Running     = (response & 0x1);
@@ -1600,12 +1600,11 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
         current_time = fmax(0, current_time - start_time);
         usleep(fmax(1, fmod(polltime+time_passed-current_time, polltime)*1000000));
         time_passed = current_time;
-        one_second = (current_steps / time_passed - target_steps) / target_steps;
+        one_second = (current_steps / time_passed / target_steps);
     }
     *interrupt = 1;
     ahp_gt_stop_motion(axis, 0);
     one_second *= initial_second;
-    one_second += initial_second;
     ahp_gt_set_timing(axis, one_second);
     WriteAndCheck (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
     dispatch_command (ReloadVars, axis, -1);
