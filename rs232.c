@@ -53,18 +53,17 @@ extern "C" {
 #include <netinet/in.h>
 
 #else
+#undef UNICODE
+#undef _UNICODE
 #include <winsock2.h>
 #include <windows.h>
 #include <ws2tcpip.h>
 #include <winsock.h>
-#undef UNICODE
-#undef _UNICODE
 #endif
 #include <pthread.h>
 
 static pthread_mutexattr_t ahp_serial_mutex_attr;
-static pthread_mutex_t ahp_serial_read_mutex;
-static pthread_mutex_t ahp_serial_send_mutex;
+static pthread_mutex_t ahp_serial_mutex;
 static int ahp_serial_mutexes_initialized = 0;
 static int ahp_serial_baudrate = 230400;
 static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
@@ -401,7 +400,7 @@ static void ahp_serial_flushRXTX()
 static int ahp_serial_OpenComport(const char* devname)
 {
     char dev_name[128];
-#ifndef _WIN32
+#ifndef WINDOWS
     sprintf(dev_name, "/dev/%s", devname);
 #else
     sprintf(dev_name, "\\\\.\\%s", devname);
@@ -416,13 +415,16 @@ static int ahp_serial_OpenComport(const char* devname)
     if(!ahp_serial_mutexes_initialized) {
         pthread_mutexattr_init(&ahp_serial_mutex_attr);
         pthread_mutexattr_settype(&ahp_serial_mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(&ahp_serial_read_mutex, &ahp_serial_mutex_attr);
-        pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
+        pthread_mutex_init(&ahp_serial_mutex, &ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 1;
     }
-    int value = 0x1000;
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
+#ifdef WINDOWS
+    unsigned long nonblocking = 1;
+    ioctlsocket(ahp_serial_fd, FIONBIO, &nonblocking);
+#else
+    int flags = fcntl(ahp_serial_fd, F_GETFL);
+    fcntl(ahp_serial_fd, F_SETFL, flags | O_NONBLOCK);
+#endif
     return 0;
 }
 
@@ -431,10 +433,8 @@ static void ahp_serial_CloseComport()
     if(ahp_serial_fd != -1)
         close(ahp_serial_fd);
     if(ahp_serial_mutexes_initialized) {
-        pthread_mutex_unlock(&ahp_serial_read_mutex);
-        pthread_mutex_destroy(&ahp_serial_read_mutex);
-        pthread_mutex_unlock(&ahp_serial_send_mutex);
-        pthread_mutex_destroy(&ahp_serial_send_mutex);
+        pthread_mutex_unlock(&ahp_serial_mutex);
+        pthread_mutex_destroy(&ahp_serial_mutex);
         pthread_mutexattr_destroy(&ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 0;
 
@@ -453,7 +453,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     if(ahp_serial_mutexes_initialized) {
-        while(pthread_mutex_trylock(&ahp_serial_read_mutex))
+        while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(12000000/ahp_serial_baudrate);
@@ -465,7 +465,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
             nbytes += n;
             bytes_left -= n;
         }
-        pthread_mutex_unlock(&ahp_serial_read_mutex);
+        pthread_mutex_unlock(&ahp_serial_mutex);
     }
     if(nbytes < size)
         return err;
@@ -480,7 +480,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
     int bytes_left = size;
     int err = 0;
     if(ahp_serial_mutexes_initialized) {
-        while(pthread_mutex_trylock(&ahp_serial_send_mutex))
+        while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
             usleep(12000000/ahp_serial_baudrate);
@@ -492,7 +492,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
             nbytes += n;
             bytes_left -= n;
         }
-        pthread_mutex_unlock(&ahp_serial_send_mutex);
+        pthread_mutex_unlock(&ahp_serial_mutex);
     }
     if(nbytes < size)
         return err;
@@ -524,7 +524,7 @@ static int ahp_serial_AlignFrame(int sof, int maxtries)
 {
     int c = 0;
     ahp_serial_flushRX();
-    while(c != sof && maxtries-- > 0) {
+    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
         c = ahp_serial_RecvByte();
         if(c < 0) {
           if(errno == EAGAIN)
@@ -541,15 +541,18 @@ static void ahp_serial_SetFD(int f, int bauds)
     if(!ahp_serial_mutexes_initialized) {
         pthread_mutexattr_init(&ahp_serial_mutex_attr);
         pthread_mutexattr_settype(&ahp_serial_mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
-        pthread_mutex_init(&ahp_serial_read_mutex, &ahp_serial_mutex_attr);
-        pthread_mutex_init(&ahp_serial_send_mutex, &ahp_serial_mutex_attr);
+        pthread_mutex_init(&ahp_serial_mutex, &ahp_serial_mutex_attr);
         ahp_serial_mutexes_initialized = 1;
     }
     ahp_serial_fd = f;
     ahp_serial_baudrate = bauds;
-    int value = 0x1000;
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_SNDBUF, (const char *)&value, sizeof(int));
-    setsockopt(ahp_serial_fd, SOL_SOCKET, SO_RCVBUF, (const char *)&value, sizeof(int));
+#ifdef WINDOWS
+    unsigned long nonblocking = 1;
+    ioctlsocket(ahp_serial_fd, FIONBIO, &nonblocking);
+#else
+    int flags = fcntl(ahp_serial_fd, F_GETFL);
+    fcntl(ahp_serial_fd, F_SETFL, flags | O_NONBLOCK);
+#endif
 }
 
 static int ahp_serial_GetFD()
