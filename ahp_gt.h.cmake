@@ -957,7 +957,7 @@ DLL_EXPORT void ahp_gt_correct_tracking(int axis, double target_period, int *int
 * \brief Set the tracking mode
 * \param mode The tracking mode - 0: no tracking 1: EQ mode 2: AZ mode
 */
-DLL_EXPORT ahp_gt_set_tracking_mode(int mode);
+DLL_EXPORT void ahp_gt_set_tracking_mode(int mode);
 
 /**
 * \brief Start a test tracking motion
