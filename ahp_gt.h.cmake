@@ -862,6 +862,60 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 
 /**
+* \brief Get current altitude and azimuth
+* \param Ra Right ascension
+* \param Dec Declination
+* \param Alt Altitude filled by reference
+* \param Az Azimuth filled by reference
+*/
+DLL_EXPORT void ahp_gt_get_alt_az_coordinates(double Ra, double Dec, double* Alt, double *Az);
+
+/**
+* \brief Get the altitude tracking multiplier for AZ mounts
+* \param Alt Altitude
+* \param Az Azimuth
+* \param Lat Latitude of the current location
+* \return Altitude tracking offset multiplier
+*/
+DLL_EXPORT double ahp_gt_tracking_sine(double Alt, double Az, double Lat);
+
+/**
+* \brief Get the azimuth tracking multiplier for AZ mounts
+* \param Alt Altitude
+* \param Az Azimuth
+* \param Lat Latitude of the current location
+* \return Altitude tracking offset multiplier
+*/
+DLL_EXPORT double ahp_gt_tracking_cosine(double Alt, double Az, double Lat);
+
+/**
+* \brief Get the azimuth tracking multiplier for AZ mounts
+* \param Alt Altitude
+* \param Az Azimuth
+* \param Ra Right ascension filled by reference
+* \param Dec Declination filled by reference
+*/
+DLL_EXPORT void ahp_gt_get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *Dec);
+
+/**
+* \brief Get the current hour angle
+* \return The current hour angle
+*/
+DLL_EXPORT double ahp_gt_get_ha();
+
+/**
+* \brief Get the current right ascension
+* \return The current right ascension
+*/
+DLL_EXPORT double ahp_gt_get_ra();
+
+/**
+* \brief Get the current declination
+* \return The current declination
+*/
+DLL_EXPORT double ahp_gt_get_dec();
+
+/**
 * \brief Move both axes to horizontal coordinates
 * \param alt Altitude in degrees
 * \param az Azimuth in degrees
@@ -898,6 +952,12 @@ DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 * \param interrupt if non-zero stop training before ending this session
 */
 DLL_EXPORT void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt);
+
+/**
+* \brief Set the tracking mode
+* \param mode The tracking mode - 0: no tracking 1: EQ mode 2: AZ mode
+*/
+DLL_EXPORT ahp_gt_set_tracking_mode(int mode);
 
 /**
 * \brief Start a test tracking motion

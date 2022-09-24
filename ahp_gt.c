@@ -94,6 +94,9 @@ typedef struct {
     int is_aligned;
     int connfd;
     int flipped;
+    int tracking_mode;
+    int threads_running;
+    pthread_t tracking_thread;
 } gt1_info;
 
 const double rates[9] = { 1, 8, 16, 32, 64, 128, 400, 600, 800 };
@@ -197,7 +200,23 @@ static double get_local_hour_angle(double Ra)
     return range_ha(ha);
 }
 
-static void get_alt_az_coordinates(double Ra, double Dec, double* Alt, double *Az)
+double ahp_gt_tracking_sine(double Alt, double Az, double Lat)
+{
+    Alt *= M_PI / 180.0;
+    Az *= M_PI / 180.0;
+    Lat *= M_PI / 180.0;
+    return cos(Lat) * cos(Az) / cos(Alt);
+}
+
+double ahp_gt_tracking_cosine(double Alt, double Az, double Lat)
+{
+    Alt *= M_PI / 180.0;
+    Az *= M_PI / 180.0;
+    Lat *= M_PI / 180.0;
+    return cos(Lat) * sin(Az) / cos(Alt);
+}
+
+void ahp_gt_get_alt_az_coordinates(double Ra, double Dec, double* Alt, double *Az)
 {
     double alt, az;
     double lat, lon, el;
@@ -216,7 +235,7 @@ static void get_alt_az_coordinates(double Ra, double Dec, double* Alt, double *A
     *Az = az;
 }
 
-static void get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *Dec)
+void ahp_gt_get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *Dec)
 {
     double ra, dec, ha;
     double lat, lon, el;
@@ -235,17 +254,17 @@ static void get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *De
     *Dec = dec;
 }
 
-static double get_ha()
+double ahp_gt_get_ha()
 {
     return range_ha(ahp_gt_get_position(0, NULL) * 12.0 / M_PI);
 }
 
-static double get_ra()
+double ahp_gt_get_ra()
 {
-    return range_24(get_lst() - get_ha() - (devices[ahp_gt_get_current_device()].flipped ? 12.0 : 0));
+    return range_24(get_lst() - ahp_gt_get_ha() - (devices[ahp_gt_get_current_device()].flipped ? 12.0 : 0));
 }
 
-static double get_dec()
+double ahp_gt_get_dec()
 {
     double dec = ahp_gt_get_position(1, NULL) * 180.0 / M_PI;
     if(dec > 90.0 && dec < 270.0)
@@ -262,6 +281,29 @@ static int readcmd(char *cmd, int len)
     return n;
 }
 
+static void *track(void* arg) {
+    gt1_info *info = arg;
+    while(info->threads_running) {
+        double alt, az;
+        switch(info->tracking_mode) {
+        case 0:
+            break;
+        case 1:
+            ahp_gt_start_motion(0, 1.0);
+            break;
+        case 2:
+            ahp_gt_get_alt_az_coordinates(ahp_gt_get_ra(), ahp_gt_get_dec(), &alt, &az);
+            ahp_gt_start_motion(0, ahp_gt_tracking_cosine(alt, az, info->lat));
+            ahp_gt_start_motion(1, ahp_gt_tracking_sine(alt, az, info->lat));
+            break;
+        default:
+            break;
+        }
+        usleep(500000);
+    }
+    return NULL;
+}
+
 static int synscan_poll()
 {
     char msg[32];
@@ -269,7 +311,7 @@ static int synscan_poll()
     time_t ts;
     struct tm *now;
     int in_goto;
-    double ha, alt, az, lat, lon, el, ra, dec;
+    double ha = 0.0, alt = 0.0, az = 0.0, lat = 0.0, lon = 0.0, el = 0.0, ra = 0.0, dec = 0.0;
     unsigned int alpha, delta;
     int d, m, s, sign;
     if(ahp_gt_is_connected()) {
@@ -280,26 +322,26 @@ static int synscan_poll()
                 goto err_end;
             switch(cmd[0]) {
             case GetRaDec:
-                delta = get_dec() * 0x8000 / 180.0;
-                alpha = get_ra() * 0x8000 / 12.0;
+                delta = ahp_gt_get_dec() * 0x8000 / 180.0;
+                alpha = ahp_gt_get_ra() * 0x8000 / 12.0;
                 sprintf(msg, "%04X,%04X#", alpha, delta);
                 write(devices[ahp_gt_get_current_device()].connfd, msg, 10);
                 break;
             case GetPreciseRaDec:
-                delta = get_dec() * 0x80000000 / 180.0;
-                alpha = get_ra() * 0x80000000 / 12.0;
+                delta = ahp_gt_get_dec() * 0x80000000 / 180.0;
+                alpha = ahp_gt_get_ra() * 0x80000000 / 12.0;
                 sprintf(msg, "%08X,%08X#", alpha, delta);
                 write(devices[ahp_gt_get_current_device()].connfd, msg, 18);
                 break;
             case GetAzAlt:
-                get_alt_az_coordinates(get_ra(), get_dec(), &alt, &az);
+                ahp_gt_get_alt_az_coordinates(ahp_gt_get_ra(), ahp_gt_get_dec(), &alt, &az);
                 alpha = az * 0x8000 / 12.0;
                 delta = alt * 0x8000 / 180.0;
                 sprintf(msg, "%04X,%04X#", alpha, delta);
                 write(devices[ahp_gt_get_current_device()].connfd, msg, 10);
                 break;
             case GetPreciseAzAlt:
-                get_alt_az_coordinates(get_ra(), get_dec(), &alt, &az);
+                ahp_gt_get_alt_az_coordinates(ahp_gt_get_ra(), ahp_gt_get_dec(), &alt, &az);
                 alpha = az * 0x80000000 / 12.0;
                 delta = alt * 0x80000000 / 180.0;
                 sprintf(msg, "%08X,%08X#", alpha, delta);
@@ -398,16 +440,7 @@ static int synscan_poll()
             case SetTrackingMode:
                 if(readcmd(cmd, 1) < 0)
                     goto err_end;
-                switch(cmd[0]) {
-                case 0:
-                    ahp_gt_stop_motion(0, 0);
-                    break;
-                case 2:
-                    ahp_gt_start_tracking(0);
-                    break;
-                default:
-                    break;
-                }
+                devices[ahp_gt_get_current_device()].tracking_mode = cmd[0];
                 sprintf(msg, "#");
                 write(devices[ahp_gt_get_current_device()].connfd, msg, 1);
                 break;
@@ -816,7 +849,7 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
             devices[ahp_gt_get_current_device()].connfd = accept(sockfd, &client, &len);
             if(devices[ahp_gt_get_current_device()].connfd > -1) {
                 while(!(*interrupt) && !synscan_poll())
-                    usleep(100);
+                    usleep(500000);
                 close(devices[ahp_gt_get_current_device()].connfd);
             }
         }
@@ -928,6 +961,8 @@ int ahp_gt_connect_fd(int fd)
             ahp_gt_get_mc_version();
             if(devices[ahp_gt_get_current_device()].version > 0) {
                 fprintf(stderr, "MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
+                devices[ahp_gt_get_current_device()].threads_running = 1;
+                pthread_create(&devices[ahp_gt_get_current_device()].tracking_thread, NULL, (void*)&devices[ahp_gt_get_current_device()], track);
                 return 0;
             }
         }
@@ -988,7 +1023,15 @@ int ahp_gt_connect(const char* port)
 
 void ahp_gt_disconnect()
 {
+    int addr = 0;
     if(ahp_gt_is_connected()) {
+        for(addr = 0; addr < 128; addr++) {
+            if(ahp_gt_detected[addr]) {
+                ahp_gt_select_device(addr);
+                devices[ahp_gt_get_current_device()].threads_running = 0;
+                pthread_join(devices[ahp_gt_get_current_device()].tracking_thread, NULL);
+            }
+        }
         ahp_serial_CloseComport();
         if(mutexes_initialized) {
             pthread_mutex_unlock(&mutex);
@@ -1460,7 +1503,7 @@ void ahp_gt_goto_altaz(double alt, double az)
     if(ahp_gt_is_connected()) {
         if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
             double ra, dec;
-            get_ra_dec_coordinates(alt, az, &ra, &dec);
+            ahp_gt_get_ra_dec_coordinates(alt, az, &ra, &dec);
             ahp_gt_goto_radec(ra, dec);
         }
     }
@@ -1565,6 +1608,12 @@ void ahp_gt_stop_motion(int axis, int wait) {
         while (ahp_gt_is_axis_moving(axis))
             usleep(100);
     }
+}
+
+void ahp_gt_set_tracking_mode(int mode) {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].tracking_mode = mode;
 }
 
 void ahp_gt_start_tracking(int axis) {
