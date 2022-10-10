@@ -812,6 +812,22 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 */
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 
+/**
+* \brief Move an axis by an offset
+* \param axis The motor to move
+* \param increment The position offset to cover by the specified axis in radians
+* \param speed The radial speed in sidereal rates
+*/
+DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
+
+/**
+* \brief Move an axis to a position
+* \param axis The motor to move
+* \param target The position to reach by the specified axis in radians
+* \param speed The radial speed in sidereal rates
+*/
+DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
+
 /** \defgroup Astronomy Astronomy specific
 *\{*/
 
@@ -863,22 +879,6 @@ DLL_EXPORT void ahp_gt_set_location(double latitude, double longitude, double el
 * \param elevation The elevation on sea level
 */
 DLL_EXPORT void ahp_gt_get_location(double *latitude, double *longitude, double *elevation);
-
-/**
-* \brief Move an axis by an offset
-* \param axis The motor to move
-* \param increment The position offset to cover by the specified axis in radians
-* \param speed The radial speed in sidereal rates
-*/
-DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
-
-/**
-* \brief Move an axis to a position
-* \param axis The motor to move
-* \param target The position to reach by the specified axis in radians
-* \param speed The radial speed in sidereal rates
-*/
-DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
 /**
 * \brief Move both axes to horizontal coordinates
