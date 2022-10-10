@@ -1,11 +1,11 @@
 var searchData=
 [
-  ['microstep_248',['Microstep',['../group___defs.html#ggae8caba8482dcf362ff7660414a946293aaede5b4c6ceee9d6185a19484dfe205e',1,'ahp_gt.h']]],
-  ['mixed_249',['Mixed',['../group___defs.html#ggae8caba8482dcf362ff7660414a946293ab92f302712b561470bfc9be49649f99f',1,'ahp_gt.h']]],
-  ['mode_5fgoto_250',['MODE_GOTO',['../group___defs.html#gga74737858fd3b371d8a4450e5aff54649a85c6d7763b7bd513a0bd1efef7220e0f',1,'ahp_gt.h']]],
-  ['mode_5fgoto_5fhispeed_251',['MODE_GOTO_HISPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016a1cb4a2318e6409747326ab49eb41ea77',1,'ahp_gt.h']]],
-  ['mode_5fgoto_5flospeed_252',['MODE_GOTO_LOSPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016ad772d8b903dd95a1c068f725e8002900',1,'ahp_gt.h']]],
-  ['mode_5fslew_253',['MODE_SLEW',['../group___defs.html#gga74737858fd3b371d8a4450e5aff54649a61183e5750350a5356af37673865aaca',1,'ahp_gt.h']]],
-  ['mode_5fslew_5fhispeed_254',['MODE_SLEW_HISPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016a42f227c84e9cb0cbb5d4441f780836d2',1,'ahp_gt.h']]],
-  ['mode_5fslew_5flospeed_255',['MODE_SLEW_LOSPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016a67f5c7db7a707903946d0f713e4634fb',1,'ahp_gt.h']]]
+  ['halfstep_315',['HalfStep',['../group___defs.html#ggae8caba8482dcf362ff7660414a946293aac702dfb59a2f399da499f6a5b1889cd',1,'ahp_gt.h']]],
+  ['hascommonslewstart_316',['hasCommonSlewStart',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba86916468f5eac90ae27bf8b7d5435a3a',1,'ahp_gt.h']]],
+  ['hasencoder_317',['hasEncoder',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba8c312ca3780c5d8e9b98536b0561ab53',1,'ahp_gt.h']]],
+  ['hashalfcurrenttracking_318',['hasHalfCurrentTracking',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba6f5aa94f15294850a18ad9bfd96c9955',1,'ahp_gt.h']]],
+  ['hashomeindexer_319',['hasHomeIndexer',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebab683f558199f48fce2a3b27102cabf73',1,'ahp_gt.h']]],
+  ['haspolarled_320',['hasPolarLed',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebae7ccb37af40e128ab950aed20cf0ff2c',1,'ahp_gt.h']]],
+  ['hasppec_321',['hasPPEC',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebaa986c10c732410be5ca6ff4e4530ed84',1,'ahp_gt.h']]],
+  ['haswifi_322',['hasWifi',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebaa2a6d5a4b3671105ca1d573473eff9ed',1,'ahp_gt.h']]]
 ];

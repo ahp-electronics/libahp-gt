@@ -63,20 +63,26 @@ $(function() {
 
 <div class="header">
   <div class="summary">
+<a href="#groups">Modules</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">Movement control<div class="ingroups"><a class="el" href="group___g_t___a_p_i.html">AHP® GT Controllers API</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="groups"></a>
+Modules</h2></td></tr>
+<tr class="memitem:group___astronomy"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___astronomy.html">Astronomy specific</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gae4dc8db0bd3937566155df4d99a99875"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT <a class="el" href="struct_skywatcher_axis_status.html">SkywatcherAxisStatus</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#gae4dc8db0bd3937566155df4d99a99875">ahp_gt_get_status</a> (int axis)</td></tr>
 <tr class="memdesc:gae4dc8db0bd3937566155df4d99a99875"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get an axis status.  <a href="group___move.html#gae4dc8db0bd3937566155df4d99a99875">More...</a><br /></td></tr>
 <tr class="separator:gae4dc8db0bd3937566155df4d99a99875"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gabbcfac1e243d79177b6c36e66ad38eb3"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#gabbcfac1e243d79177b6c36e66ad38eb3">ahp_gt_get_position</a> (int axis)</td></tr>
-<tr class="memdesc:gabbcfac1e243d79177b6c36e66ad38eb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the axis position.  <a href="group___move.html#gabbcfac1e243d79177b6c36e66ad38eb3">More...</a><br /></td></tr>
-<tr class="separator:gabbcfac1e243d79177b6c36e66ad38eb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1274f0f170580d923fe8d84a3c44c105"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#ga1274f0f170580d923fe8d84a3c44c105">ahp_gt_get_position</a> (int axis, double *timestamp)</td></tr>
+<tr class="memdesc:ga1274f0f170580d923fe8d84a3c44c105"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the axis position.  <a href="group___move.html#ga1274f0f170580d923fe8d84a3c44c105">More...</a><br /></td></tr>
+<tr class="separator:ga1274f0f170580d923fe8d84a3c44c105"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad6cabea2d8c4afe1b7e5c00d3b7aff63"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#gad6cabea2d8c4afe1b7e5c00d3b7aff63">ahp_gt_set_position</a> (int axis, double value)</td></tr>
 <tr class="memdesc:gad6cabea2d8c4afe1b7e5c00d3b7aff63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the axis position in radians.  <a href="group___move.html#gad6cabea2d8c4afe1b7e5c00d3b7aff63">More...</a><br /></td></tr>
 <tr class="separator:gad6cabea2d8c4afe1b7e5c00d3b7aff63"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -89,20 +95,11 @@ Functions</h2></td></tr>
 <tr class="memitem:ga7d4d1a44984b65790569a633a6489d82"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#ga7d4d1a44984b65790569a633a6489d82">ahp_gt_start_motion</a> (int axis, double speed)</td></tr>
 <tr class="memdesc:ga7d4d1a44984b65790569a633a6489d82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move an axis.  <a href="group___move.html#ga7d4d1a44984b65790569a633a6489d82">More...</a><br /></td></tr>
 <tr class="separator:ga7d4d1a44984b65790569a633a6489d82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga31eec2c7f398c452292e43816d31b33d"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#ga31eec2c7f398c452292e43816d31b33d">ahp_gt_goto_relative</a> (int axis, double increment, double speed)</td></tr>
-<tr class="memdesc:ga31eec2c7f398c452292e43816d31b33d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move an axis by an offset.  <a href="group___move.html#ga31eec2c7f398c452292e43816d31b33d">More...</a><br /></td></tr>
-<tr class="separator:ga31eec2c7f398c452292e43816d31b33d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga277f9001f4b2018e38126729b75d3acd"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#ga277f9001f4b2018e38126729b75d3acd">ahp_gt_goto_absolute</a> (int axis, double target, double speed)</td></tr>
-<tr class="memdesc:ga277f9001f4b2018e38126729b75d3acd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move an axis to a position.  <a href="group___move.html#ga277f9001f4b2018e38126729b75d3acd">More...</a><br /></td></tr>
-<tr class="separator:ga277f9001f4b2018e38126729b75d3acd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6042c8b7d4181b46009307433e8b9572"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___move.html#ga6042c8b7d4181b46009307433e8b9572">ahp_gt_start_tracking</a> (int axis)</td></tr>
-<tr class="memdesc:ga6042c8b7d4181b46009307433e8b9572"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a test tracking motion.  <a href="group___move.html#ga6042c8b7d4181b46009307433e8b9572">More...</a><br /></td></tr>
-<tr class="separator:ga6042c8b7d4181b46009307433e8b9572"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="gabbcfac1e243d79177b6c36e66ad38eb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gabbcfac1e243d79177b6c36e66ad38eb3">&#9670;&nbsp;</a></span>ahp_gt_get_position()</h2>
+<a id="ga1274f0f170580d923fe8d84a3c44c105"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1274f0f170580d923fe8d84a3c44c105">&#9670;&nbsp;</a></span>ahp_gt_get_position()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -111,14 +108,25 @@ Functions</h2></td></tr>
           <td class="memname">DLL_EXPORT double ahp_gt_get_position </td>
           <td>(</td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>axis</em></td><td>)</td>
+          <td class="paramname"><em>axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">double *&#160;</td>
+          <td class="paramname"><em>timestamp</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">axis</td><td>The motor to query </td></tr>
+    <tr><td class="paramname">timestamp</td><td>The timestamp of the response </td></tr>
   </table>
   </dd>
 </dl>
@@ -148,90 +156,6 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The current <a class="el" href="struct_skywatcher_axis_status.html" title="Axis Status.">SkywatcherAxisStatus</a> of this axis </dd></dl>
-
-</div>
-</div>
-<a id="ga277f9001f4b2018e38126729b75d3acd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga277f9001f4b2018e38126729b75d3acd">&#9670;&nbsp;</a></span>ahp_gt_goto_absolute()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">DLL_EXPORT void ahp_gt_goto_absolute </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>axis</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>target</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>speed</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">axis</td><td>The motor to move </td></tr>
-    <tr><td class="paramname">target</td><td>The position to reach by the specified axis in radians </td></tr>
-    <tr><td class="paramname">speed</td><td>The radial speed in sidereal rates </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
-<a id="ga31eec2c7f398c452292e43816d31b33d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga31eec2c7f398c452292e43816d31b33d">&#9670;&nbsp;</a></span>ahp_gt_goto_relative()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">DLL_EXPORT void ahp_gt_goto_relative </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>axis</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>increment</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"><em>speed</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">axis</td><td>The motor to move </td></tr>
-    <tr><td class="paramname">increment</td><td>The position offset to cover by the specified axis in radians </td></tr>
-    <tr><td class="paramname">speed</td><td>The radial speed in sidereal rates </td></tr>
-  </table>
-  </dd>
-</dl>
 
 </div>
 </div>
@@ -330,30 +254,6 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ga6042c8b7d4181b46009307433e8b9572"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga6042c8b7d4181b46009307433e8b9572">&#9670;&nbsp;</a></span>ahp_gt_start_tracking()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">DLL_EXPORT void ahp_gt_start_tracking </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>axis</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">axis</td><td>The motor to move at sidereal speed </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 <a id="ga4a7cb69f55a91be23aa8b4981ab0c447"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga4a7cb69f55a91be23aa8b4981ab0c447">&#9670;&nbsp;</a></span>ahp_gt_stop_motion()</h2>
 
@@ -392,7 +292,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Feb 19 2022 16:57:38 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Oct 10 2022 17:04:52 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

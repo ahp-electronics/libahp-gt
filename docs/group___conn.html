@@ -80,6 +80,9 @@ Functions</h2></td></tr>
 <tr class="memitem:gaf9c805cc7ee97b0071388fafa72d9aee"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#gaf9c805cc7ee97b0071388fafa72d9aee">ahp_gt_connect_fd</a> (int fd)</td></tr>
 <tr class="memdesc:gaf9c805cc7ee97b0071388fafa72d9aee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connect to the GT controller using an existing file descriptor.  <a href="group___conn.html#gaf9c805cc7ee97b0071388fafa72d9aee">More...</a><br /></td></tr>
 <tr class="separator:gaf9c805cc7ee97b0071388fafa72d9aee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9be2b5a443ae6d568c5d09b67f1ed7dd"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#ga9be2b5a443ae6d568c5d09b67f1ed7dd">ahp_gt_connect_udp</a> (const char *address, int port)</td></tr>
+<tr class="memdesc:ga9be2b5a443ae6d568c5d09b67f1ed7dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connect to the GT controller throught an UDP connection.  <a href="group___conn.html#ga9be2b5a443ae6d568c5d09b67f1ed7dd">More...</a><br /></td></tr>
+<tr class="separator:ga9be2b5a443ae6d568c5d09b67f1ed7dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3e4210a78cc0bad57843bb79e9e267f9"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#ga3e4210a78cc0bad57843bb79e9e267f9">ahp_gt_get_fd</a> ()</td></tr>
 <tr class="memdesc:ga3e4210a78cc0bad57843bb79e9e267f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the file descriptor of the port connected to the GT controllers.  <a href="group___conn.html#ga3e4210a78cc0bad57843bb79e9e267f9">More...</a><br /></td></tr>
 <tr class="separator:ga3e4210a78cc0bad57843bb79e9e267f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -87,6 +90,9 @@ Functions</h2></td></tr>
 DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#ga411a1993fbac9f4d0e74779792d1a1c5">ahp_gt_disconnect</a> ()</td></tr>
 <tr class="memdesc:ga411a1993fbac9f4d0e74779792d1a1c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disconnect from the GT controller. <br /></td></tr>
 <tr class="separator:ga411a1993fbac9f4d0e74779792d1a1c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5b9ee6f666189cd9af06f1ac42f63e50"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#ga5b9ee6f666189cd9af06f1ac42f63e50">ahp_gt_set_fd</a> (int fd)</td></tr>
+<tr class="memdesc:ga5b9ee6f666189cd9af06f1ac42f63e50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the file descriptor that links to the controller.  <a href="group___conn.html#ga5b9ee6f666189cd9af06f1ac42f63e50">More...</a><br /></td></tr>
+<tr class="separator:ga5b9ee6f666189cd9af06f1ac42f63e50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf9c012c542d3149fb673c42fb609f995"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___conn.html#gaf9c012c542d3149fb673c42fb609f995">ahp_gt_is_connected</a> ()</td></tr>
 <tr class="memdesc:gaf9c012c542d3149fb673c42fb609f995"><td class="mdescLeft">&#160;</td><td class="mdescRight">Report connection status.  <a href="group___conn.html#gaf9c012c542d3149fb673c42fb609f995">More...</a><br /></td></tr>
 <tr class="separator:gaf9c012c542d3149fb673c42fb609f995"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,6 +155,42 @@ DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el"
 
 </div>
 </div>
+<a id="ga9be2b5a443ae6d568c5d09b67f1ed7dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9be2b5a443ae6d568c5d09b67f1ed7dd">&#9670;&nbsp;</a></span>ahp_gt_connect_udp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_gt_connect_udp </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>address</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>port</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">address</td><td>The ip address of the server </td></tr>
+    <tr><td class="paramname">port</td><td>The port on which the server should connect </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>non-zero on failure </dd></dl>
+
+</div>
+</div>
 <a id="ga3e4210a78cc0bad57843bb79e9e267f9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga3e4210a78cc0bad57843bb79e9e267f9">&#9670;&nbsp;</a></span>ahp_gt_get_fd()</h2>
 
@@ -163,17 +205,13 @@ DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el"
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Get the file descriptor that links to the controller.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">fd</td><td>The serial stream file descriptor </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The serial stream file descriptor</dd>
-<dd>
-The file descriptor </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___conn.html#ga7e8e4895ebb9e33a76581c0f59d61ab2" title="Connect to the GT controller.">ahp_gt_connect</a> </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The serial stream file descriptor </dd></dl>
 
 </div>
 </div>
@@ -268,7 +306,7 @@ The file descriptor </dd></dl>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>non-zero if already detected </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___adr.html#ga3b819cc20e5c4666366188fa283b5750" title="Select a device on a serial bus.">ahp_gt_select_device</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___adr.html#ga52d03e212be6c499e87bced1f36983ea" title="Detect the currently selected device.">ahp_gt_detect_device</a> </dd>
 <dd>
 <a class="el" href="group___adr.html#ga77eda5b5c0411c42a766c3c2b9262b22" title="Obtain the current device selection.">ahp_gt_get_current_device</a> </dd>
 <dd>
@@ -280,10 +318,35 @@ The file descriptor </dd></dl>
 
 </div>
 </div>
+<a id="ga5b9ee6f666189cd9af06f1ac42f63e50"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5b9ee6f666189cd9af06f1ac42f63e50">&#9670;&nbsp;</a></span>ahp_gt_set_fd()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT void ahp_gt_set_fd </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>fd</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">fd</td><td>The file descriptor </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group___conn.html#ga7e8e4895ebb9e33a76581c0f59d61ab2" title="Connect to the GT controller.">ahp_gt_connect</a> </dd></dl>
+
+</div>
+</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Feb 19 2022 16:57:38 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Oct 10 2022 17:04:52 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>

@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['gpioasencoder_220',['GpioAsEncoder',['../group___defs.html#gga64a10002f2ee9b3399bc2805426f504ea7c2fe726c57fa294d9c043b4da876800',1,'ahp_gt.h']]],
-  ['gpioaspulsedrive_221',['GpioAsPulseDrive',['../group___defs.html#gga64a10002f2ee9b3399bc2805426f504ea540d9f4ea055c969e08d9185315015a1',1,'ahp_gt.h']]],
-  ['gpioasst4_222',['GpioAsST4',['../group___defs.html#gga64a10002f2ee9b3399bc2805426f504ea67895cdeb6f92126f2b254f9cbe25839',1,'ahp_gt.h']]],
-  ['gpiounused_223',['GpioUnused',['../group___defs.html#gga64a10002f2ee9b3399bc2805426f504ea18ec04f45a5302c896e83ea038eb3df1',1,'ahp_gt.h']]]
+  ['direction_5fbackward_293',['DIRECTION_BACKWARD',['../group___defs.html#gga0b02665a8679992ab1020923a8b5ea4dacdda804a39b418b888aa8dfcdc7f01b9',1,'ahp_gt.h']]],
+  ['direction_5fforward_294',['DIRECTION_FORWARD',['../group___defs.html#gga0b02665a8679992ab1020923a8b5ea4dadbadcbdea8b3c8deab0b1f0c30f55d0c',1,'ahp_gt.h']]]
 ];

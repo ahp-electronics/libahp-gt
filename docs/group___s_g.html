@@ -137,6 +137,12 @@ Functions</h2></td></tr>
 <tr class="memitem:ga169010b3d1e9e3a1db35d159e3c7835e"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___s_g.html#ga169010b3d1e9e3a1db35d159e3c7835e">ahp_gt_get_speed_limit</a> (int axis)</td></tr>
 <tr class="memdesc:ga169010b3d1e9e3a1db35d159e3c7835e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the speed limit.  <a href="group___s_g.html#ga169010b3d1e9e3a1db35d159e3c7835e">More...</a><br /></td></tr>
 <tr class="separator:ga169010b3d1e9e3a1db35d159e3c7835e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3f730f19b8385234e29613b0cd1db451"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___s_g.html#ga3f730f19b8385234e29613b0cd1db451">ahp_gt_get_timing</a> (int axis)</td></tr>
+<tr class="memdesc:ga3f730f19b8385234e29613b0cd1db451"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the timing value of the axis.  <a href="group___s_g.html#ga3f730f19b8385234e29613b0cd1db451">More...</a><br /></td></tr>
+<tr class="separator:ga3f730f19b8385234e29613b0cd1db451"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga793370bf272f078a4a7b3d69af167327"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___s_g.html#ga793370bf272f078a4a7b3d69af167327">ahp_gt_set_timing</a> (int axis, int value)</td></tr>
+<tr class="memdesc:ga793370bf272f078a4a7b3d69af167327"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the timing value of the axis.  <a href="group___s_g.html#ga793370bf272f078a4a7b3d69af167327">More...</a><br /></td></tr>
+<tr class="separator:ga793370bf272f078a4a7b3d69af167327"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf5c8f294c9a47196221d19e98417724e"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___s_g.html#gaf5c8f294c9a47196221d19e98417724e">ahp_gt_set_mount_type</a> (<a class="el" href="group___defs.html#ga0e72ffa5952ffedc43505758a410db6f">MountType</a> value)</td></tr>
 <tr class="memdesc:gaf5c8f294c9a47196221d19e98417724e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the mount type.  <a href="group___s_g.html#gaf5c8f294c9a47196221d19e98417724e">More...</a><br /></td></tr>
 <tr class="separator:gaf5c8f294c9a47196221d19e98417724e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -647,6 +653,31 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The GT1SteppingMode of the given axis </dd></dl>
+
+</div>
+</div>
+<a id="ga3f730f19b8385234e29613b0cd1db451"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3f730f19b8385234e29613b0cd1db451">&#9670;&nbsp;</a></span>ahp_gt_get_timing()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT double ahp_gt_get_timing </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>axis</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">axis</td><td>The motor to query </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>The timing value </dd></dl>
 
 </div>
 </div>
@@ -1276,6 +1307,41 @@ Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="ga793370bf272f078a4a7b3d69af167327"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga793370bf272f078a4a7b3d69af167327">&#9670;&nbsp;</a></span>ahp_gt_set_timing()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT void ahp_gt_set_timing </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>value</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">axis</td><td>The motor to query </td></tr>
+    <tr><td class="paramname">value</td><td>The timing value </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ga427ad44816c88e81db3dd83c95c7a614"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga427ad44816c88e81db3dd83c95c7a614">&#9670;&nbsp;</a></span>ahp_gt_set_totalsteps()</h2>
 
@@ -1384,7 +1450,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Sat Feb 19 2022 16:57:38 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Mon Oct 10 2022 17:04:52 for AHP® GT Controllers API by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.17
 </small></address>
