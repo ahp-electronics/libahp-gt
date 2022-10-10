@@ -408,14 +408,6 @@ DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 */
 DLL_EXPORT int ahp_gt_get_mc_version(void);
 
-/**
-* \brief Start an UDP server on the given port and stop after interrupt equals to 1
-* \param port The UDP port of the server
-* \param interrupt Stop when interrupt is non-zero - passed by reference
-* \return non-zero on failure
-*/
-DLL_EXPORT int ahp_gt_start_synscan_server(int port, int *interrupt);
-
 /**\}
  * \defgroup SG Parametrization
  * \{*/
@@ -778,47 +770,6 @@ DLL_EXPORT void ahp_gt_read_values(int axis);
 * \{*/
 
 /**
-* \brief Set the alignment state of the current device
-* \param aligned 1 if aligned, 0 if not yet aligned
-* \return non-zero on failure
-*/
-DLL_EXPORT void ahp_gt_set_aligned(int aligned);
-
-/**
-* \brief Get the alignment state of the current device
-* \return 1 if aligned, 0 if not yet aligned
-*/
-DLL_EXPORT int ahp_gt_is_aligned();
-
-/**
-* \brief Set current time
-* \param seconds Current time
-*/
-DLL_EXPORT void ahp_gt_set_time(double seconds);
-
-/**
-* \brief Get current time
-* \return Current time
-*/
-DLL_EXPORT double ahp_gt_get_time();
-
-/**
-* \brief Set geographic coordinates
-* \param latitude The latitude coordinate in degrees
-* \param longitude The longitude coordinate in degrees
-* \param elevation The elevation on sea level
-*/
-DLL_EXPORT void ahp_gt_set_location(double latitude, double longitude, double elevation);
-
-/**
-* \brief Get geographic coordinates
-* \param latitude The latitude coordinate in degrees
-* \param longitude The longitude coordinate in degrees
-* \param elevation The elevation on sea level
-*/
-DLL_EXPORT void ahp_gt_get_location(double *latitude, double *longitude, double *elevation);
-
-/**
 * \brief Get an axis status
 * \param axis The motor to query
 * \return The current SkywatcherAxisStatus of this axis
@@ -861,14 +812,80 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 */
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 
+/** \defgroup Astronomy Astronomy specific
+*\{*/
+
 /**
-* \brief Get current altitude and azimuth
-* \param Ra Right ascension
-* \param Dec Declination
-* \param Alt Altitude filled by reference
-* \param Az Azimuth filled by reference
+* \brief Start an TCP server on the given port and stop after interrupt equals to 1
+* \param port The TCP port of the server
+* \param interrupt Stop when interrupt is non-zero - passed by reference
+* \return non-zero on failure
 */
-DLL_EXPORT void ahp_gt_get_alt_az_coordinates(double Ra, double Dec, double* Alt, double *Az);
+DLL_EXPORT int ahp_gt_start_synscan_server(int port, int *interrupt);
+
+/**
+* \brief Set the alignment state of the current device
+* \param aligned 1 if aligned, 0 if not yet aligned
+* \return non-zero on failure
+*/
+DLL_EXPORT void ahp_gt_set_aligned(int aligned);
+
+/**
+* \brief Get the alignment state of the current device
+* \return 1 if aligned, 0 if not yet aligned
+*/
+DLL_EXPORT int ahp_gt_is_aligned();
+
+/**
+* \brief Set current time
+* \param seconds Current time
+*/
+DLL_EXPORT void ahp_gt_set_time(double seconds);
+
+/**
+* \brief Get current time
+* \return Current time
+*/
+DLL_EXPORT double ahp_gt_get_time();
+
+/**
+* \brief Set geographic coordinates
+* \param latitude The latitude coordinate in degrees
+* \param longitude The longitude coordinate in degrees
+* \param elevation The elevation on sea level
+*/
+DLL_EXPORT void ahp_gt_set_location(double latitude, double longitude, double elevation);
+
+/**
+* \brief Get geographic coordinates
+* \param latitude The latitude coordinate in degrees
+* \param longitude The longitude coordinate in degrees
+* \param elevation The elevation on sea level
+*/
+DLL_EXPORT void ahp_gt_get_location(double *latitude, double *longitude, double *elevation);
+
+/**
+* \brief Move an axis by an offset
+* \param axis The motor to move
+* \param increment The position offset to cover by the specified axis in radians
+* \param speed The radial speed in sidereal rates
+*/
+DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
+
+/**
+* \brief Move an axis to a position
+* \param axis The motor to move
+* \param target The position to reach by the specified axis in radians
+* \param speed The radial speed in sidereal rates
+*/
+DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
+
+/**
+* \brief Move both axes to horizontal coordinates
+* \param alt Altitude in degrees
+* \param az Azimuth in degrees
+*/
+DLL_EXPORT void ahp_gt_goto_altaz(double alt, double az);
 
 /**
 * \brief Get the altitude tracking multiplier for AZ mounts
@@ -889,61 +906,11 @@ DLL_EXPORT double ahp_gt_tracking_sine(double Alt, double Az, double Lat);
 DLL_EXPORT double ahp_gt_tracking_cosine(double Alt, double Az, double Lat);
 
 /**
-* \brief Get the azimuth tracking multiplier for AZ mounts
-* \param Alt Altitude
-* \param Az Azimuth
-* \param Ra Right ascension filled by reference
-* \param Dec Declination filled by reference
-*/
-DLL_EXPORT void ahp_gt_get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *Dec);
-
-/**
-* \brief Get the current hour angle
-* \return The current hour angle
-*/
-DLL_EXPORT double ahp_gt_get_ha();
-
-/**
-* \brief Get the current right ascension
-* \return The current right ascension
-*/
-DLL_EXPORT double ahp_gt_get_ra();
-
-/**
-* \brief Get the current declination
-* \return The current declination
-*/
-DLL_EXPORT double ahp_gt_get_dec();
-
-/**
-* \brief Move both axes to horizontal coordinates
-* \param alt Altitude in degrees
-* \param az Azimuth in degrees
-*/
-DLL_EXPORT void ahp_gt_goto_altaz(double alt, double az);
-
-/**
 * \brief Move both axes to celestial coordinates
 * \param ra Right ascension in hours
 * \param dec Declination in degrees
 */
 DLL_EXPORT void ahp_gt_goto_radec(double ra, double dec);
-
-/**
-* \brief Move an axis by an offset
-* \param axis The motor to move
-* \param increment The position offset to cover by the specified axis in radians
-* \param speed The radial speed in sidereal rates
-*/
-DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
-
-/**
-* \brief Move an axis to a position
-* \param axis The motor to move
-* \param target The position to reach by the specified axis in radians
-* \param speed The radial speed in sidereal rates
-*/
-DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
 /**
 * \brief Start a tracking motion correction
@@ -965,10 +932,48 @@ DLL_EXPORT void ahp_gt_set_tracking_mode(int mode);
 */
 DLL_EXPORT void ahp_gt_start_tracking(int axis);
 
+/**
+* \brief Get the azimuth tracking multiplier for AZ mounts
+* \param Alt Altitude
+* \param Az Azimuth
+* \param Ra Right ascension filled by reference
+* \param Dec Declination filled by reference
+*/
+DLL_EXPORT void ahp_gt_get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *Dec);
+
+/**
+* \brief Get current altitude and azimuth
+* \param Ra Right ascension
+* \param Dec Declination
+* \param Alt Altitude filled by reference
+* \param Az Azimuth filled by reference
+*/
+DLL_EXPORT void ahp_gt_get_alt_az_coordinates(double Ra, double Dec, double* Alt, double *Az);
+
+/**
+* \brief Get the current hour angle
+* \return The current hour angle
+*/
+DLL_EXPORT double ahp_gt_get_ha();
+
+/**
+* \brief Get the current right ascension
+* \return The current right ascension
+*/
+DLL_EXPORT double ahp_gt_get_ra();
+
+/**
+* \brief Get the current declination
+* \return The current declination
+*/
+DLL_EXPORT double ahp_gt_get_dec();
+
+/**\}
+ * \}
+ * \}*/
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
 
-/**\}
- * \}*/
 #endif //_AHP_GT_H
