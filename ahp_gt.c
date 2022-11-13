@@ -1469,18 +1469,24 @@ double ahp_gt_get_position(int axis, double *timestamp)
 
 void ahp_gt_set_time(double tm)
 {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
     double t = get_timestamp();
     devices[ahp_gt_get_current_device()].time_offset = tm - t;
 }
 
 double ahp_gt_get_time()
 {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return 0.0;
     double t = get_timestamp();
     return devices[ahp_gt_get_current_device()].time_offset + t;
 }
 
 void ahp_gt_set_location(double latitude, double longitude, double elevation)
 {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
     devices[ahp_gt_get_current_device()].lat = latitude;
     devices[ahp_gt_get_current_device()].lon = longitude;
     devices[ahp_gt_get_current_device()].el = elevation;
@@ -1488,6 +1494,8 @@ void ahp_gt_set_location(double latitude, double longitude, double elevation)
 
 void ahp_gt_get_location(double *latitude, double *longitude, double *elevation)
 {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
     *latitude = devices[ahp_gt_get_current_device()].lat;
     *longitude = devices[ahp_gt_get_current_device()].lon;
     *elevation = devices[ahp_gt_get_current_device()].el;
@@ -1502,13 +1510,11 @@ int ahp_gt_is_axis_moving(int axis)
 
 void ahp_gt_goto_altaz(double alt, double az)
 {
-    if(ahp_gt_is_connected()) {
-        if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
-            double ra, dec;
-            ahp_gt_get_ra_dec_coordinates(alt, az, &ra, &dec);
-            ahp_gt_goto_radec(ra, dec);
-        }
-    }
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    double ra, dec;
+    ahp_gt_get_ra_dec_coordinates(alt, az, &ra, &dec);
+    ahp_gt_goto_radec(ra, dec);
 }
 
 void ahp_gt_goto_radec(double ra, double dec)
