@@ -29,48 +29,6 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-static int ahp_debug = 0;
-static char* ahp_app_name = NULL;
-static FILE *out = NULL;
-static FILE *err = NULL;
-
-void ahp_set_stdout(FILE *f)
-{
-    out = f;
-}
-
-void ahp_set_stderr(FILE *f)
-{
-    err = f;
-}
-
-void ahp_print(int x, char* str)
-{
-    if(x == 0 && out != NULL)
-        fprintf(out, "%s", str);
-    else if(x <= ahp_get_debug_level() && err != NULL)
-        fprintf(err, "%s", str);
-}
-
-void ahp_set_debug_level(int value)
-{
-    ahp_debug = value;
-}
-
-void ahp_set_app_name(char* name)
-{
-    ahp_app_name = name;
-}
-
-int ahp_get_debug_level()
-{
-    return ahp_debug;
-}
-
-char* ahp_get_app_name()
-{
-    return ahp_app_name;
-}
 
 #include "rs232.c"
 

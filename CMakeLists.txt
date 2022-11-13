@@ -19,7 +19,6 @@ set(AHPGT_SOVERSION ${AHP_GT_VERSION_MAJOR})
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
