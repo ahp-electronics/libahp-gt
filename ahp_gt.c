@@ -963,8 +963,6 @@ int ahp_gt_connect_fd(int fd)
             ahp_gt_get_mc_version();
             if(devices[ahp_gt_get_current_device()].version > 0) {
                 pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
-                devices[ahp_gt_get_current_device()].threads_running = 1;
-                pthread_create(&devices[ahp_gt_get_current_device()].tracking_thread, NULL, (void*)&devices[ahp_gt_get_current_device()], track);
                 return 0;
             }
         }
@@ -1616,6 +1614,14 @@ void ahp_gt_stop_motion(int axis, int wait) {
         while (ahp_gt_is_axis_moving(axis))
             usleep(100);
     }
+}
+
+void ahp_gt_start_tracking_thread() {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].threads_running = 1;
+    pthread_create(&devices[ahp_gt_get_current_device()].tracking_thread, NULL, (void*)&devices[ahp_gt_get_current_device()], track);
+
 }
 
 void ahp_gt_set_tracking_mode(int mode) {

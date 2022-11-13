@@ -112,10 +112,6 @@ void ahp_print(int x, char* str)
         fprintf(err, "%s", str);
 }
 
-#define AHP_DEBUG_INFO 0
-#define AHP_DEBUG_ERROR 1
-#define AHP_DEBUG_WARNING 2
-#define AHP_DEBUG_DEBUG 3
 #define pdbg(x, ...) ({ \
 char str[500]; \
 struct timespec ts; \

@@ -78,6 +78,10 @@ extern "C" {
 
 #ifndef AHP_DEBUG
 #define AHP_DEBUG
+#define AHP_DEBUG_INFO 0
+#define AHP_DEBUG_ERROR 1
+#define AHP_DEBUG_WARNING 2
+#define AHP_DEBUG_DEBUG 3
 /**
 * \brief set the debug level
 * \param value the debug level
@@ -957,6 +961,11 @@ DLL_EXPORT void ahp_gt_goto_radec(double ra, double dec);
 * \param interrupt if non-zero stop training before ending this session
 */
 DLL_EXPORT void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt);
+
+/**
+* \brief Start the tracking thread
+*/
+DLL_EXPORT void ahp_gt_start_tracking_thread();
 
 /**
 * \brief Set the tracking mode
