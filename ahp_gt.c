@@ -24,11 +24,55 @@
 */
 
 #include "ahp_gt.h"
-#include "rs232.c"
 #include <pthread.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/time.h>
+
+static int ahp_debug = 0;
+static char* ahp_app_name = NULL;
+static FILE *out = NULL;
+static FILE *err = NULL;
+
+void ahp_set_stdout(FILE *f)
+{
+    out = f;
+}
+
+void ahp_set_stderr(FILE *f)
+{
+    err = f;
+}
+
+void ahp_print(int x, char* str)
+{
+    if(x == 0 && out != NULL)
+        fprintf(out, "%s", str);
+    else if(x <= ahp_get_debug_level() && err != NULL)
+        fprintf(err, "%s", str);
+}
+
+void ahp_set_debug_level(int value)
+{
+    ahp_debug = value;
+}
+
+void ahp_set_app_name(char* name)
+{
+    ahp_app_name = name;
+}
+
+int ahp_get_debug_level()
+{
+    return ahp_debug;
+}
+
+char* ahp_get_app_name()
+{
+    return ahp_app_name;
+}
+
+#include "rs232.c"
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 
@@ -639,7 +683,7 @@ static int read_eqmod()
     // Remove CR
     response[nbytes_read - 1] = '\0';
 
-    fprintf(stderr, "%s\n", response);
+    pwarn("%s\n", response);
 
     switch (response[0])
     {
@@ -688,7 +732,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
             n = 10;
         }
-        fprintf(stderr, "%s\n", command);
+        pgarb("%s\n", command);
 
         ahp_serial_flushRXTX();
         if ((ahp_serial_SendBuf((unsigned char*)command, n)) < n)
@@ -803,11 +847,11 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
     struct sockaddr_in servaddr;
 
     if(*interrupt) {
-        fprintf(stderr, "interrupted call");
+        perr("interrupted call");
         return -1;
     }
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
-        fprintf(stderr, "socket creation failed");
+        perr("socket creation failed");
         return -1;
     }
 
@@ -820,13 +864,13 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
     if ( bind(sockfd, (const struct sockaddr *)&servaddr,
             sizeof(servaddr)) < 0 )
     {
-        fprintf(stderr, "bind failed");
+        perr("bind failed");
         close(sockfd);
         return -1;
     }
 
     if ((listen(sockfd,  SOMAXCONN)) != 0) {
-        fprintf(stderr, "Listen failed...\n");
+        perr("Listen failed...\n");
         close(sockfd);
         return -1;
     }
@@ -960,7 +1004,7 @@ int ahp_gt_connect_fd(int fd)
         if(!ahp_gt_detect_device(ahp_gt_get_current_device())) {
             ahp_gt_get_mc_version();
             if(devices[ahp_gt_get_current_device()].version > 0) {
-                fprintf(stderr, "MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
+                pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                 devices[ahp_gt_get_current_device()].threads_running = 1;
                 pthread_create(&devices[ahp_gt_get_current_device()].tracking_thread, NULL, (void*)&devices[ahp_gt_get_current_device()], track);
                 return 0;
@@ -1011,7 +1055,7 @@ int ahp_gt_connect(const char* port)
             if(!ahp_gt_detect_device()) {
                 ahp_gt_get_mc_version();
                 if(devices[ahp_gt_get_current_device()].version > 0) {
-                    fprintf(stderr, "MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
+                    pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                     return 0;
                 }
             }

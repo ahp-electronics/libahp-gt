@@ -73,7 +73,99 @@ extern "C" {
  * Each section and component is documented for general usage.
 *
 * \{
-* \defgroup Defs Types
+* \defgroup Debug Debug features
+* \{*/
+
+#ifndef AHP_DEBUG
+#define AHP_DEBUG
+/**
+* \brief set the debug level
+* \param value the debug level
+*/
+DLL_EXPORT void ahp_set_debug_level(int value);
+/**
+* \brief get the debug level
+* \return The current debug level
+*/
+DLL_EXPORT int ahp_get_debug_level();
+/**
+* \brief set the application name
+* \param name the application name to be printed on logs
+*/
+DLL_EXPORT void ahp_set_app_name(char* name);
+/**
+* \brief get the application name
+* \return The current application name printed on logs
+*/
+DLL_EXPORT char* ahp_get_app_name();
+/**
+* \brief set the output log stream
+* \param f The FILE stream pointer to set as standard output
+*/
+DLL_EXPORT void ahp_set_stdout(FILE *f);
+/**
+* \brief set the error log stream
+* \param f The FILE stream pointer to set as standard error
+*/
+DLL_EXPORT void ahp_set_stderr(FILE *f);
+
+/**
+* \brief log a message to the error or output streams
+* \param x The log level
+* \param str The string to print
+*/
+DLL_EXPORT void ahp_print(int x, char* str);
+
+#define AHP_DEBUG_INFO 0
+#define AHP_DEBUG_ERROR 1
+#define AHP_DEBUG_WARNING 2
+#define AHP_DEBUG_DEBUG 3
+#define pdbg(x, ...) ({ \
+char str[500]; \
+struct timespec ts; \
+time_t t = time(NULL); \
+struct tm tm = *localtime(&t); \
+clock_gettime(CLOCK_REALTIME, &ts); \
+sprintf(str, "[%04d-%02d-%02dT%02d:%02d:%02d.%03ld ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec/1000000); \
+switch(x) { \
+    case AHP_DEBUG_ERROR: \
+    sprintf(&str[strlen(str)], "ERRO]"); \
+        break; \
+    case AHP_DEBUG_WARNING: \
+    sprintf(&str[strlen(str)], "WARN]"); \
+        break; \
+    case AHP_DEBUG_DEBUG: \
+    sprintf(&str[strlen(str)], "DEBG]"); \
+        break; \
+    default: \
+    sprintf(&str[strlen(str)], "INFO]"); \
+        break; \
+} \
+if(ahp_get_app_name() != NULL) \
+    sprintf(&str[strlen(str)], "[%s]", ahp_get_app_name()); \
+sprintf(&str[strlen(str)], " "); \
+sprintf(&str[strlen(str)], __VA_ARGS__); \
+ahp_print(x, str); \
+})
+#define pinfo(...) pdbg(AHP_DEBUG_INFO, __VA_ARGS__)
+#define perr(...) pdbg(AHP_DEBUG_ERROR, __VA_ARGS__)
+#define pwarn(...) pdbg(AHP_DEBUG_WARNING, __VA_ARGS__)
+#define pgarb(...) pdbg(AHP_DEBUG_DEBUG, __VA_ARGS__)
+#define pfunc pgarb("%s\n", __func__)
+#define start_gettime
+#define end_gettime
+#else
+#define pinfo(...)
+#define perr(...)
+#define pwarn(...)
+#define pgarb(...)
+#define pfunc(...)
+#define start_gettime(...)
+#define end_gettime(...)
+#endif
+
+/** \}
+* \defgroup Types Types
 * \{*/
 
 ///Motor coils phase winding configuration

@@ -202,7 +202,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     ahp_serial_error = tcgetattr(ahp_serial_fd, &ahp_serial_old_port_settings);
     if(ahp_serial_error==-1)
     {
-        fprintf(stderr, "unable to read portsettings \n");
+        perr("unable to read portsettings \n");
         return 1;
     }
     memset(&ahp_serial_new_port_settings, 0, sizeof(ahp_serial_new_port_settings));  /* clear the new struct */
@@ -225,7 +225,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     if(ahp_serial_error==-1)
     {
         tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
-        fprintf(stderr, "unable to adjust portsettings \n");
+        perr("unable to adjust portsettings \n");
         return 1;
     }
 
@@ -234,7 +234,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     if(ioctl(ahp_serial_fd, TIOCMGET, &status) == -1)
     {
         tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
-        fprintf(stderr, "unable to get portstatus\n");
+        perr("unable to get portstatus\n");
         return 1;
     }
 
@@ -244,7 +244,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     if(ioctl(ahp_serial_fd, TIOCMSET, &status) == -1)
     {
         tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
-        fprintf(stderr, "unable to set portstatus\n");
+        perr("unable to set portstatus\n");
         return 1;
     }
 
@@ -310,7 +310,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     case '7': ahp_serial_new_port_settings.ByteSize = DATABITS_7; break;
     case '8': ahp_serial_new_port_settings.ByteSize = DATABITS_8; break;
     default:
-        fprintf(stderr, "invalid byte size\n");
+        perr("invalid byte size\n");
     return 1;
     }
     switch(tolower(ahp_serial_mode[1])) {
@@ -318,14 +318,14 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     case 'o': ahp_serial_new_port_settings.Parity = ODDPARITY; ahp_serial_new_port_settings.fParity = 1; break;
     case 'e': ahp_serial_new_port_settings.Parity = EVENPARITY; ahp_serial_new_port_settings.fParity = 1; break;
     default:
-        fprintf(stderr, "invalid parity\n");
+        perr("invalid parity\n");
     return 1;
     }
     switch(ahp_serial_mode[2]) {
     case '1': ahp_serial_new_port_settings.StopBits = ONESTOPBIT; break;
     case '2': ahp_serial_new_port_settings.StopBits = TWOSTOPBITS; break;
     default:
-        fprintf(stderr, "invalid stop bits\n");
+        perr("invalid stop bits\n");
     return 1;
     }
 
@@ -344,7 +344,7 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
 
     if(!SetCommState(pHandle, &ahp_serial_new_port_settings))
     {
-        fprintf(stderr, "unable to set comport cfg settings\n");
+        perr("unable to set comport cfg settings\n");
         return 1;
     }
 
@@ -409,7 +409,7 @@ static int ahp_serial_OpenComport(const char* devname)
         ahp_serial_fd = open(dev_name, O_RDWR);
 
     if(ahp_serial_fd==-1) {
-        fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
+        perr("unable to open comport: %s\n", strerror(errno));
         return 1;
     }
     if(!ahp_serial_mutexes_initialized) {
