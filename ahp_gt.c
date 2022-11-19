@@ -1326,8 +1326,7 @@ void ahp_gt_set_features(int axis, SkywatcherFeature value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].features[axis] &= ~value;
-    devices[ahp_gt_get_current_device()].features[axis] |= value;
+    devices[ahp_gt_get_current_device()].features[axis] = value;
 }
 
 void ahp_gt_set_feature(int axis, GT1Feature value)
