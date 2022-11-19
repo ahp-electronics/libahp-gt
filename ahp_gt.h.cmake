@@ -955,6 +955,13 @@ DLL_EXPORT double ahp_gt_tracking_cosine(double Alt, double Az, double Lat);
 DLL_EXPORT void ahp_gt_goto_radec(double ra, double dec);
 
 /**
+* \brief Set both axes positions to celestial coordinates
+* \param ra Right ascension in hours
+* \param dec Declination in degrees
+*/
+DLL_EXPORT void ahp_gt_sync_radec(double ra, double dec);
+
+/**
 * \brief Start a tracking motion correction
 * \param axis The motor to tune at sidereal speed
 * \param target_period The target sidereal period
