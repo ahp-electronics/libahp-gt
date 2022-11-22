@@ -999,6 +999,13 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].acceleration [axis] = degrees / ((double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0));
     devices[ahp_gt_get_current_device()].crown [axis] = devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].wormsteps [axis];
     devices[ahp_gt_get_current_device()].worm [axis] = devices[ahp_gt_get_current_device()].wormsteps [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].motor [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
+    double decimals = floor(devices[ahp_gt_get_current_device()].worm [axis]) - devices[ahp_gt_get_current_device()].worm [axis];
+    if(decimals != 0.0) {
+        devices[ahp_gt_get_current_device()].motor [axis] /= decimals;
+        devices[ahp_gt_get_current_device()].worm [axis] /= decimals;
+    }
+    devices[ahp_gt_get_current_device()].motor [axis] = floor(devices[ahp_gt_get_current_device()].motor [axis]);
+    devices[ahp_gt_get_current_device()].worm [axis] = floor(devices[ahp_gt_get_current_device()].worm [axis]);
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     devices[ahp_gt_get_current_device()].maxspeed [axis] = sidereal_period / devices[ahp_gt_get_current_device()].maxspeed_value [axis];
 }
