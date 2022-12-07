@@ -777,6 +777,11 @@ static void optimize_values(int axis)
     double d = 1.0;
     d += fmin(maxdiv, (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / maxsteps);
     devices[ahp_gt_get_current_device()].divider [axis] = floor(d);
+    while(devices[ahp_gt_get_current_device()].divider [axis] > 1 && usteps > 14) {
+        devices[ahp_gt_get_current_device()].divider [axis] --;
+        usteps /= 2;
+        usteps --;
+    }
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
         devices[ahp_gt_get_current_device()].multiplier [axis] += (int)usteps;
