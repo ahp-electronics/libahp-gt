@@ -983,10 +983,9 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].address_value = (devices[ahp_gt_get_current_device()].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].dividers & 1;
 
+    devices[ahp_gt_get_current_device()].motor [axis] = 1;
     if (devices[ahp_gt_get_current_device()].steps [axis] == 0)
         devices[ahp_gt_get_current_device()].steps [axis] = 1;
-    if (devices[ahp_gt_get_current_device()].motor [axis] == 0)
-        devices[ahp_gt_get_current_device()].motor [axis] = 1;
     if (devices[ahp_gt_get_current_device()].wormsteps [axis] == 0)
         devices[ahp_gt_get_current_device()].wormsteps [axis] = 1;
     if (devices[ahp_gt_get_current_device()].totalsteps [axis] == 0)
@@ -998,7 +997,7 @@ void ahp_gt_read_values(int axis)
     double degrees = pow(devices[ahp_gt_get_current_device()].accel_steps [axis] - 1, 2.5) / 2.0;
     devices[ahp_gt_get_current_device()].acceleration [axis] = degrees / ((double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0));
     devices[ahp_gt_get_current_device()].crown [axis] = devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].wormsteps [axis];
-    devices[ahp_gt_get_current_device()].worm [axis] = devices[ahp_gt_get_current_device()].wormsteps [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].motor [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
+    devices[ahp_gt_get_current_device()].worm [axis] = devices[ahp_gt_get_current_device()].wormsteps [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
     double decimals = devices[ahp_gt_get_current_device()].worm [axis] - floor(devices[ahp_gt_get_current_device()].worm [axis]);
     if(decimals != 0.0) {
         devices[ahp_gt_get_current_device()].motor [axis] /= decimals;
@@ -1027,6 +1026,8 @@ int ahp_gt_connect_fd(int fd)
 #endif
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
+        memset(devices, 0, sizeof(gt1_info)*128);
+        memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         if(!ahp_gt_detect_device(ahp_gt_get_current_device())) {
             ahp_gt_get_mc_version();
             if(devices[ahp_gt_get_current_device()].version > 0) {
@@ -1076,6 +1077,8 @@ int ahp_gt_connect(const char* port)
     if(!ahp_serial_OpenComport(port)) {
         if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
             ahp_gt_connected = 1;
+            memset(devices, 0, sizeof(gt1_info)*128);
+            memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
             if(!ahp_gt_detect_device()) {
                 ahp_gt_get_mc_version();
                 if(devices[ahp_gt_get_current_device()].version > 0) {
@@ -1107,6 +1110,8 @@ void ahp_gt_disconnect()
             pthread_mutexattr_destroy(&mutex_attr);
             mutexes_initialized = 0;
         }
+        memset(devices, 0, sizeof(gt1_info)*128);
+        memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         ahp_gt_connected = 0;
     }
 }
@@ -1460,9 +1465,13 @@ int ahp_gt_get_current_device() {
 int ahp_gt_detect_device() {
     if(!ahp_gt_is_connected())
         return -1;
+    int a = 0;
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
     dispatch_command(SetAddress, 0, ahp_gt_current_device);
     if(ahp_gt_get_mc_version() > 0) {
+        for (a = 0; a < num_axes; a++) {
+            devices[ahp_gt_get_current_device()].steps[a] = 200;
+        }
         ahp_gt_read_values(Ra);
         ahp_gt_read_values(Dec);
         ahp_gt_detected[ahp_gt_get_current_device()] = 1;
