@@ -976,9 +976,9 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].features [axis] = dispatch_command(GetVars, offset + 6, -1);
     devices[ahp_gt_get_current_device()].gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0x7;
     devices[ahp_gt_get_current_device()].stepping_mode[axis] = (dispatch_command(GetVars, offset + 7, -1) >> 6) & 0x03;
-    devices[ahp_gt_get_current_device()].pwmfreq = (dispatch_command(GetVars, 7, -1) >> 4) & 0x3;
-    devices[ahp_gt_get_current_device()].pwmfreq |= (dispatch_command(GetVars, 15, -1) >> 2) & 0xc;
-    devices[ahp_gt_get_current_device()].pwmfreq = 15-devices[ahp_gt_get_current_device()].pwmfreq;
+    int pwmfreq = (dispatch_command(GetVars, 7, -1) >> 4) & 0x3;
+    pwmfreq |= (dispatch_command(GetVars, 15, -1) >> 2) & 0xc;
+    devices[ahp_gt_get_current_device()].pwmfreq = 0xf - pwmfreq;
     devices[ahp_gt_get_current_device()].type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
     devices[ahp_gt_get_current_device()].mount_flags = (dispatch_command(GetVars, 7, -1) & 0x8) >> 3;
     devices[ahp_gt_get_current_device()].mount_flags |= (dispatch_command(GetVars, 15, -1) & 0x8) >> 2;
@@ -1251,7 +1251,7 @@ int ahp_gt_get_pwm_frequency()
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return 15-devices[ahp_gt_get_current_device()].pwmfreq;
+    return devices[ahp_gt_get_current_device()].pwmfreq;
 }
 
 int ahp_gt_get_direction_invert(int axis)
@@ -1377,7 +1377,7 @@ void ahp_gt_set_pwm_frequency(int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    value = 15-fmin(0xb, fmax(0, value));
+    value = fmin(0xf, fmax(0, value));
     devices[ahp_gt_get_current_device()].pwmfreq = value;
 }
 
