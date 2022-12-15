@@ -154,6 +154,10 @@ GpioAsPulseDrive       = 0x0003,
 typedef enum {
 ///Fork mount, will avoid meridian flip
 isForkMount = 0x1,
+///Half-current high-speed on RA
+halfCurrentRA = 0x2,
+///Half-current high-speed on Dec
+halfCurrentDec = 0x4,
 } GT1Flags;
 
 ///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only

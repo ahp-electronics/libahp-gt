@@ -891,16 +891,14 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
     while(!(*interrupt)) {
         devices[ahp_gt_get_current_device()].connfd = -1;
         struct sockaddr client;
-        tv.tv_sec = 10;
+        tv.tv_sec = 1;
         tv.tv_usec = 0;
         socklen_t len = sizeof(client);
-        if(select(sockfd+1, &rfds, (fd_set *) 0, (fd_set *) 0, &tv) > 0) {
-            devices[ahp_gt_get_current_device()].connfd = accept(sockfd, &client, &len);
-            if(devices[ahp_gt_get_current_device()].connfd > -1) {
-                while(!(*interrupt) && !synscan_poll())
-                    usleep(500000);
-                close(devices[ahp_gt_get_current_device()].connfd);
-            }
+        devices[ahp_gt_get_current_device()].connfd = accept(sockfd, &client, &len);
+        if(devices[ahp_gt_get_current_device()].connfd > -1) {
+            while(!(*interrupt) && !synscan_poll())
+                usleep(100000);
+            close(devices[ahp_gt_get_current_device()].connfd);
         }
     }
     close(sockfd);
@@ -982,6 +980,8 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
     devices[ahp_gt_get_current_device()].mount_flags = (dispatch_command(GetVars, 7, -1) & 0x8) >> 3;
     devices[ahp_gt_get_current_device()].mount_flags |= (dispatch_command(GetVars, 15, -1) & 0x8) >> 2;
+    devices[ahp_gt_get_current_device()].mount_flags |= (dispatch_command(GetVars, 15, -1) & 0xff0000) >> 14;
+    devices[ahp_gt_get_current_device()].mount_flags &= 0x3ff;
     devices[ahp_gt_get_current_device()].dividers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
     devices[ahp_gt_get_current_device()].dividers |= dispatch_command(GetVars, 15, -1) & 0xff00;
     devices[ahp_gt_get_current_device()].divider[axis] = (devices[ahp_gt_get_current_device()].dividers >> (1+axis*4)) & 0xf;
