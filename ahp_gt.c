@@ -805,24 +805,21 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
 }
 
-int Check(int pos)
+static int Check(int pos, int val)
 {
     int ret = -1;
-    int nchecks = 10;
     int ntries = 10;
-    while (ret < 0 && nchecks-- > 0)
+    while (ntries-- > 0)
     {
-        while (ret < 0 && ntries-- > 0)
-        {
-            ret = dispatch_command(GetVars, pos, -1);
-            if(ret > -1)
-                nchecks = 0;
+        ret = dispatch_command(GetVars, pos, -1);
+        if(ret == val) {
+            return 1;
         }
     }
-    return ret;
+    return 0;
 }
 
-int WriteAndCheck(int axis, int pos, int val)
+static int WriteAndCheck(int axis, int pos, int val)
 {
      int ret = 0;
      int nchecks = 10;
@@ -837,14 +834,15 @@ int WriteAndCheck(int axis, int pos, int val)
                  ret = dispatch_command(SetVars, pos, val) == 0;
                  if (ret>-1)
                  {
-                     ret = Check(pos) == val;
-                     if (ret)
+                     if (Check(pos, val)) {
                          nchecks = 0;
+                         return 1;
+                     }
                  }
              }
          }
      }
-     return ret;
+     return 0;
 }
 
 int ahp_gt_start_synscan_server(int port, int *interrupt)
@@ -909,48 +907,51 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    int i = 0;
     int offset = axis * 8;
     *finished = 0;
+    *percent = axis * 50;
     if (!WriteAndCheck (axis, offset + 0, devices[ahp_gt_get_current_device()].totalsteps [axis])) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 6.25;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 1, devices[ahp_gt_get_current_device()].wormsteps [axis])) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 12.5;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 2, devices[ahp_gt_get_current_device()].maxspeed_value [axis])) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 18.75;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 3, devices[ahp_gt_get_current_device()].guide [axis])) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 25;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 4, devices[ahp_gt_get_current_device()].one_second [axis])) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 32.25;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 5, ((int)devices[ahp_gt_get_current_device()].accel_steps [axis] << 18) | ((int)devices[ahp_gt_get_current_device()].accel_increment [axis] << 10) | (((int)devices[ahp_gt_get_current_device()].multiplier [axis] & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].stepping_conf[axis] & 0x03) << 1) | (devices[ahp_gt_get_current_device()].direction_invert[axis] & 1))) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 38.5;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 6, (int)devices[ahp_gt_get_current_device()].features [axis])) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 44.75;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (axis, offset + 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> axis)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gt1feature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
-    *percent = axis * 50 + 50;
+    *percent = *percent + 6.25;
+    dispatch_command (ReloadVars, axis, -1);
     dispatch_command (ReloadVars, axis, -1);
     *finished = 1;
 }
