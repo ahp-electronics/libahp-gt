@@ -791,7 +791,7 @@ static void optimize_values(int axis)
 
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     devices[ahp_gt_get_current_device()].maxperiod [axis] = (int)sidereal_period;
-    devices[ahp_gt_get_current_device()].speed_limit [axis] = (int)(800);
+    devices[ahp_gt_get_current_device()].speed_limit [axis] = (int)(2000);
     devices[ahp_gt_get_current_device()].minperiod [axis] = 1;
     devices[ahp_gt_get_current_device()].maxspeed [axis] = fmin(devices[ahp_gt_get_current_device()].speed_limit [axis], devices[ahp_gt_get_current_device()].maxspeed [axis]);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
