@@ -703,25 +703,16 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             }
         }
         command[n-1] = '\0';
-        for(i = 0; i < maxtries; i++)
-        {
-            nbytes_read = ahp_serial_RecvBuf((unsigned char*)response, 8);
-            if(nbytes_read > 0) {
-                break;
-            } else {
-                usleep(20000);
+        for(i = 0; c != '\r' && i < maxtries; i++) {
+            if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
+                response[nbytes_read++] = c;
             }
         }
         if (i == maxtries)
         {
             goto ret_err;
         }
-        char *last = strchr(response, '\r');
-        nbytes_read = last - response;
-        if (nbytes_read < 0 || nbytes_read >= 32)
-        {
-            goto ret_err;
-        }
+        // Remove CR
         response[nbytes_read - 1] = '\0';
 
         pwarn("%s\n", response);
