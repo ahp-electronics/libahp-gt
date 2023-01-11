@@ -1081,7 +1081,9 @@ int ahp_gt_connect(const char* port)
     if(ahp_gt_is_connected())
         return 0;
     if(!ahp_serial_OpenComport(port)) {
-        if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
+        int rate = 9600;
+retry:
+        if(!ahp_serial_SetupPort(rate, "8N1", 0)) {
             ahp_gt_connected = 1;
             memset(devices, 0, sizeof(gt1_info)*128);
             memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
@@ -1091,6 +1093,9 @@ int ahp_gt_connect(const char* port)
                     pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                     return 0;
                 }
+            } else if(rate == 9600) {
+                rate = 115200;
+                goto retry;
             }
         }
         ahp_serial_CloseComport();

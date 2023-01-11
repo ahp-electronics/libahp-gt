@@ -158,6 +158,8 @@ isForkMount = 0x1,
 halfCurrentRA = 0x2,
 ///Half-current high-speed on Dec
 halfCurrentDec = 0x4,
+///high Baud Rate 115200
+bauds_115200 = 0x8,
 } GT1Flags;
 
 ///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only
