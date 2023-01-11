@@ -412,7 +412,6 @@ DLL_EXPORT int ahp_gt_connect_udp(const char* address, int port);
 
 /**
 * \brief Return the file descriptor of the port connected to the GT controllers
-* \param fd The serial stream file descriptor
 * \return The serial stream file descriptor
 */
 DLL_EXPORT int ahp_gt_get_fd();
@@ -777,9 +776,8 @@ DLL_EXPORT int ahp_gt_detect_device();
 DLL_EXPORT void ahp_gt_select_device(int address);
 
 /**
-* \brief Obtain the current device selection
-* \param address The address to query on bus
-* \return -1 if no devices with such address, 0 if a device with the given address is present
+* \brief Obtain the current device address
+* \return -1 if no devices were detected at all, or currently selected device address
 */
 DLL_EXPORT int ahp_gt_get_current_device();
 

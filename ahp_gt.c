@@ -661,54 +661,14 @@ static void long2Revu24str(unsigned int n, char *str)
     str[6]        = '\0';
 }
 
-static int read_eqmod()
-{
-    int err_code = 0, nbytes_read = 0;
-    int max_err = 100;
-    // Clear string
-    response[0] = '\0';
-    unsigned char c = 0;
-    usleep(100000);
-    while(c != '\r' && err_code < max_err) {
-        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
-            response[nbytes_read++] = c;
-        } else {
-            err_code++;
-        }
-    }
-    if (err_code == max_err)
-    {
-        return 0;
-    }
-    // Remove CR
-    response[nbytes_read - 1] = '\0';
-
-    pwarn("%s\n", response);
-
-    switch (response[0])
-    {
-        case '=':
-            if(nbytes_read > 2) {
-                if(nbytes_read > 5)
-                    return Revu24str2long(response+1);
-                else
-                    return Highstr2long(response+1);
-            }
-            break;
-        case '!':
-            return -1;
-        default:
-        return -1;
-    }
-
-    return 0;
-}
-
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int maxtries = 10;
-    unsigned char i;
+    int maxtries = 20;
+    int nbytes_read = 0;
+    int i;
+    unsigned char c = 0;
+    memset(response, '0', 32);
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -739,26 +699,54 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         {
             if (i == maxtries-1)
             {
-                ret = -1;
-                break;
-            }
-            else
-            {
-                usleep(100);
-                continue;
+                goto ret_err;
             }
         }
-        usleep(10000);
-
         command[n-1] = '\0';
+        for(i = 0; i < maxtries; i++)
+        {
+            nbytes_read = ahp_serial_RecvBuf((unsigned char*)response, 8);
+            if(nbytes_read > 0) {
+                break;
+            } else {
+                usleep(20000);
+            }
+        }
+        if (i == maxtries)
+        {
+            goto ret_err;
+        }
+        char *last = strchr(response, '\r');
+        nbytes_read = last - response;
+        if (nbytes_read < 0 || nbytes_read >= 32)
+        {
+            goto ret_err;
+        }
+        response[nbytes_read - 1] = '\0';
 
-        ret = read_eqmod();
-        if(ret == -2)
-            continue;
+        pwarn("%s\n", response);
+
+        switch (response[0])
+        {
+            case '=':
+                if(nbytes_read > 2) {
+                    if(nbytes_read > 5)
+                        ret = Revu24str2long(response+1);
+                    else
+                        ret = Highstr2long(response+1);
+                }
+                break;
+            case '!':
+            default:
+            goto ret_err;
+        }
         break;
     }
     pthread_mutex_unlock(&mutex);
     return ret;
+ret_err:
+    pthread_mutex_unlock(&mutex);
+    return -1;
 }
 
 static void optimize_values(int axis)
@@ -907,7 +895,6 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    int i = 0;
     int offset = axis * 8;
     *finished = 0;
     *percent = axis * 50;
@@ -1020,16 +1007,6 @@ int ahp_gt_connect_fd(int fd)
     if(ahp_gt_is_connected())
         return 0;
     if(fd != -1) {
-#ifdef WINDOWS
-        unsigned long non_blocking = 1;
-        ioctlsocket(fd, FIONBIO, &non_blocking);
-#else
-        int flags = fcntl(fd, F_GETFL, 0);
-        if(flags >= 0) {
-            flags = (flags|O_NONBLOCK);
-            fcntl(fd, F_SETFL, flags);
-        }
-#endif
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
         memset(devices, 0, sizeof(gt1_info)*128);
