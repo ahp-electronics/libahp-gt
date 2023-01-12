@@ -661,6 +661,49 @@ static void long2Revu24str(unsigned int n, char *str)
     str[6]        = '\0';
 }
 
+static int read_eqmod()
+{
+    int err_code = 0, nbytes_read = 0;
+    int max_err = 100;
+    // Clear string
+    response[0] = '\0';
+    unsigned char c = 0;
+    while(c != '\r' && err_code < max_err) {
+        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
+            response[nbytes_read++] = c;
+        } else {
+            err_code++;
+            usleep(100);
+        }
+    }
+    if (err_code == max_err)
+    {
+        return 0;
+    }
+    // Remove CR
+    response[nbytes_read - 1] = '\0';
+
+    pwarn("%s\n", response);
+
+    switch (response[0])
+    {
+        case '=':
+            if(nbytes_read > 2) {
+                if(nbytes_read > 5)
+                    return Revu24str2long(response+1);
+                else
+                    return Highstr2long(response+1);
+            }
+            break;
+        case '!':
+            return -1;
+        default:
+        return -1;
+    }
+
+    return 0;
+}
+
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
@@ -703,34 +746,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             }
         }
         command[n-1] = '\0';
-        for(i = 0; c != '\r' && i < maxtries; i++) {
-            if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
-                response[nbytes_read++] = c;
-            }
-        }
-        if (i == maxtries)
-        {
-            goto ret_err;
-        }
-        // Remove CR
-        response[nbytes_read - 1] = '\0';
 
-        pwarn("%s\n", response);
-
-        switch (response[0])
-        {
-            case '=':
-                if(nbytes_read > 2) {
-                    if(nbytes_read > 5)
-                        ret = Revu24str2long(response+1);
-                    else
-                        ret = Highstr2long(response+1);
-                }
-                break;
-            case '!':
-            default:
-            goto ret_err;
-        }
+        ret = read_eqmod();
         break;
     }
     pthread_mutex_unlock(&mutex);
@@ -983,6 +1000,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].crown [axis] = devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].wormsteps [axis];
     devices[ahp_gt_get_current_device()].worm [axis] = devices[ahp_gt_get_current_device()].wormsteps [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
     double decimals = devices[ahp_gt_get_current_device()].worm [axis] - floor(devices[ahp_gt_get_current_device()].worm [axis]);
+    decimals /= floor(devices[ahp_gt_get_current_device()].worm [axis]);
     if(decimals != 0.0) {
         devices[ahp_gt_get_current_device()].motor [axis] /= decimals;
         devices[ahp_gt_get_current_device()].worm [axis] /= decimals;
