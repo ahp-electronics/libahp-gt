@@ -664,7 +664,7 @@ static void long2Revu24str(unsigned int n, char *str)
 static int read_eqmod()
 {
     int err_code = 0, nbytes_read = 0;
-    int max_err = 100;
+    int max_err = 10;
     // Clear string
     response[0] = '\0';
     unsigned char c = 0;
@@ -673,7 +673,7 @@ static int read_eqmod()
             response[nbytes_read++] = c;
         } else {
             err_code++;
-            usleep(100);
+            usleep(10000);
         }
     }
     if (err_code == max_err)
@@ -707,10 +707,8 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int maxtries = 20;
-    int nbytes_read = 0;
+    int maxtries = 5;
     int i;
-    unsigned char c = 0;
     memset(response, '0', 32);
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
@@ -787,7 +785,7 @@ static void optimize_values(int axis)
 
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     devices[ahp_gt_get_current_device()].maxperiod [axis] = (int)sidereal_period;
-    devices[ahp_gt_get_current_device()].speed_limit [axis] = (int)(2000);
+    devices[ahp_gt_get_current_device()].speed_limit [axis] = (int)(500 * SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] / devices[ahp_gt_get_current_device()].totalsteps [axis]);
     devices[ahp_gt_get_current_device()].minperiod [axis] = 1;
     devices[ahp_gt_get_current_device()].maxspeed [axis] = fmin(devices[ahp_gt_get_current_device()].speed_limit [axis], devices[ahp_gt_get_current_device()].maxspeed [axis]);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
@@ -1000,7 +998,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].crown [axis] = devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].wormsteps [axis];
     devices[ahp_gt_get_current_device()].worm [axis] = devices[ahp_gt_get_current_device()].wormsteps [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
     double decimals = devices[ahp_gt_get_current_device()].worm [axis] - floor(devices[ahp_gt_get_current_device()].worm [axis]);
-    decimals /= floor(devices[ahp_gt_get_current_device()].worm [axis]);
+    decimals /= devices[ahp_gt_get_current_device()].worm [axis];
     if(decimals != 0.0) {
         devices[ahp_gt_get_current_device()].motor [axis] /= decimals;
         devices[ahp_gt_get_current_device()].worm [axis] /= decimals;
@@ -1278,8 +1276,7 @@ double ahp_gt_get_max_speed(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
-    double sidereal_speed = SIDEREAL_DAY * ahp_gt_get_multiplier(axis) * ahp_gt_get_wormsteps(axis) / ahp_gt_get_totalsteps(axis);
-    return sidereal_speed / devices[ahp_gt_get_current_device()].maxspeed_value[axis];
+    return devices[ahp_gt_get_current_device()].maxspeed [axis];
 }
 
 double ahp_gt_get_speed_limit(int axis)
