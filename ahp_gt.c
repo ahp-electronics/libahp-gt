@@ -33,6 +33,7 @@
 #include "rs232.c"
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
+#define MAX_STEP_FREQ 500
 
 #ifndef GAMMAJ2000
 ///Right ascension of the meridian at J2000 zero at Greenwich
@@ -777,15 +778,28 @@ static void optimize_values(int axis)
         usteps --;
     }
     devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
-    if(devices[ahp_gt_get_current_device()].stepping_mode[axis] != HalfStep)
+    switch(devices[ahp_gt_get_current_device()].stepping_mode[axis]) {
+    case HalfStep:
+        devices[ahp_gt_get_current_device()].speed_limit [axis] = MAX_STEP_FREQ*256;
+        break;
+    case Microstep:
         devices[ahp_gt_get_current_device()].multiplier [axis] += (int)usteps;
+        devices[ahp_gt_get_current_device()].speed_limit [axis] = MAX_STEP_FREQ/4;
+        break;
+    case Mixed:
+        devices[ahp_gt_get_current_device()].multiplier [axis] += (int)usteps;
+        devices[ahp_gt_get_current_device()].speed_limit [axis] = MAX_STEP_FREQ;
+        break;
+    default:
+        break;
+    }
     devices[ahp_gt_get_current_device()].one_second[axis] = (1500000.0);
     devices[ahp_gt_get_current_device()].wormsteps [axis] *= (double)devices[ahp_gt_get_current_device()].multiplier [axis] / (double)devices[ahp_gt_get_current_device()].divider [axis];
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
 
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     devices[ahp_gt_get_current_device()].maxperiod [axis] = (int)sidereal_period;
-    devices[ahp_gt_get_current_device()].speed_limit [axis] = (int)(500 * SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] / devices[ahp_gt_get_current_device()].totalsteps [axis]);
+    devices[ahp_gt_get_current_device()].speed_limit [axis] *= (SIDEREAL_DAY * (double)devices[ahp_gt_get_current_device()].multiplier[axis] / devices[ahp_gt_get_current_device()].totalsteps [axis]);
     devices[ahp_gt_get_current_device()].minperiod [axis] = 1;
     devices[ahp_gt_get_current_device()].maxspeed [axis] = fmin(devices[ahp_gt_get_current_device()].speed_limit [axis], devices[ahp_gt_get_current_device()].maxspeed [axis]);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
