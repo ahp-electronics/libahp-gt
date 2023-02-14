@@ -100,6 +100,7 @@ typedef struct {
     int will_flip;
     int tracking_mode;
     int threads_running;
+    int baud_rate;
     pthread_t tracking_thread;
 } gt1_info;
 
@@ -665,7 +666,7 @@ static void long2Revu24str(unsigned int n, char *str)
 static int read_eqmod()
 {
     int err_code = 0, nbytes_read = 0;
-    int max_err = 10;
+    int max_err = 30;
     // Clear string
     response[0] = '\0';
     unsigned char c = 0;
@@ -674,7 +675,7 @@ static int read_eqmod()
             response[nbytes_read++] = c;
         } else {
             err_code++;
-            usleep(10000);
+            usleep(10000000/devices[ahp_gt_get_current_device()].baud_rate);
         }
     }
     if (err_code == max_err)
@@ -708,8 +709,9 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int maxtries = 5;
+    int maxtries = 15;
     int i;
+    int c;
     memset(response, '0', 32);
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
@@ -719,36 +721,33 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     while(pthread_mutex_trylock(&mutex))
         usleep(100);
-    for(i = 0; i < maxtries; i++)
-    {
-        // Clear string
-        command[0] = '\0';
-        char command_arg[28];
-        int n;
-        if (arg < 0) {
-            snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
-            n = 4;
-        } else {
-            arg = (int)fmin((double)0xffffff, arg);
-            long2Revu24str((unsigned int)arg, command_arg);
-            snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
-            n = 10;
-        }
-        pgarb("%s\n", command);
-
-        ahp_serial_flushRXTX();
-        if ((ahp_serial_SendBuf((unsigned char*)command, n)) < n)
-        {
-            if (i == maxtries-1)
-            {
-                goto ret_err;
-            }
-        }
-        command[n-1] = '\0';
-
-        ret = read_eqmod();
-        break;
+    i = maxtries;
+retry:
+    command[0] = '\0';
+    char command_arg[28];
+    int n;
+    if (arg < 0) {
+        snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
+        n = 4;
+    } else {
+        arg = (int)fmin((double)0xffffff, arg);
+        long2Revu24str((unsigned int)arg, command_arg);
+        snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
+        n = 10;
     }
+    pgarb("%s\n", command);
+
+    ahp_serial_flushRXTX();
+    for(c = 0; c < n; c++) {
+        if ((ahp_serial_SendByte((unsigned char)command[c])) < 0)
+            goto retry;
+    }
+    if (--i == 0)
+        goto ret_err;
+
+    command[n-1] = '\0';
+
+    ret = read_eqmod();
     pthread_mutex_unlock(&mutex);
     return ret;
 ret_err:
@@ -977,7 +976,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].accel_steps [axis] = ((tmp >> 18) & 0x3f);
     devices[ahp_gt_get_current_device()].accel_increment [axis] =  (tmp >> 10) & 0xff;
     devices[ahp_gt_get_current_device()].multiplier [axis] = (tmp >> 3) & 0x7f;
-    devices[ahp_gt_get_current_device()].direction_invert [axis] = (tmp >> 2) & 0x1;
+    devices[ahp_gt_get_current_device()].direction_invert [axis] = tmp & 0x1;
     devices[ahp_gt_get_current_device()].stepping_conf [axis] = (tmp & 0x06)>>1;
     devices[ahp_gt_get_current_device()].features [axis] = dispatch_command(GetVars, offset + 6, -1);
     devices[ahp_gt_get_current_device()].gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0x7;
@@ -1012,7 +1011,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].crown [axis] = devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].wormsteps [axis];
     devices[ahp_gt_get_current_device()].worm [axis] = devices[ahp_gt_get_current_device()].wormsteps [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
     double decimals = devices[ahp_gt_get_current_device()].worm [axis] - floor(devices[ahp_gt_get_current_device()].worm [axis]);
-    decimals /= devices[ahp_gt_get_current_device()].worm [axis];
+    decimals /= floor(devices[ahp_gt_get_current_device()].worm [axis]);
     if(decimals != 0.0) {
         devices[ahp_gt_get_current_device()].motor [axis] /= decimals;
         devices[ahp_gt_get_current_device()].worm [axis] /= decimals;
@@ -1079,9 +1078,9 @@ int ahp_gt_connect(const char* port)
     if(ahp_gt_is_connected())
         return 0;
     if(!ahp_serial_OpenComport(port)) {
-        int rate = 9600;
+        devices[ahp_gt_get_current_device()].baud_rate = 9600;
 retry:
-        if(!ahp_serial_SetupPort(rate, "8N1", 0)) {
+        if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
             ahp_gt_connected = 1;
             memset(devices, 0, sizeof(gt1_info)*128);
             memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
@@ -1091,8 +1090,8 @@ retry:
                     pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                     return 0;
                 }
-            } else if(rate == 9600) {
-                rate = 115200;
+            } else if(devices[ahp_gt_get_current_device()].baud_rate == 9600) {
+                devices[ahp_gt_get_current_device()].baud_rate = 115200;
                 goto retry;
             }
         }
@@ -1475,6 +1474,7 @@ int ahp_gt_detect_device() {
         return -1;
     int a = 0;
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
+    devices[ahp_gt_get_current_device()].baud_rate = 9600;
     dispatch_command(SetAddress, 0, ahp_gt_current_device);
     if(ahp_gt_get_mc_version() > 0) {
         for (a = 0; a < num_axes; a++) {
