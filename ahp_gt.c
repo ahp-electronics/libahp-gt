@@ -1498,6 +1498,7 @@ void ahp_gt_set_address(int address)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].address_value = address;
+    optimize_values(0);
 }
 
 int ahp_gt_get_address()
