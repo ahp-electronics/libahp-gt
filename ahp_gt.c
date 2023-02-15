@@ -33,7 +33,7 @@
 #include "rs232.c"
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
-#define MAX_STEP_FREQ 500
+#define MAX_STEP_FREQ 1000
 
 #ifndef GAMMAJ2000
 ///Right ascension of the meridian at J2000 zero at Greenwich
@@ -73,6 +73,7 @@ typedef struct {
     double maxperiod[num_axes];
     double minperiod[num_axes];
     double speed_limit[num_axes];
+    double max_step_frequency[num_axes];
     double acceleration[num_axes];
     double crown[num_axes];
     double steps[num_axes];
@@ -114,7 +115,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
 static unsigned int ahp_gt_detected[128] = { 0 };
-static gt1_info devices[128];
+static gt1_info devices[128] = { 0 };
 static int sockfd;
 
 static double get_timestamp()
@@ -1295,6 +1296,13 @@ double ahp_gt_get_max_speed(int axis)
     return devices[ahp_gt_get_current_device()].maxspeed [axis];
 }
 
+double ahp_gt_get_max_step_frequency(int axis)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return 0.0;
+    return devices[ahp_gt_get_current_device()].max_step_frequency[axis];
+}
+
 double ahp_gt_get_speed_limit(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1436,6 +1444,14 @@ void ahp_gt_set_max_speed(int axis, double value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].maxspeed[axis] = value;
+    optimize_values(axis);
+}
+
+void ahp_gt_set_max_step_frequency(int axis, double value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].max_step_frequency[axis] = value;
     optimize_values(axis);
 }
 
