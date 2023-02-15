@@ -200,17 +200,20 @@ static double calc_flipped_ha(double *ha, double *dec)
     ahp_gt_get_location(&lat, &lon, &el);
     *ha = range_ha(*ha);
     *dec -= 90.0;
-    if (lat >= 0.0 && *ha < 0.0) {
-        flipped = 1;
-            *ha = *ha+12.0;
-        *dec = -*dec;
-    }
-    if (lat < 0.0 && *ha >= 0.0) {
+    if (lat >= 0.0 && *ha > 0.0) {
         flipped = 1;
             *ha = *ha-12.0;
         *dec = -*dec;
     }
-    *dec += 90.0;
+    if (lat < 0.0 && *ha <= 0.0) {
+        flipped = 1;
+            *ha = *ha+12.0;
+        *dec = -*dec;
+    }
+    if (lat < 0.0)
+        *ha -= 6.0;
+    else
+        *ha += 6.0;
     return flipped;
 }
 
