@@ -675,7 +675,7 @@ static int read_eqmod()
             response[nbytes_read++] = c;
         } else {
             err_code++;
-            usleep(10000000/devices[ahp_gt_get_current_device()].baud_rate);
+            usleep(1000);
         }
     }
     if (err_code == max_err)
