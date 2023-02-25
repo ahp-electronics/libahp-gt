@@ -201,20 +201,23 @@ static double calc_flipped_ha(double *ha, double *dec)
     ahp_gt_get_location(&lat, &lon, &el);
     *ha = range_ha(*ha);
     *dec -= 90.0;
-    if (lat >= 0.0 && *ha > 0.0) {
-        flipped = 1;
+    if (lat >= 0.0) {
+        if(*ha > 6.0) {
+            flipped = 1;
             *ha = *ha-12.0;
-        *dec = -*dec;
+        } else {
+            *dec = -*dec;
+        }
     }
-    if (lat < 0.0 && *ha <= 0.0) {
-        flipped = 1;
+    if (lat < 0.0) {
+        if(*ha < 6.0) {
+            flipped = 1;
             *ha = *ha+12.0;
-        *dec = -*dec;
+        } else {
+            *dec = -*dec;
+        }
     }
-    if (lat < 0.0)
-        *ha -= 6.0;
-    else
-        *ha += 6.0;
+    *ha = range_ha(*ha);
     return flipped;
 }
 
@@ -669,10 +672,11 @@ static void long2Revu24str(unsigned int n, char *str)
 
 static int read_eqmod()
 {
+    char * reply;
     int err_code = 0, nbytes_read = 0;
     int max_err = 30;
     // Clear string
-    response[0] = '\0';
+    memset(response, '\0', 32);
     unsigned char c = 0;
     while(c != '\r' && err_code < max_err) {
         if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
@@ -686,19 +690,24 @@ static int read_eqmod()
     {
         return 0;
     }
+    if(!strncmp(command, response, strlen(command))) {
+        reply = &response[strlen(command)];
+        nbytes_read -= strlen(command);
+    } else reply = response;
+
     // Remove CR
-    response[nbytes_read - 1] = '\0';
+    reply[nbytes_read - 1] = '\0';
 
-    pwarn("%s\n", response);
+    pwarn("%s\n", reply);
 
-    switch (response[0])
+    switch (reply[0])
     {
         case '=':
             if(nbytes_read > 2) {
                 if(nbytes_read > 5)
-                    return Revu24str2long(response+1);
+                    return Revu24str2long(reply+1);
                 else
-                    return Highstr2long(response+1);
+                    return Highstr2long(reply+1);
             }
             break;
         case '!':
@@ -748,8 +757,6 @@ retry:
     }
     if (--i == 0)
         goto ret_err;
-
-    command[n-1] = '\0';
 
     ret = read_eqmod();
     pthread_mutex_unlock(&mutex);
@@ -1083,6 +1090,7 @@ int ahp_gt_connect(const char* port)
         return 0;
     if(!ahp_serial_OpenComport(port)) {
         devices[ahp_gt_get_current_device()].baud_rate = 9600;
+        int highspeed = 0;
 retry:
         if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
             ahp_gt_connected = 1;
@@ -1094,8 +1102,9 @@ retry:
                     pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                     return 0;
                 }
-            } else if(devices[ahp_gt_get_current_device()].baud_rate == 9600) {
+            } else if(!highspeed) {
                 devices[ahp_gt_get_current_device()].baud_rate = 115200;
+                highspeed = 1;
                 goto retry;
             }
         }
@@ -1557,7 +1566,7 @@ void ahp_gt_set_position(int axis, double value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    dispatch_command(SetAxisPositionCmd, axis, (int)(value*devices[ahp_gt_get_current_device()].totalsteps[axis]/M_PI/2.0)+0x800000);
+    dispatch_command(SetAxisPositionCmd, axis, (int)((value-M_PI_2)*devices[ahp_gt_get_current_device()].totalsteps[axis]/M_PI/2.0)+0x800000);
 }
 
 double ahp_gt_get_position(int axis, double *timestamp)
@@ -1624,6 +1633,8 @@ void ahp_gt_goto_radec(double ra, double dec)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    dec = range_dec(dec);
+    ra = range_24(ra);
     double ha = get_local_hour_angle(ra);
     if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
         devices[ahp_gt_get_current_device()].will_flip = calc_flipped_ha(&ha, &dec);
