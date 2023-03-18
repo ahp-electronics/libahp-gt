@@ -21,6 +21,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
    )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/99-libahp-gt.rules.cmake ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-gt.rules )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 
@@ -41,5 +42,6 @@ endif(WIN32)
 target_link_libraries(ahp_gt ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
 install(TARGETS ahp_gt LIBRARY DESTINATION ${LIB_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-gt.rules DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FindAHPGT.cmake DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules")
