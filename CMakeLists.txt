@@ -37,11 +37,11 @@ if(WIN32)
     target_link_libraries(ahp_gt ws2_32 setupapi cfgmgr32)
 else(WIN32)
    set_target_properties(ahp_gt PROPERTIES VERSION ${AHPGT_VERSION} SOVERSION ${AHPGT_SOVERSION})
+   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-gt.rules DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 endif(WIN32)
 
 target_link_libraries(ahp_gt ${CMAKE_THREAD_LIBS_INIT} ${M_LIB})
 
 install(TARGETS ahp_gt LIBRARY DESTINATION ${LIB_INSTALL_DIR})
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-gt.rules DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/udev/rules.d)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h DESTINATION ${CMAKE_INSTALL_PREFIX}/include/ahp)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/FindAHPGT.cmake DESTINATION "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}/cmake-${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}/Modules")
