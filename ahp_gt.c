@@ -37,7 +37,7 @@
 
 #ifndef GAMMAJ2000
 ///Right ascension of the meridian at J2000 zero at Greenwich
-#define GAMMAJ2000 18.6971378528
+#define GAMMAJ2000 12.6971378528
 #endif
 #ifndef SIDEREAL_DAY
 #define SIDEREAL_DAY 86164.098903691
@@ -202,7 +202,7 @@ static double calc_flipped_ha(double *ha, double *dec)
     *ha = range_ha(*ha);
     *dec -= 90.0;
     if (lat >= 0.0) {
-        if(*ha > 6.0) {
+        if(*ha < -6.0 || *ha > 6.0) {
             flipped = 1;
             *ha = *ha-12.0;
         } else {
@@ -210,7 +210,7 @@ static double calc_flipped_ha(double *ha, double *dec)
         }
     }
     if (lat < 0.0) {
-        if(*ha < 6.0) {
+        if(*ha > -6.0 && *ha < 6.0) {
             flipped = 1;
             *ha = *ha+12.0;
         } else {
@@ -811,7 +811,6 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].maxperiod [axis] = (int)sidereal_period;
     devices[ahp_gt_get_current_device()].speed_limit [axis] *= (SIDEREAL_DAY * (double)devices[ahp_gt_get_current_device()].multiplier[axis] / devices[ahp_gt_get_current_device()].totalsteps [axis]);
     devices[ahp_gt_get_current_device()].minperiod [axis] = 1;
-    devices[ahp_gt_get_current_device()].maxspeed [axis] = fmin(devices[ahp_gt_get_current_device()].speed_limit [axis], devices[ahp_gt_get_current_device()].maxspeed [axis]);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
     devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
