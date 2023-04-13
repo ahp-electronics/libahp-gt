@@ -36,7 +36,7 @@
 #define MAX_STEP_FREQ 1000
 
 #ifndef GAMMAJ2000
-///Right ascension of the meridian at J2000 zero at Greenwich
+///Right ascension of the sun at J2000 zero from Greenwich
 #define GAMMAJ2000 18.6971378528
 #endif
 #ifndef SIDEREAL_DAY
