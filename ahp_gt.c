@@ -145,7 +145,7 @@ static double time_to_J2000time(time_t tp)
 static double J2000time_to_lst(double secs_since_J2000, double Long)
 {
     Long *= SIDEREAL_24 / 360.0;
-    return fmod(SIDEREAL_24 * secs_since_J2000 / SIDEREAL_DAY + Long + GAMMAJ2000, SIDEREAL_24);
+    return fmod(SIDEREAL_24 * secs_since_J2000 / SIDEREAL_DAY + Long - GAMMAJ2000, SIDEREAL_24);
 }
 
 static double get_lst()
@@ -200,24 +200,24 @@ static double calc_flipped_ha(double *ha, double *dec)
     double lat, lon, el;
     ahp_gt_get_location(&lat, &lon, &el);
     *ha = range_ha(*ha);
-    *dec -= 90.0;
     if (lat >= 0.0) {
-        if(*ha < -6.0 || *ha > 6.0) {
+        if(*ha > 0.0) {
             flipped = 1;
-            *ha = *ha-12.0;
+            *ha = *ha-6.0;
         } else {
+            *ha = *ha+6.0;
             *dec = -*dec;
         }
     }
     if (lat < 0.0) {
-        if(*ha > -6.0 && *ha < 6.0) {
+        if(*ha < 0.0) {
             flipped = 1;
-            *ha = *ha+12.0;
+            *ha = *ha+6.0;
         } else {
+            *ha = *ha-6.0;
             *dec = -*dec;
         }
     }
-    *ha = range_ha(*ha);
     return flipped;
 }
 
@@ -273,9 +273,9 @@ void ahp_gt_get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *De
     dec = asin(cos(Az) * (cos(Alt) * cos(lat)) + sin(Alt) * sin(lat));
     ha = acos((sin(Alt) - sin(dec) * sin(lat)) / (cos(dec) * cos(lat)));
     dec *= 180.0 / M_PI;
-    ha *= 24.0 / M_PI;
     if (sin(ha) > 0.0)
-        ha = 24.0 - ha;
+        ha = M_PI * 2.0 - ha;
+    ha *= 24.0 / M_PI;
     ra = range_24(get_local_hour_angle(ha));
     *Ra = ra;
     *Dec = dec;
@@ -1635,11 +1635,14 @@ void ahp_gt_goto_radec(double ra, double dec)
     dec = range_dec(dec);
     ra = range_24(ra);
     double ha = get_local_hour_angle(ra);
+    dec -= 90.0;
     if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
         devices[ahp_gt_get_current_device()].will_flip = calc_flipped_ha(&ha, &dec);
     } else {
+        ha -= 6.0;
         devices[ahp_gt_get_current_device()].will_flip = 0;
     }
+    ha = range_ha(ha);
     dec *= M_PI / 180.0;
     ha *= M_PI / 12.0;
     ahp_gt_goto_absolute(0, ha, 800.0);
