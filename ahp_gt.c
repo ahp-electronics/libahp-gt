@@ -1623,6 +1623,10 @@ void ahp_gt_goto_altaz(double alt, double az)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    if(ahp_gt_is_axis_moving(0))
+        return;
+    if(ahp_gt_is_axis_moving(1))
+        return;
     double ra, dec;
     ahp_gt_get_ra_dec_coordinates(alt, az, &ra, &dec);
     ahp_gt_goto_radec(ra, dec);
@@ -1631,6 +1635,10 @@ void ahp_gt_goto_altaz(double alt, double az)
 void ahp_gt_goto_radec(double ra, double dec)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    if(ahp_gt_is_axis_moving(0))
+        return;
+    if(ahp_gt_is_axis_moving(1))
         return;
     dec = range_dec(dec);
     ra = range_24(ra);
@@ -1653,12 +1661,17 @@ void ahp_gt_sync_radec(double ra, double dec)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    dec = range_dec(dec);
+    ra = range_24(ra);
     double ha = get_local_hour_angle(ra);
+    dec -= 90.0;
     if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
         devices[ahp_gt_get_current_device()].will_flip = calc_flipped_ha(&ha, &dec);
     } else {
+        ha -= 6.0;
         devices[ahp_gt_get_current_device()].will_flip = 0;
     }
+    ha = range_ha(ha);
     dec *= M_PI / 180.0;
     ha *= M_PI / 12.0;
     ahp_gt_set_position(0, ha);
@@ -1667,6 +1680,8 @@ void ahp_gt_sync_radec(double ra, double dec)
 
 void ahp_gt_goto_absolute(int axis, double target, double speed) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    if(ahp_gt_is_axis_moving(axis))
         return;
     double position = ahp_gt_get_position(axis, NULL);
     speed = fabs(speed);
@@ -1697,6 +1712,8 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
 void ahp_gt_goto_relative(int axis, double increment, double speed) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    if(ahp_gt_is_axis_moving(axis))
+        return;
     speed = fabs(speed);
     speed *= (increment < 0 ? -1 : 1);
     double max = devices[ahp_gt_get_current_device()].totalsteps[axis];
@@ -1722,6 +1739,8 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
 
 void ahp_gt_start_motion(int axis, double speed) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    if(ahp_gt_is_axis_moving(axis))
         return;
     double period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
