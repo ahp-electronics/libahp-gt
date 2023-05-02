@@ -910,6 +910,19 @@ DLL_EXPORT void ahp_gt_set_time(double seconds);
 */
 DLL_EXPORT double ahp_gt_get_time();
 
+
+/**
+* \brief Set current time offset
+* \param seconds Current time offset
+*/
+DLL_EXPORT void ahp_gt_set_time_offset(double offset);
+
+/**
+* \brief Get current time offset
+* \return Current time offset
+*/
+DLL_EXPORT double ahp_gt_get_time_offset();
+
 /**
 * \brief Set geographic coordinates
 * \param latitude The latitude coordinate in degrees

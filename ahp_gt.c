@@ -150,7 +150,7 @@ static double J2000time_to_lst(double secs_since_J2000, double Long)
 
 static double get_lst()
 {
-    double lat, lon, el;
+    double lat = 0.0, lon = 0.0, el = 0.0;
     ahp_gt_get_location(&lat, &lon, &el);
     double lst = fmod(J2000time_to_lst(time_to_J2000time(ahp_gt_get_time()), lon), 24.0);
     return lst;
@@ -174,9 +174,18 @@ static double range_24(double ra)
     return ra;
 }
 
+static double range_180(double deg)
+{
+    if (deg >= 180.0)
+        return (360.0 - deg);
+    if (deg < -180.0)
+        return (deg + 360.0);
+    return deg;
+}
+
 static double range_360(double deg)
 {
-    if ((deg >= 360.0))
+    if (deg >= 360.0)
         return (deg - 360.0);
     if (deg < 0.0)
         return (deg + 360.0);
@@ -194,15 +203,35 @@ double range_dec(double dec)
     return dec;
 }
 
+static double get_flipped_ha(double *ha, double *dec)
+{
+    int flipped = 0;
+    double lat = 0.0, lon = 0.0, el = 0.0;
+    ahp_gt_get_location(&lat, &lon, &el);
+    *ha = range_24(*ha);
+    if (lat >= 0.0) {
+        if(*dec > 0.0) {
+            *ha = *ha-12.0;
+            flipped = 1;
+        }
+    }
+    if (lat < 0.0) {
+        if(*dec < 0.0) {
+            *ha = *ha-12.0;
+            flipped = 1;
+        }
+    }
+    *ha = range_24(*ha);
+    return flipped;
+}
+
 static double calc_flipped_ha(double *ha, double *dec)
 {
     int flipped = 0;
-    double lat, lon, el;
+    double lat = 0.0, lon = 0.0, el = 0.0;
     ahp_gt_get_location(&lat, &lon, &el);
-    *ha = range_ha(*ha);
     if (lat >= 0.0) {
         if(*ha > 0.0) {
-            flipped = 1;
             *ha = *ha-6.0;
         } else {
             *ha = *ha+6.0;
@@ -211,10 +240,9 @@ static double calc_flipped_ha(double *ha, double *dec)
     }
     if (lat < 0.0) {
         if(*ha < 0.0) {
-            flipped = 1;
-            *ha = *ha+6.0;
-        } else {
             *ha = *ha-6.0;
+        } else {
+            *ha = *ha+6.0;
             *dec = -*dec;
         }
     }
@@ -225,6 +253,23 @@ static double get_local_hour_angle(double Ra)
 {
     double ha = (get_lst() - Ra);
     return range_ha(ha);
+}
+
+void radec2rad(double ra, double dec, double *alpha, double *delta, int *flipped)
+{
+    dec = range_dec(dec);
+    ra = range_24(ra);
+    double ha = get_local_hour_angle(ra);
+    dec -= 90.0;
+    if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
+        *flipped = calc_flipped_ha(&ha, &dec);
+    } else {
+        ha -= 6.0;
+        *flipped = 0;
+    }
+    ha = range_ha(ha);
+    *alpha = ha * M_PI / 12.0;
+    *delta = dec * M_PI / 180.0;
 }
 
 double ahp_gt_tracking_sine(double Alt, double Az, double Lat)
@@ -283,8 +328,8 @@ void ahp_gt_get_ra_dec_coordinates(double Alt, double Az, double *Ra, double *De
 
 double ahp_gt_get_ha()
 {
-    double lat, lon, el;
-    double ha = ahp_gt_get_position(0, NULL) * 12.0 / M_PI;
+    double lat = 0.0, lon = 0.0, el = 0.0;
+    double ha = ahp_gt_get_position(0, NULL) * 12.0 / M_PI + 6.0;
     ahp_gt_get_location(&lat, &lon, &el);
     if (lat >= 0.0)
         ha = range_ha(ha);
@@ -295,35 +340,28 @@ double ahp_gt_get_ha()
 
 double ahp_gt_get_ra()
 {
-    double lat, lon, el;
-    ahp_gt_get_location(&lat, &lon, &el);
-    double ra = get_lst() - range_24(ahp_gt_get_ha());
-    if(devices[ahp_gt_get_current_device()].flipped) {
-        if (lat >= 0.0) {
-            ra = get_lst() - range_24(ahp_gt_get_ha()) - 12.0;
-        } else {
-            ra = get_lst() - range_24(ahp_gt_get_ha()) + 12.0;
-        }
+    double ha = ahp_gt_get_ha();
+    double dec = ahp_gt_get_position(1, NULL) * 180.0 / M_PI;
+    if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
+        devices[ahp_gt_get_current_device()].flipped = get_flipped_ha(&ha, &dec);
+    } else {
+        devices[ahp_gt_get_current_device()].flipped = 0;
     }
-    return range_24(ra);
+    return range_24(get_lst() - ha);
 }
 
 double ahp_gt_get_dec()
 {
+    double ha = ahp_gt_get_ha();
     double dec = ahp_gt_get_position(1, NULL) * 180.0 / M_PI;
-    double lat, lon, el;
-    ahp_gt_get_location(&lat, &lon, &el);
-    if(lat >= 0.0) {
-        if(dec > 90.0 && dec < 270.0)
-            devices[ahp_gt_get_current_device()].flipped = 1;
-        else
-            devices[ahp_gt_get_current_device()].flipped = 0;
+    if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
+        double delta = dec;
+        devices[ahp_gt_get_current_device()].flipped = get_flipped_ha(&ha, &delta);
     } else {
-        if(dec < 90.0 || dec >= 270.0)
-            devices[ahp_gt_get_current_device()].flipped = 1;
-        else
-            devices[ahp_gt_get_current_device()].flipped = 0;
+        devices[ahp_gt_get_current_device()].flipped = 0;
     }
+    dec += 90.0;
+    dec = range_dec(dec);
     return dec;
 }
 
@@ -1572,7 +1610,7 @@ double ahp_gt_get_position(int axis, double *timestamp)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    int steps = dispatch_command(GetAxisPosition, axis, -1)-8388608;
+    int steps = dispatch_command(GetAxisPosition, axis, -1)-0x800000;
     if(timestamp != NULL)
         *timestamp = get_timestamp() - 0.008333333;
     return (double)steps*M_PI*2.0/(double)devices[ahp_gt_get_current_device()].totalsteps[axis];
@@ -1594,10 +1632,26 @@ double ahp_gt_get_time()
     return devices[ahp_gt_get_current_device()].time_offset + t;
 }
 
+void ahp_gt_set_time_offset(double offset)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].time_offset = offset;
+}
+
+double ahp_gt_get_time_offset()
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return 0.0;
+    return devices[ahp_gt_get_current_device()].time_offset;
+}
+
 void ahp_gt_set_location(double latitude, double longitude, double elevation)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    longitude = range_360(longitude);
+    latitude = range_dec(latitude);
     devices[ahp_gt_get_current_device()].lat = latitude;
     devices[ahp_gt_get_current_device()].lon = longitude;
     devices[ahp_gt_get_current_device()].el = elevation;
@@ -1640,42 +1694,20 @@ void ahp_gt_goto_radec(double ra, double dec)
         return;
     if(ahp_gt_is_axis_moving(1))
         return;
-    dec = range_dec(dec);
-    ra = range_24(ra);
-    double ha = get_local_hour_angle(ra);
-    dec -= 90.0;
-    if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
-        devices[ahp_gt_get_current_device()].will_flip = calc_flipped_ha(&ha, &dec);
-    } else {
-        ha -= 6.0;
-        devices[ahp_gt_get_current_device()].will_flip = 0;
-    }
-    ha = range_ha(ha);
-    dec *= M_PI / 180.0;
-    ha *= M_PI / 12.0;
-    ahp_gt_goto_absolute(0, ha, 800.0);
-    ahp_gt_goto_absolute(1, dec, 800.0);
+    double alpha, delta;
+    radec2rad(ra, dec, &alpha, &delta, &devices[ahp_gt_get_current_device()].will_flip);
+    ahp_gt_goto_absolute(0, alpha, 800.0);
+    ahp_gt_goto_absolute(1, delta, 800.0);
 }
 
 void ahp_gt_sync_radec(double ra, double dec)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    dec = range_dec(dec);
-    ra = range_24(ra);
-    double ha = get_local_hour_angle(ra);
-    dec -= 90.0;
-    if((ahp_gt_get_mount_flags() & isForkMount) == 0) {
-        devices[ahp_gt_get_current_device()].will_flip = calc_flipped_ha(&ha, &dec);
-    } else {
-        ha -= 6.0;
-        devices[ahp_gt_get_current_device()].will_flip = 0;
-    }
-    ha = range_ha(ha);
-    dec *= M_PI / 180.0;
-    ha *= M_PI / 12.0;
-    ahp_gt_set_position(0, ha);
-    ahp_gt_set_position(1, dec);
+    double alpha, delta;
+    radec2rad(ra, dec, &alpha, &delta, &devices[ahp_gt_get_current_device()].flipped);
+    ahp_gt_set_position(0, alpha);
+    ahp_gt_set_position(1, delta);
 }
 
 void ahp_gt_goto_absolute(int axis, double target, double speed) {
@@ -1687,8 +1719,8 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
     speed = fabs(speed);
     speed *= (target-position < 0 ? -1 : 1);
     double max = devices[ahp_gt_get_current_device()].totalsteps[axis];
-    target /= M_PI*2;
     target *= max;
+    target /= M_PI*2;
     target += (double)0x800000;
     double maxperiod = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     int period = maxperiod * devices[ahp_gt_get_current_device()].multiplier[axis];
