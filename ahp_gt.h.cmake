@@ -992,6 +992,11 @@ DLL_EXPORT void ahp_gt_correct_tracking(int axis, double target_period, int *int
 DLL_EXPORT void ahp_gt_start_tracking_thread();
 
 /**
+* \brief Stop the tracking thread
+*/
+DLL_EXPORT void ahp_gt_stop_tracking_thread();
+
+/**
 * \brief Set the tracking mode
 * \param mode The tracking mode - 0: no tracking 1: EQ mode 2: AZ mode
 */

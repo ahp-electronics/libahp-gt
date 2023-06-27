@@ -1157,8 +1157,7 @@ void ahp_gt_disconnect()
         for(addr = 0; addr < 128; addr++) {
             if(ahp_gt_detected[addr]) {
                 ahp_gt_select_device(addr);
-                devices[ahp_gt_get_current_device()].threads_running = 0;
-                pthread_join(devices[ahp_gt_get_current_device()].tracking_thread, NULL);
+                ahp_gt_stop_tracking_thread();
             }
         }
         ahp_serial_CloseComport();
@@ -1805,7 +1804,15 @@ void ahp_gt_start_tracking_thread() {
         return;
     devices[ahp_gt_get_current_device()].threads_running = 1;
     pthread_create(&devices[ahp_gt_get_current_device()].tracking_thread, NULL, (void*)&devices[ahp_gt_get_current_device()], track);
+}
 
+void ahp_gt_stop_tracking_thread() {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    if(!devices[ahp_gt_get_current_device()].threads_running)
+        return;
+    devices[ahp_gt_get_current_device()].threads_running = 0;
+    pthread_join(devices[ahp_gt_get_current_device()].tracking_thread, NULL);
 }
 
 void ahp_gt_set_tracking_mode(int mode) {
