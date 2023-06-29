@@ -525,13 +525,13 @@ static int synscan_poll()
                 ahp_gt_stop_motion(1, 0);
                 break;
             case GetTrackingMode:
-                sprintf(msg, "%c#", ahp_gt_is_axis_moving(0) * 2);
+                sprintf(msg, "%c#", ahp_gt_get_tracking_mode());
                 write(devices[ahp_gt_get_current_device()].connfd, msg, 2);
                 break;
             case SetTrackingMode:
                 if(readcmd(cmd, 1) < 0)
                     goto err_end;
-                devices[ahp_gt_get_current_device()].tracking_mode = cmd[0];
+                ahp_gt_get_tracking_mode(cmd[0]);
                 sprintf(msg, "#");
                 write(devices[ahp_gt_get_current_device()].connfd, msg, 1);
                 break;
@@ -1819,6 +1819,12 @@ void ahp_gt_set_tracking_mode(int mode) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].tracking_mode = mode;
+}
+
+int ahp_gt_get_tracking_mode() {
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return 0;
+    return devices[ahp_gt_get_current_device()].tracking_mode;
 }
 
 void ahp_gt_start_tracking(int axis) {

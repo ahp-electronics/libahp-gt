@@ -913,7 +913,7 @@ DLL_EXPORT double ahp_gt_get_time();
 
 /**
 * \brief Set current time offset
-* \param seconds Current time offset
+* \param offset Current time offset
 */
 DLL_EXPORT void ahp_gt_set_time_offset(double offset);
 
@@ -1001,6 +1001,12 @@ DLL_EXPORT void ahp_gt_stop_tracking_thread();
 * \param mode The tracking mode - 0: no tracking 1: EQ mode 2: AZ mode
 */
 DLL_EXPORT void ahp_gt_set_tracking_mode(int mode);
+
+/**
+* \brief Get the tracking mode
+* \return The tracking mode - 0: no tracking 1: EQ mode 2: AZ mode
+*/
+DLL_EXPORT int ahp_gt_get_tracking_mode();
 
 /**
 * \brief Start a test tracking motion
