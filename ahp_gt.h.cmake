@@ -186,6 +186,18 @@ hasHalfCurrentTracking = 0x004000,
 hasWifi                = 0x008000,
 } SkywatcherFeature;
 
+typedef enum {
+    START_PPEC_TRAINING_CMD            = 0x00,
+    STOP_PPEC_TRAINING_CMD             = 0x01,
+    TURN_PPEC_ON_CMD                   = 0x02,
+    TURN_PPEC_OFF_CMD                  = 0x03,
+    ENCODER_ON_CMD                     = 0x04,
+    ENCODER_OFF_CMD                    = 0x05,
+    DISABLE_FULL_CURRENT_LOW_SPEED_CMD = 0x0006,
+    ENABLE_FULL_CURRENT_LOW_SPEED_CMD  = 0x0106,
+    RESET_HOME_INDEXER_CMD             = 0x08,
+} SkywatcherSetFeatureCmd;
+
 ///Default Mount types
 typedef enum {
 ///Sky-Watcher EQ6
