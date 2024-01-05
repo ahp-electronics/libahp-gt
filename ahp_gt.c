@@ -1053,13 +1053,16 @@ void ahp_gt_read_values(int axis)
         devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
     if (devices[ahp_gt_get_current_device()].maxspeed_value [axis] == 0)
         devices[ahp_gt_get_current_device()].maxspeed_value [axis] = 1;
+    double motor = 1.0;
     double degrees = pow(devices[ahp_gt_get_current_device()].accel_steps [axis] - 1, 2.5) / 2.0;
     double crown = (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].wormsteps [axis];
     double worm = (double)devices[ahp_gt_get_current_device()].wormsteps [axis] * devices[ahp_gt_get_current_device()].divider [axis] / devices[ahp_gt_get_current_device()].steps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis];
-    double motor = 1.0;
-            devices[ahp_gt_get_current_device()].acceleration [axis] = degrees / ((double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0));
+    devices[ahp_gt_get_current_device()].acceleration [axis] = degrees / ((double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0));
     double decimals = worm - floor(worm);
-    decimals /= floor(worm) + 1;
+    if(decimals >= 1.0)
+        decimals /= floor(worm);
+    else while(decimals > (double)devices[ahp_gt_get_current_device()].wormsteps [axis] / (double)devices[ahp_gt_get_current_device()].totalsteps [axis])
+        decimals /= 2.0;
     if(decimals != 0.0) {
         motor /= decimals;
         worm /= decimals;
