@@ -29,8 +29,8 @@
 #include <fcntl.h>
 #include <sys/time.h>
 
-
 #include "rs232.c"
+
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 #define MAX_STEP_FREQ 1000
@@ -1061,15 +1061,15 @@ void ahp_gt_read_values(int axis)
     double decimals = worm - floor(worm);
     if(decimals >= 1.0)
         decimals /= floor(worm);
-    else while(decimals > (double)devices[ahp_gt_get_current_device()].wormsteps [axis] / (double)devices[ahp_gt_get_current_device()].totalsteps [axis])
-        decimals /= 2.0;
+    else
+        decimals /= floor(motor / worm) / worm;
     if(decimals != 0.0) {
         motor /= decimals;
         worm /= decimals;
     }
     devices[ahp_gt_get_current_device()].crown [axis] = crown;
-    devices[ahp_gt_get_current_device()].motor [axis] = motor;
-    devices[ahp_gt_get_current_device()].worm [axis] = worm;
+    devices[ahp_gt_get_current_device()].motor [axis] = round(motor);
+    devices[ahp_gt_get_current_device()].worm [axis] = round(worm);
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     devices[ahp_gt_get_current_device()].maxspeed [axis] = sidereal_period / devices[ahp_gt_get_current_device()].maxspeed_value [axis];
 }

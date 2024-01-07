@@ -31,6 +31,7 @@
 extern "C" {
 #endif
 #ifdef _WIN32
+#include <winsock2.h>
 #include <windows.h>
 #define DLL_EXPORT __declspec(dllexport)
 #else
