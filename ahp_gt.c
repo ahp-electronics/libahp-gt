@@ -858,15 +858,6 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].address_value &= 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
     devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
-
-    switch(devices[ahp_gt_get_current_device()].stepping_mode[axis]) {
-    case HalfStep:
-    case Microstep:
-        devices[ahp_gt_get_current_device()].multiplier [axis] = 1;
-        break;
-    default:
-        break;
-    }
 }
 
 static int Check(int pos, int val)
