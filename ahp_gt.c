@@ -808,7 +808,7 @@ static void optimize_values(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    double baseclock = 750000;
+    double baseclock = 1500000;
     double usteps = 62.0;
     double maxdiv = 14.0;
     devices[ahp_gt_get_current_device()].wormsteps [axis] = (int)(devices[ahp_gt_get_current_device()].steps [axis] * devices[ahp_gt_get_current_device()].worm [axis] / devices[ahp_gt_get_current_device()].motor [axis]);
