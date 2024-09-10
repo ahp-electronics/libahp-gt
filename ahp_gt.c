@@ -851,7 +851,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
     devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
-    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock+baseclock*(sidereal_period-floor(sidereal_period))/sidereal_period);
+    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock+baseclock*(sidereal_period-floor(sidereal_period))/floor(sidereal_period));
 
     double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
     devices[ahp_gt_get_current_device()].accel_steps [axis] = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
@@ -1867,6 +1867,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     *interrupt = 1;
     ahp_gt_stop_motion(axis, 0);
     one_second *= initial_second;
+    one_second += one_second*((target_period-floor(target_period))/floor(target_period));
     ahp_gt_set_timing(axis, one_second);
     WriteAndCheck (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
     dispatch_command (ReloadVars, axis, -1);
