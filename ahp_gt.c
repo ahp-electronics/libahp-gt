@@ -1866,8 +1866,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     }
     *interrupt = 1;
     ahp_gt_stop_motion(axis, 0);
-    one_second *= initial_second;
-    one_second += one_second*((target_period-floor(target_period))/floor(target_period));
+    one_second = initial_second - initial_second*(one_second-1.0);
     ahp_gt_set_timing(axis, one_second);
     WriteAndCheck (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
     dispatch_command (ReloadVars, axis, -1);
