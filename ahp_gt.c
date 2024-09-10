@@ -851,7 +851,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
     devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
-    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock-baseclock*(sidereal_period-floor(sidereal_period))/sidereal_period);
+    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock+baseclock*(sidereal_period-floor(sidereal_period))/sidereal_period);
 
     double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
     devices[ahp_gt_get_current_device()].accel_steps [axis] = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
