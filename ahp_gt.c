@@ -841,7 +841,7 @@ static void optimize_values(int axis)
     default:
         break;
     }
-    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock);
+    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock-baseclock*(sidereal_period-floor(sidereal_period))/sidereal_period);
     devices[ahp_gt_get_current_device()].wormsteps [axis] *= (double)devices[ahp_gt_get_current_device()].multiplier [axis] / (double)devices[ahp_gt_get_current_device()].divider [axis];
     devices[ahp_gt_get_current_device()].totalsteps [axis] = (int)(devices[ahp_gt_get_current_device()].crown [axis] * devices[ahp_gt_get_current_device()].wormsteps [axis]);
 
