@@ -700,13 +700,6 @@ DLL_EXPORT void ahp_gt_set_divider(int axis, int value);
 DLL_EXPORT void ahp_gt_set_multiplier(int axis, int value);
 
 /**
-* \brief Set the clock value per second in the current configuration
-* \param axis The motor to reconfigure
-* \param value The ticks to obtain a second
-*/
-DLL_EXPORT void ahp_gt_set_clock(int axis, int value);
-
-/**
 * \brief Set the total number of steps
 * \param axis The motor to reconfigure
 * \param value The total number of steps after ahp_gt_write_values
