@@ -390,6 +390,7 @@ double timestamp;
  *\{*/
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
+#define AHP_GT_ONE_SECOND 1500000
 
 /**\}
  * \defgroup Conn Connection
@@ -697,6 +698,13 @@ DLL_EXPORT void ahp_gt_set_divider(int axis, int value);
 * \param value The microsteps each step in high-speed mode after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_multiplier(int axis, int value);
+
+/**
+* \brief Set the clock value per second in the current configuration
+* \param axis The motor to reconfigure
+* \param value The ticks to obtain a second
+*/
+DLL_EXPORT void ahp_gt_set_clock(int axis, int value);
 
 /**
 * \brief Set the total number of steps

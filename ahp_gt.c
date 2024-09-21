@@ -1517,6 +1517,13 @@ void ahp_gt_set_multiplier(int axis, int value)
     devices[ahp_gt_get_current_device()].multiplier[axis] = abs(value);
 }
 
+void ahp_gt_set_clock(int axis, int value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].one_second[axis] = abs(value);
+}
+
 void ahp_gt_set_totalsteps(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
