@@ -808,7 +808,6 @@ static void optimize_values(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    double baseclock = 1500000;
     double usteps = 62.0;
     double maxdiv = 14.0;
     devices[ahp_gt_get_current_device()].wormsteps [axis] = (int)(devices[ahp_gt_get_current_device()].steps [axis] * devices[ahp_gt_get_current_device()].worm [axis] / devices[ahp_gt_get_current_device()].motor [axis]);
@@ -849,9 +848,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].speed_limit [axis] *= (SIDEREAL_DAY * (double)devices[ahp_gt_get_current_device()].multiplier[axis] / devices[ahp_gt_get_current_device()].totalsteps [axis]);
     devices[ahp_gt_get_current_device()].minperiod [axis] = 1;
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = (int)fmax(devices[ahp_gt_get_current_device()].minperiod [axis], (devices[ahp_gt_get_current_device()].maxperiod [axis] / devices[ahp_gt_get_current_device()].maxspeed [axis]));
-    devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].totalsteps [axis]);
-
-    devices[ahp_gt_get_current_device()].one_second[axis] = (baseclock+baseclock*(sidereal_period-floor(sidereal_period))/floor(sidereal_period));
+    devices[ahp_gt_get_current_device()].guide [axis] = (int)(SIDEREAL_DAY * devices[ahp_gt_get_current_device()].one_second[axis] / devices[ahp_gt_get_current_device()].totalsteps [axis]);
 
     double degrees = devices[ahp_gt_get_current_device()].acceleration [axis] * (double)devices[ahp_gt_get_current_device()].totalsteps [axis] / devices[ahp_gt_get_current_device()].multiplier [axis] / (M_PI * 2.0);
     devices[ahp_gt_get_current_device()].accel_steps [axis] = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
