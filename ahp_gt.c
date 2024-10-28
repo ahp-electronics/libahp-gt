@@ -1274,7 +1274,7 @@ double ahp_gt_get_guide_steps(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
-    return devices[ahp_gt_get_current_device()].guide[axis];
+    return devices[ahp_gt_get_current_device()].guide[axis] * M_PI * 2 / SIDEREAL_DAY;
 }
 
 double ahp_gt_get_acceleration_steps(int axis)
@@ -1337,7 +1337,7 @@ double ahp_gt_get_max_speed(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
-    return devices[ahp_gt_get_current_device()].maxspeed [axis];
+    return devices[ahp_gt_get_current_device()].maxspeed [axis] * M_PI * 2 / SIDEREAL_DAY;
 }
 
 double ahp_gt_get_max_step_frequency(int axis)
@@ -1351,7 +1351,7 @@ double ahp_gt_get_speed_limit(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0.0;
-    return devices[ahp_gt_get_current_device()].speed_limit[axis];
+    return devices[ahp_gt_get_current_device()].speed_limit[axis] * M_PI * 2 / SIDEREAL_DAY;
 }
 
 double ahp_gt_get_timing(int axis)
@@ -1426,7 +1426,7 @@ void ahp_gt_set_guide_steps(int axis, double value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].guide[axis] = value;
+    devices[ahp_gt_get_current_device()].guide[axis] = value * SIDEREAL_DAY / M_PI / 2;
     optimize_values(axis);
 }
 
@@ -1487,7 +1487,7 @@ void ahp_gt_set_max_speed(int axis, double value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].maxspeed[axis] = value;
+    devices[ahp_gt_get_current_device()].maxspeed[axis] = value * SIDEREAL_DAY / M_PI / 2;
     optimize_values(axis);
 }
 
@@ -1714,6 +1714,7 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
     if(ahp_gt_is_axis_moving(axis))
         return;
     double position = ahp_gt_get_position(axis, NULL);
+    speed *= SIDEREAL_DAY / M_PI / 2;
     speed = fabs(speed);
     speed *= (target-position < 0 ? -1 : 1);
     double max = devices[ahp_gt_get_current_device()].totalsteps[axis];
@@ -1744,6 +1745,7 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
         return;
     if(ahp_gt_is_axis_moving(axis))
         return;
+    speed *= SIDEREAL_DAY / M_PI / 2;
     speed = fabs(speed);
     speed *= (increment < 0 ? -1 : 1);
     double max = devices[ahp_gt_get_current_device()].totalsteps[axis];
@@ -1772,6 +1774,7 @@ void ahp_gt_start_motion(int axis, double speed) {
         return;
     if(ahp_gt_is_axis_moving(axis))
         return;
+    speed *= SIDEREAL_DAY / M_PI / 2;
     double period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].multiplier[axis] * devices[ahp_gt_get_current_device()].wormsteps[axis] / devices[ahp_gt_get_current_device()].totalsteps[axis];
     SkywatcherMotionMode mode = MODE_SLEW_HISPEED;
     if(fabs(speed) < 128.0) {

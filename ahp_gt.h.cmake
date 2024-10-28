@@ -552,7 +552,7 @@ DLL_EXPORT int ahp_gt_get_wormsteps(int axis);
 /**
 * \brief Get the guiding rate
 * \param axis The motor to query
-* \return The current ST4 port guide rate in sidereal speeds
+* \return The current ST4 port guide rate in radians per second
 */
 DLL_EXPORT double ahp_gt_get_guide_steps(int axis);
 
@@ -612,14 +612,14 @@ DLL_EXPORT GT1SteppingMode ahp_gt_get_stepping_mode(int axis);
 /**
 * \brief Get the maximum speed
 * \param axis The motor to query
-* \return The maximum speed in sidereal rates
+* \return The maximum speed in radians per second
 */
 DLL_EXPORT double ahp_gt_get_max_speed(int axis);
 
 /**
 * \brief Get the speed limit
 * \param axis The motor to query
-* \return The speed limit allowed by autoconfiguration, in sidereal rates
+* \return The speed limit allowed by autoconfiguration, in radians per second
 */
 DLL_EXPORT double ahp_gt_get_speed_limit(int axis);
 
@@ -716,7 +716,7 @@ DLL_EXPORT void ahp_gt_set_wormsteps(int axis, int value);
 /**
 * \brief Set the guiding speed
 * \param axis The motor to reconfigure
-* \param value The guiding speed in sidereal rates after ahp_gt_write_values
+* \param value The guiding speed in radians per second after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
 
@@ -769,7 +769,7 @@ DLL_EXPORT void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value);
 /**
 * \brief Set the maximum goto speed
 * \param axis The motor to reconfigure
-* \param value The maximum speed of this axis in sidereal rates after ahp_gt_write_values
+* \param value The maximum speed of this axis in radians per second after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
@@ -868,7 +868,7 @@ DLL_EXPORT void ahp_gt_stop_motion(int axis, int wait);
 /**
 * \brief Move an axis
 * \param axis The motor to move
-* \param speed The radial speed in sidereal rates
+* \param speed The radial speed in radians per second
 */
 DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 
@@ -876,7 +876,7 @@ DLL_EXPORT void ahp_gt_start_motion(int axis, double speed);
 * \brief Move an axis by an offset
 * \param axis The motor to move
 * \param increment The position offset to cover by the specified axis in radians
-* \param speed The radial speed in sidereal rates
+* \param speed The radial speed in radians per second
 */
 DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
 
@@ -884,7 +884,7 @@ DLL_EXPORT void ahp_gt_goto_relative(int axis, double increment, double speed);
 * \brief Move an axis to a position
 * \param axis The motor to move
 * \param target The position to reach by the specified axis in radians
-* \param speed The radial speed in sidereal rates
+* \param speed The radial speed in radians per second
 */
 DLL_EXPORT void ahp_gt_goto_absolute(int axis, double target, double speed);
 
