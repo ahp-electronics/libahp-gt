@@ -1078,7 +1078,7 @@ int ahp_gt_connect_fd(int fd)
         ahp_gt_connected = 1;
         memset(devices, 0, sizeof(gt1_info)*128);
         memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
-        if(!ahp_gt_detect_device(ahp_gt_get_current_device())) {
+        if(!ahp_gt_detect_device()) {
             ahp_gt_get_mc_version();
             if(devices[ahp_gt_get_current_device()].version > 0) {
                 pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
@@ -1553,7 +1553,6 @@ int ahp_gt_detect_device() {
 
 void ahp_gt_select_device(int address) {
     ahp_gt_current_device = address&0x7f;
-    dispatch_command(SetAddress, 0, ahp_gt_current_device);
 }
 
 void ahp_gt_set_address(int address)
