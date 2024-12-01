@@ -52,7 +52,14 @@
 typedef enum {
     Ra = 0,
     Dec = 1,
-    num_axes = 2,
+    Axis3 = 2,
+    Axis4 = 3,
+    Axis5 = 4,
+    Axis6 = 5,
+    Axis7 = 6,
+    Axis8 = 7,
+    Axis9 = 8,
+    num_axes = 9,
 } SkywatcherAxis;
 
 typedef struct {
