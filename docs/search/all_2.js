@@ -1,7 +1,6 @@
 var searchData=
 [
-  ['defines_99',['Defines',['../group___defines.html',1,'']]],
-  ['direction_100',['Direction',['../struct_skywatcher_axis_status.html#a7d7abbbfdf05475f75000a47a7e19732',1,'SkywatcherAxisStatus']]],
-  ['direction_5fbackward_101',['DIRECTION_BACKWARD',['../group___defs.html#gga0b02665a8679992ab1020923a8b5ea4dacdda804a39b418b888aa8dfcdc7f01b9',1,'ahp_gt.h']]],
-  ['direction_5fforward_102',['DIRECTION_FORWARD',['../group___defs.html#gga0b02665a8679992ab1020923a8b5ea4dadbadcbdea8b3c8deab0b1f0c30f55d0c',1,'ahp_gt.h']]]
+  ['cancelgoto_109',['CancelGOTO',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da241de15b1347037daa3b60e110f32881',1,'ahp_gt.h']]],
+  ['configuration_110',['Configuration',['../group___cfg.html',1,'']]],
+  ['connection_111',['Connection',['../group___conn.html',1,'']]]
 ];

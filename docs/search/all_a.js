@@ -1,19 +1,4 @@
 var searchData=
 [
-  ['setlocation_166',['SetLocation',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da05c258ba61e698500948f2890775ed6c',1,'ahp_gt.h']]],
-  ['settime_167',['SetTime',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da6dc57a9b0c84fe305dee09e494bae63b',1,'ahp_gt.h']]],
-  ['settrackingmode_168',['SetTrackingMode',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da3cf4b08d8747c639a176a55386358db4',1,'ahp_gt.h']]],
-  ['skywatcheraxisstatus_169',['SkywatcherAxisStatus',['../struct_skywatcher_axis_status.html',1,'']]],
-  ['skywatcherdirection_170',['SkywatcherDirection',['../group___defs.html#ga0b02665a8679992ab1020923a8b5ea4d',1,'ahp_gt.h']]],
-  ['skywatcherfeature_171',['SkywatcherFeature',['../group___defs.html#ga36c59e018c9e7bf4bd839970a74451eb',1,'ahp_gt.h']]],
-  ['skywatchermotionmode_172',['SkywatcherMotionMode',['../group___defs.html#ga3223e002472c37900cd7e14762b0f016',1,'ahp_gt.h']]],
-  ['skywatcherslewmode_173',['SkywatcherSlewMode',['../group___defs.html#ga74737858fd3b371d8a4450e5aff54649',1,'ahp_gt.h']]],
-  ['skywatcherspeedmode_174',['SkywatcherSpeedMode',['../group___defs.html#ga6abeeb63b8543c6eeeb451539c311e53',1,'ahp_gt.h']]],
-  ['slew_175',['Slew',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da7483c66885225e382a04a288a1430204',1,'ahp_gt.h']]],
-  ['speed_176',['Speed',['../struct_skywatcher_axis_status.html#a34098409f9077ec9a67166ecd760017c',1,'SkywatcherAxisStatus']]],
-  ['speed_5fhigh_177',['SPEED_HIGH',['../group___defs.html#gga6abeeb63b8543c6eeeb451539c311e53ab4be0aa6f7b3712c84e992507498c3aa',1,'ahp_gt.h']]],
-  ['speed_5flow_178',['SPEED_LOW',['../group___defs.html#gga6abeeb63b8543c6eeeb451539c311e53a38ede0326c63ff7cdc527ea3fb771a03',1,'ahp_gt.h']]],
-  ['syncpreciseradec_179',['SyncPreciseRaDec',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da10aa7c867032be0f0a4c2f8e357898af',1,'ahp_gt.h']]],
-  ['syncradec_180',['SyncRaDec',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da7ab483c841666d4639ef0107269309d8',1,'ahp_gt.h']]],
-  ['synscancommand_181',['SynscanCommand',['../group___defs.html#ga9eb24fb88499527f6fc142e673df408d',1,'ahp_gt.h']]]
+  ['running_181',['Running',['../struct_skywatcher_axis_status.html#ada3caad03c98113ac1e7bcdf6d6db6bc',1,'SkywatcherAxisStatus']]]
 ];

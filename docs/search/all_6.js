@@ -1,20 +1,13 @@
 var searchData=
 [
-  ['initialized_135',['Initialized',['../struct_skywatcher_axis_status.html#aa59f1f9db7eaa0171f986d526b9c7165',1,'SkywatcherAxisStatus']]],
-  ['inppec_136',['inPPEC',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba9cce0555fdb3a951867fb9c30f4ccdf4',1,'ahp_gt.h']]],
-  ['inppectraining_137',['inPPECTraining',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebaae0c969f37736f08c9871acb155fcabf',1,'ahp_gt.h']]],
-  ['is114gt_138',['is114GT',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6faaefe7c53f69e24e69ecf9d324477c5dd',1,'ahp_gt.h']]],
-  ['isazeq_139',['isAZEQ',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebabd2376cfcc756bbd963e5f4a9156c908',1,'ahp_gt.h']]],
-  ['isazeq5_140',['isAZEQ5',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa32bc49c3b1ae5bc8f303a4102814cc37',1,'ahp_gt.h']]],
-  ['isazeq6_141',['isAZEQ6',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa3e25c5debadf8a5670fc470247cfd814',1,'ahp_gt.h']]],
-  ['iscustom_142',['isCustom',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa92b864570269d5acbe8f58a626495dde',1,'ahp_gt.h']]],
-  ['isdob_143',['isDOB',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fab9703aa1f0a00bab3091e617a8ee446e',1,'ahp_gt.h']]],
-  ['iseq3_144',['isEQ3',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fac017acd5999f067850eb01087af217e9',1,'ahp_gt.h']]],
-  ['iseq5_145',['isEQ5',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa8be170bd909b9d79167716f99fe17ee5',1,'ahp_gt.h']]],
-  ['iseq6_146',['isEQ6',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fae47c25fcb8d88cbc32c61e702d527613',1,'ahp_gt.h']]],
-  ['iseq8_147',['isEQ8',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa9b2d8ed243a458a1622eba24b3af9342',1,'ahp_gt.h']]],
-  ['isforkmount_148',['isForkMount',['../group___defs.html#ggab2b9995224915d10f7a45822a4eb6e6aad2e450a0b2f4077399e80ad19ae86c0d',1,'ahp_gt.h']]],
-  ['isgt_149',['isGT',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fabb1bcec15b06afb767ff1687ebe070f6',1,'ahp_gt.h']]],
-  ['isheq5_150',['isHEQ5',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa12d40ee564be196917ebe594af6a03f7',1,'ahp_gt.h']]],
-  ['ismf_151',['isMF',['../group___defs.html#gga0e72ffa5952ffedc43505758a410db6fa08aa1ec1029b1b92ec8f292600a11689',1,'ahp_gt.h']]]
+  ['halfcurrentdec_141',['halfCurrentDec',['../group___types.html#ggab2b9995224915d10f7a45822a4eb6e6aa4c4404fe1813eb9170d8757fc2c2a970',1,'ahp_gt.h']]],
+  ['halfcurrentra_142',['halfCurrentRA',['../group___types.html#ggab2b9995224915d10f7a45822a4eb6e6aa2b2f838bc83f5613ab920146fd248954',1,'ahp_gt.h']]],
+  ['halfstep_143',['HalfStep',['../group___types.html#ggae8caba8482dcf362ff7660414a946293aac702dfb59a2f399da499f6a5b1889cd',1,'ahp_gt.h']]],
+  ['hascommonslewstart_144',['hasCommonSlewStart',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451eba86916468f5eac90ae27bf8b7d5435a3a',1,'ahp_gt.h']]],
+  ['hasencoder_145',['hasEncoder',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451eba8c312ca3780c5d8e9b98536b0561ab53',1,'ahp_gt.h']]],
+  ['hashalfcurrenttracking_146',['hasHalfCurrentTracking',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451eba6f5aa94f15294850a18ad9bfd96c9955',1,'ahp_gt.h']]],
+  ['hashomeindexer_147',['hasHomeIndexer',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451ebab683f558199f48fce2a3b27102cabf73',1,'ahp_gt.h']]],
+  ['haspolarled_148',['hasPolarLed',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451ebae7ccb37af40e128ab950aed20cf0ff2c',1,'ahp_gt.h']]],
+  ['hasppec_149',['hasPPEC',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451ebaa986c10c732410be5ca6ff4e4530ed84',1,'ahp_gt.h']]],
+  ['haswifi_150',['hasWifi',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451ebaa2a6d5a4b3671105ca1d573473eff9ed',1,'ahp_gt.h']]]
 ];

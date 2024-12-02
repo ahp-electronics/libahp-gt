@@ -1,15 +1,20 @@
 var searchData=
 [
-  ['multi_2ddevice_20addressing_152',['Multi-device addressing',['../group___adr.html',1,'']]],
-  ['microstep_153',['Microstep',['../group___defs.html#ggae8caba8482dcf362ff7660414a946293aaede5b4c6ceee9d6185a19484dfe205e',1,'ahp_gt.h']]],
-  ['mixed_154',['Mixed',['../group___defs.html#ggae8caba8482dcf362ff7660414a946293ab92f302712b561470bfc9be49649f99f',1,'ahp_gt.h']]],
-  ['mode_155',['Mode',['../struct_skywatcher_axis_status.html#a202f3c1301c3ec92bb4096b141b66e67',1,'SkywatcherAxisStatus']]],
-  ['mode_5fgoto_156',['MODE_GOTO',['../group___defs.html#gga74737858fd3b371d8a4450e5aff54649a85c6d7763b7bd513a0bd1efef7220e0f',1,'ahp_gt.h']]],
-  ['mode_5fgoto_5fhispeed_157',['MODE_GOTO_HISPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016a1cb4a2318e6409747326ab49eb41ea77',1,'ahp_gt.h']]],
-  ['mode_5fgoto_5flospeed_158',['MODE_GOTO_LOSPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016ad772d8b903dd95a1c068f725e8002900',1,'ahp_gt.h']]],
-  ['mode_5fslew_159',['MODE_SLEW',['../group___defs.html#gga74737858fd3b371d8a4450e5aff54649a61183e5750350a5356af37673865aaca',1,'ahp_gt.h']]],
-  ['mode_5fslew_5fhispeed_160',['MODE_SLEW_HISPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016a42f227c84e9cb0cbb5d4441f780836d2',1,'ahp_gt.h']]],
-  ['mode_5fslew_5flospeed_161',['MODE_SLEW_LOSPEED',['../group___defs.html#gga3223e002472c37900cd7e14762b0f016a67f5c7db7a707903946d0f713e4634fb',1,'ahp_gt.h']]],
-  ['mounttype_162',['MountType',['../group___defs.html#ga0e72ffa5952ffedc43505758a410db6f',1,'ahp_gt.h']]],
-  ['movement_20control_163',['Movement control',['../group___move.html',1,'']]]
+  ['initialized_151',['Initialized',['../struct_skywatcher_axis_status.html#aa59f1f9db7eaa0171f986d526b9c7165',1,'SkywatcherAxisStatus']]],
+  ['inppec_152',['inPPEC',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451eba9cce0555fdb3a951867fb9c30f4ccdf4',1,'ahp_gt.h']]],
+  ['inppectraining_153',['inPPECTraining',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451ebaae0c969f37736f08c9871acb155fcabf',1,'ahp_gt.h']]],
+  ['is114gt_154',['is114GT',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6faaefe7c53f69e24e69ecf9d324477c5dd',1,'ahp_gt.h']]],
+  ['isazeq_155',['isAZEQ',['../group___types.html#gga36c59e018c9e7bf4bd839970a74451ebabd2376cfcc756bbd963e5f4a9156c908',1,'ahp_gt.h']]],
+  ['isazeq5_156',['isAZEQ5',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa32bc49c3b1ae5bc8f303a4102814cc37',1,'ahp_gt.h']]],
+  ['isazeq6_157',['isAZEQ6',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa3e25c5debadf8a5670fc470247cfd814',1,'ahp_gt.h']]],
+  ['iscustom_158',['isCustom',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa92b864570269d5acbe8f58a626495dde',1,'ahp_gt.h']]],
+  ['isdob_159',['isDOB',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fab9703aa1f0a00bab3091e617a8ee446e',1,'ahp_gt.h']]],
+  ['iseq3_160',['isEQ3',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fac017acd5999f067850eb01087af217e9',1,'ahp_gt.h']]],
+  ['iseq5_161',['isEQ5',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa8be170bd909b9d79167716f99fe17ee5',1,'ahp_gt.h']]],
+  ['iseq6_162',['isEQ6',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fae47c25fcb8d88cbc32c61e702d527613',1,'ahp_gt.h']]],
+  ['iseq8_163',['isEQ8',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa9b2d8ed243a458a1622eba24b3af9342',1,'ahp_gt.h']]],
+  ['isforkmount_164',['isForkMount',['../group___types.html#ggab2b9995224915d10f7a45822a4eb6e6aad2e450a0b2f4077399e80ad19ae86c0d',1,'ahp_gt.h']]],
+  ['isgt_165',['isGT',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fabb1bcec15b06afb767ff1687ebe070f6',1,'ahp_gt.h']]],
+  ['isheq5_166',['isHEQ5',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa12d40ee564be196917ebe594af6a03f7',1,'ahp_gt.h']]],
+  ['ismf_167',['isMF',['../group___types.html#gga0e72ffa5952ffedc43505758a410db6fa08aa1ec1029b1b92ec8f292600a11689',1,'ahp_gt.h']]]
 ];

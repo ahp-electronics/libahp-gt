@@ -1,11 +1,22 @@
 var searchData=
 [
-  ['halfstep_315',['HalfStep',['../group___defs.html#ggae8caba8482dcf362ff7660414a946293aac702dfb59a2f399da499f6a5b1889cd',1,'ahp_gt.h']]],
-  ['hascommonslewstart_316',['hasCommonSlewStart',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba86916468f5eac90ae27bf8b7d5435a3a',1,'ahp_gt.h']]],
-  ['hasencoder_317',['hasEncoder',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba8c312ca3780c5d8e9b98536b0561ab53',1,'ahp_gt.h']]],
-  ['hashalfcurrenttracking_318',['hasHalfCurrentTracking',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451eba6f5aa94f15294850a18ad9bfd96c9955',1,'ahp_gt.h']]],
-  ['hashomeindexer_319',['hasHomeIndexer',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebab683f558199f48fce2a3b27102cabf73',1,'ahp_gt.h']]],
-  ['haspolarled_320',['hasPolarLed',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebae7ccb37af40e128ab950aed20cf0ff2c',1,'ahp_gt.h']]],
-  ['hasppec_321',['hasPPEC',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebaa986c10c732410be5ca6ff4e4530ed84',1,'ahp_gt.h']]],
-  ['haswifi_322',['hasWifi',['../group___defs.html#gga36c59e018c9e7bf4bd839970a74451ebaa2a6d5a4b3671105ca1d573473eff9ed',1,'ahp_gt.h']]]
+  ['getazalt_325',['GetAzAlt',['../group___types.html#gga9eb24fb88499527f6fc142e673df408dac6f5ff37a7d86029040d27daed19fc3c',1,'ahp_gt.h']]],
+  ['getlocation_326',['GetLocation',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da4926a51e5ccb7f0ec1c02f6ce16ae061',1,'ahp_gt.h']]],
+  ['getmodel_327',['GetModel',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da0f27be7816ac668814cb382c9639f357',1,'ahp_gt.h']]],
+  ['getmountpointingstate_328',['GetMountPointingState',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da899f5f442daf17e1e919930b3e0be3e1',1,'ahp_gt.h']]],
+  ['getpreciseazalt_329',['GetPreciseAzAlt',['../group___types.html#gga9eb24fb88499527f6fc142e673df408dab1804e45082cc591b335abd209c8eaf1',1,'ahp_gt.h']]],
+  ['getpreciseradec_330',['GetPreciseRaDec',['../group___types.html#gga9eb24fb88499527f6fc142e673df408daa6d5180db681c71f10fb0450e6993726',1,'ahp_gt.h']]],
+  ['getradec_331',['GetRaDec',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da56fb313b0f26b14e0fa1fb4062a19429',1,'ahp_gt.h']]],
+  ['getsynscanversion_332',['GetSynScanVersion',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da53870a53a8c5353da23c37af66187c6e',1,'ahp_gt.h']]],
+  ['gettime_333',['GetTime',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da9ecd59ae2f49a476edd1bd15fb372cf8',1,'ahp_gt.h']]],
+  ['gettrackingmode_334',['GetTrackingMode',['../group___types.html#gga9eb24fb88499527f6fc142e673df408dad337063ec228223d30ba866f2820b63c',1,'ahp_gt.h']]],
+  ['gotoazalt_335',['GotoAzAlt',['../group___types.html#gga9eb24fb88499527f6fc142e673df408dadb2703a5a846a217f7f6d8c78858a2a8',1,'ahp_gt.h']]],
+  ['gotoinprogress_336',['GOTOinProgress',['../group___types.html#gga9eb24fb88499527f6fc142e673df408daf235c8f075551bd6241e45202f04ed4f',1,'ahp_gt.h']]],
+  ['gotopreciseazalt_337',['GotoPreciseAzAlt',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da1a79dbfc43a1e01304203e000c12518c',1,'ahp_gt.h']]],
+  ['gotopreciseradec_338',['GotoPreciseRaDec',['../group___types.html#gga9eb24fb88499527f6fc142e673df408da9e5c213560ede906fbb20db71f5ca872',1,'ahp_gt.h']]],
+  ['gotoradec_339',['GotoRaDec',['../group___types.html#gga9eb24fb88499527f6fc142e673df408dafd3366258bd219922a9e34d5ebe6f37b',1,'ahp_gt.h']]],
+  ['gpioasencoder_340',['GpioAsEncoder',['../group___types.html#gga64a10002f2ee9b3399bc2805426f504ea7c2fe726c57fa294d9c043b4da876800',1,'ahp_gt.h']]],
+  ['gpioaspulsedrive_341',['GpioAsPulseDrive',['../group___types.html#gga64a10002f2ee9b3399bc2805426f504ea540d9f4ea055c969e08d9185315015a1',1,'ahp_gt.h']]],
+  ['gpioasst4_342',['GpioAsST4',['../group___types.html#gga64a10002f2ee9b3399bc2805426f504ea67895cdeb6f92126f2b254f9cbe25839',1,'ahp_gt.h']]],
+  ['gpiounused_343',['GpioUnused',['../group___types.html#gga64a10002f2ee9b3399bc2805426f504ea18ec04f45a5302c896e83ea038eb3df1',1,'ahp_gt.h']]]
 ];

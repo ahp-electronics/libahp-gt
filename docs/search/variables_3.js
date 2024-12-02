@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['running_275',['Running',['../struct_skywatcher_axis_status.html#ada3caad03c98113ac1e7bcdf6d6db6bc',1,'SkywatcherAxisStatus']]]
+  ['running_303',['Running',['../struct_skywatcher_axis_status.html#ada3caad03c98113ac1e7bcdf6d6db6bc',1,'SkywatcherAxisStatus']]]
 ];

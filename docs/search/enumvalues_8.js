@@ -1,11 +1,11 @@
 var searchData=
 [
-  ['setlocation_347',['SetLocation',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da05c258ba61e698500948f2890775ed6c',1,'ahp_gt.h']]],
-  ['settime_348',['SetTime',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da6dc57a9b0c84fe305dee09e494bae63b',1,'ahp_gt.h']]],
-  ['settrackingmode_349',['SetTrackingMode',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da3cf4b08d8747c639a176a55386358db4',1,'ahp_gt.h']]],
-  ['slew_350',['Slew',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da7483c66885225e382a04a288a1430204',1,'ahp_gt.h']]],
-  ['speed_5fhigh_351',['SPEED_HIGH',['../group___defs.html#gga6abeeb63b8543c6eeeb451539c311e53ab4be0aa6f7b3712c84e992507498c3aa',1,'ahp_gt.h']]],
-  ['speed_5flow_352',['SPEED_LOW',['../group___defs.html#gga6abeeb63b8543c6eeeb451539c311e53a38ede0326c63ff7cdc527ea3fb771a03',1,'ahp_gt.h']]],
-  ['syncpreciseradec_353',['SyncPreciseRaDec',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da10aa7c867032be0f0a4c2f8e357898af',1,'ahp_gt.h']]],
-  ['syncradec_354',['SyncRaDec',['../group___defs.html#gga9eb24fb88499527f6fc142e673df408da7ab483c841666d4639ef0107269309d8',1,'ahp_gt.h']]]
+  ['microstep_370',['Microstep',['../group___types.html#ggae8caba8482dcf362ff7660414a946293aaede5b4c6ceee9d6185a19484dfe205e',1,'ahp_gt.h']]],
+  ['mixed_371',['Mixed',['../group___types.html#ggae8caba8482dcf362ff7660414a946293ab92f302712b561470bfc9be49649f99f',1,'ahp_gt.h']]],
+  ['mode_5fgoto_372',['MODE_GOTO',['../group___types.html#gga74737858fd3b371d8a4450e5aff54649a85c6d7763b7bd513a0bd1efef7220e0f',1,'ahp_gt.h']]],
+  ['mode_5fgoto_5fhispeed_373',['MODE_GOTO_HISPEED',['../group___types.html#gga3223e002472c37900cd7e14762b0f016a1cb4a2318e6409747326ab49eb41ea77',1,'ahp_gt.h']]],
+  ['mode_5fgoto_5flospeed_374',['MODE_GOTO_LOSPEED',['../group___types.html#gga3223e002472c37900cd7e14762b0f016ad772d8b903dd95a1c068f725e8002900',1,'ahp_gt.h']]],
+  ['mode_5fslew_375',['MODE_SLEW',['../group___types.html#gga74737858fd3b371d8a4450e5aff54649a61183e5750350a5356af37673865aaca',1,'ahp_gt.h']]],
+  ['mode_5fslew_5fhispeed_376',['MODE_SLEW_HISPEED',['../group___types.html#gga3223e002472c37900cd7e14762b0f016a42f227c84e9cb0cbb5d4441f780836d2',1,'ahp_gt.h']]],
+  ['mode_5fslew_5flospeed_377',['MODE_SLEW_LOSPEED',['../group___types.html#gga3223e002472c37900cd7e14762b0f016a67f5c7db7a707903946d0f713e4634fb',1,'ahp_gt.h']]]
 ];
