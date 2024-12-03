@@ -1216,7 +1216,7 @@ MountType ahp_gt_get_mount_type()
 int ahp_gt_get_axis_number()
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return;
+        return 0;
     return dispatch_command(GetAxis, 0, -1);
 }
 
