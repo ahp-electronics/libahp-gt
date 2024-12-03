@@ -93,9 +93,9 @@ typedef struct {
     double accel_increment[num_axes];
     SkywatcherMotionMode motionmode[num_axes];
     SkywatcherAxisStatus axisstatus[num_axes];
-    GT1Feature gt1feature[num_axes];
+    GTFeature gtfeature[num_axes];
     MountType type;
-    GT1Flags mount_flags;
+    GTFlags mount_flags;
     double lat;
     double lon;
     double el;
@@ -110,7 +110,7 @@ typedef struct {
     int threads_running;
     int baud_rate;
     pthread_t tracking_thread;
-} gt1_info;
+} gt_info;
 
 const double rates[9] = { 1, 8, 16, 32, 64, 128, 400, 600, 800 };
 static int mutexes_initialized = 0;
@@ -122,7 +122,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
 static unsigned int ahp_gt_detected[128] = { 0 };
-static gt1_info devices[128] = { 0 };
+static gt_info devices[128] = { 0 };
 static int sockfd;
 
 static double get_timestamp()
@@ -380,7 +380,7 @@ static int readcmd(char *cmd, int len)
 }
 
 static void *track(void* arg) {
-    gt1_info *info = arg;
+    gt_info *info = arg;
     while(info->threads_running) {
         double alt, az;
         switch(info->tracking_mode) {
@@ -869,6 +869,8 @@ static int Check(int pos, int val)
 {
     int ret = -1;
     int ntries = 10;
+    if(ahp_gt_get_mc_version() != 0x0137)
+        pos %= 8;
     while (ntries-- > 0)
     {
         ret = dispatch_command(GetVars, pos, -1);
@@ -881,27 +883,27 @@ static int Check(int pos, int val)
 
 static int WriteAndCheck(int axis, int pos, int val)
 {
-     int ret = 0;
-     int nchecks = 10;
-     int ntries = 10;
-     while (!ret && nchecks-- > 0)
-     {
-         while (!ret && ntries-- > 0)
-         {
-             ret = dispatch_command(FlashEnable, axis, -1);
-             if (ret>-1)
-             {
-                 ret = dispatch_command(SetVars, pos, val) == 0;
-                 if (ret>-1)
-                 {
-                     if (Check(pos, val)) {
-                         nchecks = 0;
-                         return 1;
-                     }
-                 }
-             }
-         }
-     }
+    int ret = 0;
+    int nchecks = 10;
+    int ntries = 10;
+    while (!ret && nchecks-- > 0)
+    {
+        while (!ret && ntries-- > 0)
+        {
+            ret = dispatch_command(FlashEnable, axis, -1);
+            if (ret>-1)
+            {
+                ret = dispatch_command(SetVars, pos, val) == 0;
+                if (ret>-1)
+                {
+                    if (Check(pos, val)) {
+                        nchecks = 0;
+                        return 1;
+                    }
+                }
+            }
+        }
+    }
      return 0;
 }
 
@@ -968,6 +970,8 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     int offset = axis * 8;
+    if(ahp_gt_get_mc_version() != 0x0137)
+        offset %= 8;
     *finished = 0;
     *percent = axis * 50;
     if (!WriteAndCheck (axis, offset + 0, devices[ahp_gt_get_current_device()].totalsteps [axis])) {
@@ -1005,7 +1009,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = *percent + 6.25;
-    if (!WriteAndCheck (axis, offset + 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> axis)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gt1feature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers>>(8*axis))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, offset + 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> axis)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gtfeature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
     }
@@ -1020,6 +1024,8 @@ void ahp_gt_read_values(int axis)
     if(!ahp_gt_is_connected())
         return;
     int offset = axis * 8;
+    if(ahp_gt_get_mc_version() != 0x0137)
+        offset %= 8;
     devices[ahp_gt_get_current_device()].totalsteps [axis] = dispatch_command(GetVars, offset + 0, -1);
     devices[ahp_gt_get_current_device()].wormsteps [axis] = dispatch_command(GetVars, offset + 1, -1);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = dispatch_command(GetVars, offset + 2, -1);
@@ -1032,7 +1038,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].direction_invert [axis] = tmp & 0x1;
     devices[ahp_gt_get_current_device()].stepping_conf [axis] = (tmp & 0x06)>>1;
     devices[ahp_gt_get_current_device()].features [axis] = dispatch_command(GetVars, offset + 6, -1);
-    devices[ahp_gt_get_current_device()].gt1feature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0x7;
+    devices[ahp_gt_get_current_device()].gtfeature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0x7;
     devices[ahp_gt_get_current_device()].stepping_mode[axis] = (dispatch_command(GetVars, offset + 7, -1) >> 6) & 0x03;
     int pwmfreq = (dispatch_command(GetVars, 7, -1) >> 4) & 0x3;
     pwmfreq |= (dispatch_command(GetVars, 15, -1) >> 2) & 0xc;
@@ -1083,7 +1089,7 @@ int ahp_gt_connect_fd(int fd)
     if(fd != -1) {
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
-        memset(devices, 0, sizeof(gt1_info)*128);
+        memset(devices, 0, sizeof(gt_info)*128);
         memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         if(!ahp_gt_detect_device()) {
             ahp_gt_get_mc_version();
@@ -1137,7 +1143,7 @@ int ahp_gt_connect(const char* port)
 retry:
         if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
             ahp_gt_connected = 1;
-            memset(devices, 0, sizeof(gt1_info)*128);
+            memset(devices, 0, sizeof(gt_info)*128);
             memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
             if(!ahp_gt_detect_device()) {
                 ahp_gt_get_mc_version();
@@ -1173,7 +1179,7 @@ void ahp_gt_disconnect()
             pthread_mutexattr_destroy(&mutex_attr);
             mutexes_initialized = 0;
         }
-        memset(devices, 0, sizeof(gt1_info)*128);
+        memset(devices, 0, sizeof(gt_info)*128);
         memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         ahp_gt_connected = 0;
     }
@@ -1207,11 +1213,18 @@ MountType ahp_gt_get_mount_type()
     return devices[ahp_gt_get_current_device()].type;
 }
 
-GT1Feature ahp_gt_get_feature(int axis)
+int ahp_gt_get_axis_number()
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    return dispatch_command(GetAxis, 0, -1);
+}
+
+GTFeature ahp_gt_get_feature(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return devices[ahp_gt_get_current_device()].gt1feature[axis];
+    return devices[ahp_gt_get_current_device()].gtfeature[axis];
 }
 
 SkywatcherFeature ahp_gt_get_features(int axis)
@@ -1319,25 +1332,25 @@ int ahp_gt_get_direction_invert(int axis)
     return devices[ahp_gt_get_current_device()].direction_invert[axis];
 }
 
-GT1Flags ahp_gt_get_mount_flags()
+GTFlags ahp_gt_get_mount_flags()
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return devices[ahp_gt_get_current_device()].mount_flags;
 }
 
-GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis)
+GTSteppingConfiguration ahp_gt_get_stepping_conf(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return (GT1SteppingConfiguration)devices[ahp_gt_get_current_device()].stepping_conf[axis];
+    return (GTSteppingConfiguration)devices[ahp_gt_get_current_device()].stepping_conf[axis];
 }
 
-GT1SteppingMode ahp_gt_get_stepping_mode(int axis)
+GTSteppingMode ahp_gt_get_stepping_mode(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return (GT1SteppingMode)devices[ahp_gt_get_current_device()].stepping_mode[axis];
+    return (GTSteppingMode)devices[ahp_gt_get_current_device()].stepping_mode[axis];
 }
 
 double ahp_gt_get_max_speed(int axis)
@@ -1382,6 +1395,13 @@ void ahp_gt_set_mount_type(MountType value)
     devices[ahp_gt_get_current_device()].type = value;
 }
 
+void ahp_gt_set_axis_number(int value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    dispatch_command(SetAxis, value, 0);
+}
+
 void ahp_gt_set_features(int axis, SkywatcherFeature value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1389,11 +1409,11 @@ void ahp_gt_set_features(int axis, SkywatcherFeature value)
     devices[ahp_gt_get_current_device()].features[axis] = value;
 }
 
-void ahp_gt_set_feature(int axis, GT1Feature value)
+void ahp_gt_set_feature(int axis, GTFeature value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].gt1feature[axis] = value & 7;
+    devices[ahp_gt_get_current_device()].gtfeature[axis] = value & 7;
     optimize_values(axis);
 }
 
@@ -1468,21 +1488,21 @@ void ahp_gt_set_direction_invert(int axis, int value)
     devices[ahp_gt_get_current_device()].direction_invert[axis] = value&1;
 }
 
-void ahp_gt_set_mount_flags(GT1Flags value)
+void ahp_gt_set_mount_flags(GTFlags value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].mount_flags = value;
 }
 
-void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value)
+void ahp_gt_set_stepping_conf(int axis, GTSteppingConfiguration value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].stepping_conf[axis] = (int)value;
 }
 
-void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value)
+void ahp_gt_set_stepping_mode(int axis, GTSteppingMode value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;

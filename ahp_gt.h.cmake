@@ -127,7 +127,7 @@ typedef enum {
     ABAB             = 1,
 ///ABBA Motor winding
     ABBA             = 2,
-} GT1SteppingConfiguration;
+} GTSteppingConfiguration;
 
 ///Stepping mode
 typedef enum {
@@ -137,7 +137,7 @@ Mixed            = 0,
 Microstep        = 1,
 ///Half-stepping in low speed, Half-stepping in high speed
 HalfStep         = 2,
-} GT1SteppingMode;
+} GTSteppingMode;
 
 ///ST-4 port configuration
 typedef enum  {
@@ -149,9 +149,9 @@ GpioAsST4              = 0x0001,
 GpioAsEncoder          = 0x0002,
 ///The ST4 port will drive an external Step/Dir power drive
 GpioAsPulseDrive       = 0x0003,
-} GT1Feature;
+} GTFeature;
 
-///GT1 custom flags
+///GT custom flags
 typedef enum {
 ///Fork mount, will avoid meridian flip
 isForkMount = 0x1,
@@ -161,7 +161,7 @@ halfCurrentRA = 0x2,
 halfCurrentDec = 0x4,
 ///high Baud Rate 115200
 bauds_115200 = 0x8,
-} GT1Flags;
+} GTFlags;
 
 ///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only
 typedef enum {
@@ -260,6 +260,8 @@ typedef enum {
     Flash                     = '#',
     FlashEnable               = '!',
     SetAddress                = '=',
+    SetAxis                   = '.',
+    GetAxis                   = ',',
 } SkywatcherCommand;
 
 /// Commands for the SynScan protocol implementation
@@ -480,11 +482,17 @@ DLL_EXPORT int ahp_gt_get_mc_version(void);
 DLL_EXPORT MountType ahp_gt_get_mount_type(void);
 
 /**
+* \brief Get the current GT controller axis number
+* \return The GT controller axis number
+*/
+DLL_EXPORT int ahp_gt_get_axis_number();
+
+/**
 * \brief Get the current GT features
 * \param axis The motor to query
-* \return The GT controller GT1Feature configuration
+* \return The GT controller GTFeature configuration
 */
-DLL_EXPORT GT1Feature ahp_gt_get_feature(int axis);
+DLL_EXPORT GTFeature ahp_gt_get_feature(int axis);
 
 /**
 * \brief Get the current SkyWatcher features
@@ -591,23 +599,23 @@ DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
 
 /**
 * \brief Get the mount flags
-* \return Custom 10bit GT1Flags - for future usage
+* \return Custom 10bit GTFlags - for future usage
 */
-DLL_EXPORT GT1Flags ahp_gt_get_mount_flags();
+DLL_EXPORT GTFlags ahp_gt_get_mount_flags();
 
 /**
 * \brief Get the stepping configuration
 * \param axis The motor to query
-* \return The GT1SteppingConfiguration of the given axis - the coil polarization order
+* \return The GTSteppingConfiguration of the given axis - the coil polarization order
 */
-DLL_EXPORT GT1SteppingConfiguration ahp_gt_get_stepping_conf(int axis);
+DLL_EXPORT GTSteppingConfiguration ahp_gt_get_stepping_conf(int axis);
 
 /**
 * \brief Get the stepping mode
 * \param axis The motor to query
-* \return The GT1SteppingMode of the given axis
+* \return The GTSteppingMode of the given axis
 */
-DLL_EXPORT GT1SteppingMode ahp_gt_get_stepping_mode(int axis);
+DLL_EXPORT GTSteppingMode ahp_gt_get_stepping_mode(int axis);
 
 /**
 * \brief Get the maximum speed
@@ -644,6 +652,12 @@ DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
 /**
+* \brief Set the GT controller axis number
+* \param axis The motor axis number
+*/
+DLL_EXPORT void ahp_gt_set_axis_number(int value);
+
+/**
 * \brief Set the Skywatcher features
 * \param axis The motor to reconfigure
 * \param value The SkywatcherFeature after ahp_gt_write_values
@@ -653,9 +667,9 @@ DLL_EXPORT void ahp_gt_set_features(int axis, SkywatcherFeature value);
 /**
 * \brief Set the GT features
 * \param axis The motor to reconfigure
-* \param value The GT1Feature after ahp_gt_write_values
+* \param value The GTFeature after ahp_gt_write_values
 */
-DLL_EXPORT void ahp_gt_set_feature(int axis, GT1Feature value);
+DLL_EXPORT void ahp_gt_set_feature(int axis, GTFeature value);
 
 /**
 * \brief Set the motor steps number
@@ -750,21 +764,21 @@ DLL_EXPORT void ahp_gt_set_direction_invert(int axis, int value);
 * \brief Set the mount flags
 * \param value Only isForkMount is supported at the moment
 */
-DLL_EXPORT void ahp_gt_set_mount_flags(GT1Flags value);
+DLL_EXPORT void ahp_gt_set_mount_flags(GTFlags value);
 
 /**
 * \brief Set the stepping configuration
 * \param axis The motor to reconfigure
-* \param value The GT1SteppingConfiguration of this axis after ahp_gt_write_values
+* \param value The GTSteppingConfiguration of this axis after ahp_gt_write_values
 */
-DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GT1SteppingConfiguration value);
+DLL_EXPORT void ahp_gt_set_stepping_conf(int axis, GTSteppingConfiguration value);
 
 /**
 * \brief Set the stepping mode
 * \param axis The motor to reconfigure
-* \param value The GT1SteppingMode of this axis after ahp_gt_write_values
+* \param value The GTSteppingMode of this axis after ahp_gt_write_values
 */
-DLL_EXPORT void ahp_gt_set_stepping_mode(int axis, GT1SteppingMode value);
+DLL_EXPORT void ahp_gt_set_stepping_mode(int axis, GTSteppingMode value);
 
 /**
 * \brief Set the maximum goto speed
