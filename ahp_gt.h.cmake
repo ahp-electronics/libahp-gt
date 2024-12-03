@@ -653,7 +653,7 @@ DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
 /**
 * \brief Set the GT controller axis number
-* \param axis The motor axis number
+* \param value The motor axis number
 */
 DLL_EXPORT void ahp_gt_set_axis_number(int value);
 
