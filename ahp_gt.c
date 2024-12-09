@@ -805,6 +805,7 @@ retry:
 
     ret = read_eqmod();
     pthread_mutex_unlock(&mutex);
+    fprintf(stderr, "=%06X\n", ret);
     return ret;
 ret_err:
     pthread_mutex_unlock(&mutex);
@@ -865,69 +866,59 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
 }
 
+static int Read(int axis, int pos)
+{
+    int ret = 0;
+    int ntries = 10;
+    while (!ret && ntries-- > 0)
+    {
+        ret = dispatch_command(FlashEnable, axis, -1);
+        if (ret>-1)
+        {
+            ret = dispatch_command(GetVars, pos, -1);
+            if (ret>-1)
+            {
+                ntries = 0;
+                return ret;
+            }
+            ret = 0;
+        }
+        ret = 0;
+    }
+    return -1;
+}
+
 static int Check(int pos, int val)
 {
     int ret = -1;
-    int ntries = 10;
     if((ahp_gt_get_mc_version() & 0xff) == 0x38)
         pos %= 8;
-    while (ntries-- > 0)
-    {
-        ret = dispatch_command(GetVars, pos, -1);
-        if(ret == val) {
-            return 1;
-        }
-    }
-    return 0;
+    ret = Read(GetVars, pos);
+    return (ret == val);
 }
 
 static int WriteAndCheck(int axis, int pos, int val)
 {
     int ret = 0;
-    int nchecks = 10;
     int ntries = 10;
-    while (!ret && nchecks-- > 0)
+    while (!ret && ntries-- > 0)
     {
-        while (!ret && ntries-- > 0)
+        ret = dispatch_command(FlashEnable, axis, -1);
+        if (ret>-1)
         {
-            ret = dispatch_command(FlashEnable, axis, -1);
+            ret = dispatch_command(SetVars, pos, val) == 0;
             if (ret>-1)
             {
-                ret = dispatch_command(SetVars, pos, val) == 0;
-                if (ret>-1)
-                {
-                    if (Check(pos, val)) {
-                        nchecks = 0;
-                        return 1;
-                    }
+                if (Check(pos, val)) {
+                    ntries = 0;
+                    return 1;
                 }
+                ret = 0;
             }
+            ret = 0;
         }
     }
     return 0;
-}
-
-static int Read(int axis, int pos)
-{
-    int ret = 0;
-    int nchecks = 10;
-    int ntries = 10;
-    while (!ret && nchecks-- > 0)
-    {
-        while (!ret && ntries-- > 0)
-        {
-            ret = dispatch_command(FlashEnable, axis, -1);
-            if (ret>-1)
-            {
-                ret = dispatch_command(GetVars, pos, -1);
-                if (ret>-1)
-                {
-                    nchecks = 0;
-                }
-            }
-        }
-    }
-    return ret;
 }
 
 int ahp_gt_start_synscan_server(int port, int *interrupt)
