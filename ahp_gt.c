@@ -767,7 +767,7 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int maxtries = 15;
+    int maxtries = 1;
     int i;
     int c;
     memset(response, '0', 32);
@@ -779,8 +779,6 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     while(pthread_mutex_trylock(&mutex))
         usleep(100);
-    i = maxtries;
-retry:
     command[0] = '\0';
     char command_arg[28];
     int n;
@@ -798,10 +796,8 @@ retry:
     ahp_serial_flushRXTX();
     for(c = 0; c < n; c++) {
         if ((ahp_serial_SendByte((unsigned char)command[c])) < 0)
-            goto retry;
+            goto ret_err;
     }
-    if (--i == 0)
-        goto ret_err;
 
     ret = read_eqmod();
     pthread_mutex_unlock(&mutex);
@@ -888,15 +884,6 @@ static int Read(int axis, int pos)
     return -1;
 }
 
-static int Check(int pos, int val)
-{
-    int ret = -1;
-    if((ahp_gt_get_mc_version() & 0xff) == 0x38)
-        pos %= 8;
-    ret = Read(GetVars, pos);
-    return (ret == val);
-}
-
 static int WriteAndCheck(int axis, int pos, int val)
 {
     int ret = 0;
@@ -909,7 +896,7 @@ static int WriteAndCheck(int axis, int pos, int val)
             ret = dispatch_command(SetVars, pos, val) == 0;
             if (ret>-1)
             {
-                if (Check(pos, val)) {
+                if (Read(axis, pos) == val) {
                     ntries = 0;
                     return 1;
                 }
