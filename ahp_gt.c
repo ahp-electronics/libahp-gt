@@ -904,7 +904,30 @@ static int WriteAndCheck(int axis, int pos, int val)
             }
         }
     }
-     return 0;
+    return 0;
+}
+
+static int Read(int axis, int pos)
+{
+    int ret = 0;
+    int nchecks = 10;
+    int ntries = 10;
+    while (!ret && nchecks-- > 0)
+    {
+        while (!ret && ntries-- > 0)
+        {
+            ret = dispatch_command(FlashEnable, axis, -1);
+            if (ret>-1)
+            {
+                ret = dispatch_command(GetVars, pos, -1);
+                if (ret>-1)
+                {
+                    nchecks = 0;
+                }
+            }
+        }
+    }
+    return ret;
 }
 
 int ahp_gt_start_synscan_server(int port, int *interrupt)
@@ -1026,30 +1049,30 @@ void ahp_gt_read_values(int axis)
     int offset = axis * 8;
     if((ahp_gt_get_mc_version() & 0xff) == 0x38)
         offset %= 8;
-    devices[ahp_gt_get_current_device()].totalsteps [axis] = dispatch_command(GetVars, offset + 0, -1);
-    devices[ahp_gt_get_current_device()].wormsteps [axis] = dispatch_command(GetVars, offset + 1, -1);
-    devices[ahp_gt_get_current_device()].maxspeed_value [axis] = dispatch_command(GetVars, offset + 2, -1);
-    devices[ahp_gt_get_current_device()].guide [axis] = dispatch_command(GetVars, offset + 3, -1);
-    devices[ahp_gt_get_current_device()].one_second [axis] = dispatch_command(GetVars, offset + 4, -1);
-    int tmp = dispatch_command(GetVars, offset + 5, -1);
+    devices[ahp_gt_get_current_device()].totalsteps [axis] = Read(axis, offset + 0);
+    devices[ahp_gt_get_current_device()].wormsteps [axis] = Read(axis, offset + 1);
+    devices[ahp_gt_get_current_device()].maxspeed_value [axis] = Read(axis, offset + 2);
+    devices[ahp_gt_get_current_device()].guide [axis] = Read(axis, offset + 3);
+    devices[ahp_gt_get_current_device()].one_second [axis] = Read(axis, offset + 4);
+    int tmp = Read(axis, offset + 5);
     devices[ahp_gt_get_current_device()].accel_steps [axis] = ((tmp >> 18) & 0x3f);
     devices[ahp_gt_get_current_device()].accel_increment [axis] =  (tmp >> 10) & 0xff;
     devices[ahp_gt_get_current_device()].multiplier [axis] = (tmp >> 3) & 0x7f;
     devices[ahp_gt_get_current_device()].direction_invert [axis] = tmp & 0x1;
     devices[ahp_gt_get_current_device()].stepping_conf [axis] = (tmp & 0x06)>>1;
-    devices[ahp_gt_get_current_device()].features [axis] = dispatch_command(GetVars, offset + 6, -1);
-    devices[ahp_gt_get_current_device()].gtfeature[axis] = dispatch_command(GetVars, offset + 7, -1) & 0x7;
-    devices[ahp_gt_get_current_device()].stepping_mode[axis] = (dispatch_command(GetVars, offset + 7, -1) >> 6) & 0x03;
-    int pwmfreq = (dispatch_command(GetVars, 7, -1) >> 4) & 0x3;
-    pwmfreq |= (dispatch_command(GetVars, 15, -1) >> 2) & 0xc;
+    devices[ahp_gt_get_current_device()].features [axis] = Read(axis, offset + 6);
+    devices[ahp_gt_get_current_device()].gtfeature[axis] = Read(axis, offset + 7) & 0x7;
+    devices[ahp_gt_get_current_device()].stepping_mode[axis] = (Read(axis, offset + 7) >> 6) & 0x03;
+    int pwmfreq = (Read(axis, 7) >> 4) & 0x3;
+    pwmfreq |= (Read(axis, 15) >> 2) & 0xc;
     devices[ahp_gt_get_current_device()].pwmfreq = 0xf - pwmfreq;
-    devices[ahp_gt_get_current_device()].type = (dispatch_command(GetVars, offset + 7, -1) >> 16) & 0xff;
-    devices[ahp_gt_get_current_device()].mount_flags = (dispatch_command(GetVars, 7, -1) & 0x8) >> 3;
-    devices[ahp_gt_get_current_device()].mount_flags |= (dispatch_command(GetVars, 15, -1) & 0x8) >> 2;
-    devices[ahp_gt_get_current_device()].mount_flags |= (dispatch_command(GetVars, 15, -1) & 0xff0000) >> 14;
+    devices[ahp_gt_get_current_device()].type = (Read(axis, offset + 7) >> 16) & 0xff;
+    devices[ahp_gt_get_current_device()].mount_flags = (Read(axis, 7) & 0x8) >> 3;
+    devices[ahp_gt_get_current_device()].mount_flags |= (Read(axis, 15) & 0x8) >> 2;
+    devices[ahp_gt_get_current_device()].mount_flags |= (Read(axis, 15) & 0xff0000) >> 14;
     devices[ahp_gt_get_current_device()].mount_flags &= 0x3ff;
-    devices[ahp_gt_get_current_device()].dividers = (dispatch_command(GetVars, 7, -1) >> 8) & 0xff;
-    devices[ahp_gt_get_current_device()].dividers |= dispatch_command(GetVars, 15, -1) & 0xff00;
+    devices[ahp_gt_get_current_device()].dividers = (Read(axis, 7) >> 8) & 0xff;
+    devices[ahp_gt_get_current_device()].dividers |= Read(axis, 15) & 0xff00;
     devices[ahp_gt_get_current_device()].divider[axis] = (devices[ahp_gt_get_current_device()].dividers >> (1+axis*4)) & 0xf;
     devices[ahp_gt_get_current_device()].address_value = (devices[ahp_gt_get_current_device()].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].dividers & 1;
