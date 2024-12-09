@@ -869,7 +869,7 @@ static int Check(int pos, int val)
 {
     int ret = -1;
     int ntries = 10;
-    if((ahp_gt_get_mc_version() & 0xff) != 0x37)
+    if((ahp_gt_get_mc_version() & 0xff) == 0x38)
         pos %= 8;
     while (ntries-- > 0)
     {
@@ -970,7 +970,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     int offset = axis * 8;
-    if((ahp_gt_get_mc_version() & 0xff) != 0x37)
+    if((ahp_gt_get_mc_version() & 0xff) == 0x38)
         offset %= 8;
     *finished = 0;
     *percent = axis * 50;
@@ -1024,7 +1024,7 @@ void ahp_gt_read_values(int axis)
     if(!ahp_gt_is_connected())
         return;
     int offset = axis * 8;
-    if((ahp_gt_get_mc_version() & 0xff) != 0x37)
+    if((ahp_gt_get_mc_version() & 0xff) == 0x38)
         offset %= 8;
     devices[ahp_gt_get_current_device()].totalsteps [axis] = dispatch_command(GetVars, offset + 0, -1);
     devices[ahp_gt_get_current_device()].wormsteps [axis] = dispatch_command(GetVars, offset + 1, -1);
