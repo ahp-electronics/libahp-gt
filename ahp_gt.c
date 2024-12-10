@@ -862,6 +862,28 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | ((unsigned char)devices[ahp_gt_get_current_device()].divider [0] << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].divider [1]) << 5) | (devices[ahp_gt_get_current_device()].address_value << 9);
 }
 
+static int Reload(int axis)
+{
+    int ret = 0;
+    int ntries = 10;
+    while (!ret && ntries-- > 0)
+    {
+        ret = dispatch_command(FlashEnable, axis, -1);
+        if (ret>-1)
+        {
+            ret = dispatch_command(ReloadVars, axis, -1);
+            if (ret>-1)
+            {
+                ntries = 0;
+                return ret;
+            }
+            ret = 0;
+        }
+        ret = 0;
+    }
+    return -1;
+}
+
 static int Read(int axis, int pos)
 {
     int ret = 0;
@@ -1020,8 +1042,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = *percent + 3.125;
-    dispatch_command (ReloadVars, axis, -1);
-    dispatch_command (ReloadVars, axis, -1);
+    Reload(axis);
     *finished = 1;
 }
 
@@ -1901,7 +1922,7 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     one_second = initial_second - initial_second*(one_second-1.0);
     ahp_gt_set_timing(axis, one_second);
     WriteAndCheck (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
-    dispatch_command (ReloadVars, axis, -1);
+    Reload(axis);
 }
 
 void ahp_gt_set_aligned(int aligned) {
