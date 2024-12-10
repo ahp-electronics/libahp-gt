@@ -970,11 +970,9 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    int offset = axis * 8;
-    if((ahp_gt_get_mc_version() & 0xff) == 0x38) {
-        offset = 0;
-        offset %= 8;
-    }
+    int offset = 0;
+    if((ahp_gt_get_mc_version() & 0xff) != 0x39)
+        offset = axis * 8;
     *finished = 0;
     *percent = axis * 50;
     if (!WriteAndCheck (axis, offset + 0, devices[ahp_gt_get_current_device()].totalsteps [axis])) {
@@ -1011,7 +1009,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         *finished = -1;
         return;
     }
-    *percent = *percent + 3.125;
+    *percent = *percent + 6.25;
     if (!WriteAndCheck (0, offset + 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4) >> (2 * axis)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> axis)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gtfeature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers>>(8*axis))&0xff)<<8))) {
         *finished = -1;
         return;
@@ -1021,7 +1019,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 3.125;
     dispatch_command (ReloadVars, axis, -1);
     dispatch_command (ReloadVars, axis, -1);
     *finished = 1;
@@ -1031,9 +1029,9 @@ void ahp_gt_read_values(int axis)
 {
     if(!ahp_gt_is_connected())
         return;
-    int offset = axis * 8;
-    if((ahp_gt_get_mc_version() & 0xff) == 0x38)
-        offset %= 8;
+    int offset = 0;
+    if((ahp_gt_get_mc_version() & 0xff) != 0x39)
+        offset = axis * 8;
     devices[ahp_gt_get_current_device()].totalsteps [axis] = Read(axis, offset + 0);
     devices[ahp_gt_get_current_device()].wormsteps [axis] = Read(axis, offset + 1);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = Read(axis, offset + 2);
