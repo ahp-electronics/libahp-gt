@@ -1422,11 +1422,11 @@ void ahp_gt_set_mount_type(MountType value)
     devices[ahp_gt_get_current_device()].type = value;
 }
 
-void ahp_gt_set_axis_number(int value)
+void ahp_gt_set_axis_number(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    dispatch_command(SetAxis, value, 0);
+    dispatch_command(SetAxis, axis, value);
 }
 
 void ahp_gt_set_features(int axis, SkywatcherFeature value)

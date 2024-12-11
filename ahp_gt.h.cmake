@@ -653,9 +653,10 @@ DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
 /**
 * \brief Set the GT controller axis number
+* \param axis The motor old axis number
 * \param value The motor axis number
 */
-DLL_EXPORT void ahp_gt_set_axis_number(int value);
+DLL_EXPORT void ahp_gt_set_axis_number(int axis, int value);
 
 /**
 * \brief Set the Skywatcher features
