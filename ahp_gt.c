@@ -1032,15 +1032,16 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = *percent + 6.25;
-    if (!WriteAndCheck (0, offset + 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> axis)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gtfeature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers)&0xff)<<8))) {
+    if (!WriteAndCheck (axis, 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gtfeature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers)&0xff)<<8))) {
         *finished = -1;
         return;
     }
     *percent = *percent + 3.125;
-    if (!WriteAndCheck (1, offset + 7, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4) >> (2)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> axis)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gtfeature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers>>(8))&0xff)<<8))) {
+    if (!WriteAndCheck (axis, 15, ((((0xf-devices[ahp_gt_get_current_device()].pwmfreq) << 4) >> (2)) & 0x30) | ((int)devices[ahp_gt_get_current_device()].stepping_mode[axis] << 6) | (((devices[ahp_gt_get_current_device()].mount_flags >> 1)&1) << 3) | ((int)devices[ahp_gt_get_current_device()].gtfeature[axis] & 7) | (axis == 0?(((unsigned char)devices[ahp_gt_get_current_device()].type)<<16):((devices[ahp_gt_get_current_device()].mount_flags&0x3fc)<<14)) | (int)(((devices[ahp_gt_get_current_device()].dividers>>(8))&0xff)<<8))) {
         *finished = -1;
         return;
     }
+    axis = 1;
     *percent = *percent + 3.125;
     Reload(axis);
     *finished = 1;
