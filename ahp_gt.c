@@ -547,7 +547,7 @@ static int synscan_poll()
                     goto err_end;
                 switch(cmd[0]) {
                 case 1:
-                    sprintf(msg, "%c%c#", 0, ahp_gt_get_mc_version());
+                    sprintf(msg, "%c%c#", 0, ahp_gt_get_mc_version(0));
                     write(devices[ahp_gt_get_current_device()].connfd, msg, 3);
                 case 2:
                     if(cmd[3] == 0)
