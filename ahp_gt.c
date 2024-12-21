@@ -59,7 +59,14 @@ typedef enum {
     Axis7 = 6,
     Axis8 = 7,
     Axis9 = 8,
-    num_axes = 9,
+    Axis10 = 9,
+    Axis11 = 10,
+    Axis12 = 11,
+    Axis13 = 12,
+    Axis14 = 13,
+    Axis15 = 14,
+    Axis16 = 15,
+    num_axes = 16,
 } SkywatcherAxis;
 
 typedef struct {
@@ -767,8 +774,6 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int maxtries = 1;
-    int i;
     int c;
     memset(response, '0', 32);
     if(!mutexes_initialized) {
@@ -800,8 +805,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
 
     ret = read_eqmod();
+    if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
-    fprintf(stderr, "=%06X\n", ret);
     return ret;
 ret_err:
     pthread_mutex_unlock(&mutex);
