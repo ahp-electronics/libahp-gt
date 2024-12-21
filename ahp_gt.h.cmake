@@ -467,9 +467,10 @@ DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 
 /**
 * \brief Get the GT firmware version
-* \return The GT controller firmware
+* \param axis The axis number if checking for a single axis module
+* \return The GT controller firmware version
 */
-DLL_EXPORT int ahp_gt_get_mc_version(void);
+DLL_EXPORT int ahp_gt_get_mc_version(int axis);
 
 /**\}
  * \defgroup SG Parametrization

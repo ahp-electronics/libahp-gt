@@ -993,7 +993,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     int offset = 0;
-    if((ahp_gt_get_mc_version() & 0xff) == 0x37)
+    if((ahp_gt_get_mc_version(axis) & 0xff) == 0x37)
         offset = axis * 8;
     *finished = 0;
     *percent = axis * 50;
@@ -1054,7 +1054,7 @@ void ahp_gt_read_values(int axis)
     if(!ahp_gt_is_connected())
         return;
     int offset = 0;
-    if((ahp_gt_get_mc_version() & 0xff) == 0x37)
+    if((ahp_gt_get_mc_version(axis) & 0xff) == 0x37)
         offset = axis * 8;
     devices[ahp_gt_get_current_device()].totalsteps [axis] = Read(axis, offset + 0);
     devices[ahp_gt_get_current_device()].wormsteps [axis] = Read(axis, offset + 1);
@@ -1122,7 +1122,7 @@ int ahp_gt_connect_fd(int fd)
         memset(devices, 0, sizeof(gt_info)*128);
         memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         if(!ahp_gt_detect_device()) {
-            ahp_gt_get_mc_version();
+            ahp_gt_get_mc_version(0);
             if(devices[ahp_gt_get_current_device()].version > 0) {
                 pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                 return 0;
@@ -1176,7 +1176,7 @@ retry:
             memset(devices, 0, sizeof(gt_info)*128);
             memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
             if(!ahp_gt_detect_device()) {
-                ahp_gt_get_mc_version();
+                ahp_gt_get_mc_version(0);
                 if(devices[ahp_gt_get_current_device()].version > 0) {
                     pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
                     return 0;
@@ -1225,9 +1225,9 @@ unsigned int ahp_gt_is_detected(int index)
     return ahp_gt_detected[index];
 }
 
-int ahp_gt_get_mc_version()
+int ahp_gt_get_mc_version(int axis)
 {
-    int v = dispatch_command(InquireMotorBoardVersion, 0, -1);
+    int v = dispatch_command(InquireMotorBoardVersion, axis, -1);
     v >>= 8;
     v &= 0xffff;
     if (v == 0xffff)
@@ -1596,7 +1596,7 @@ int ahp_gt_detect_device() {
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     dispatch_command(SetAddress, 0, ahp_gt_current_device);
-    if(ahp_gt_get_mc_version() > 0) {
+    if(ahp_gt_get_mc_version(0) > 0) {
         for (a = 0; a < num_axes; a++) {
             devices[ahp_gt_get_current_device()].steps[a] = 200;
         }
