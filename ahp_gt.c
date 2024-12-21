@@ -1044,7 +1044,6 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = *percent + 3.125;
-    axis = 1;
     Reload(axis);
     *finished = 1;
 }
@@ -1228,7 +1227,7 @@ unsigned int ahp_gt_is_detected(int index)
 int ahp_gt_get_mc_version(int axis)
 {
     int v = dispatch_command(InquireMotorBoardVersion, axis, -1);
-    v >>= 8;
+    v = (v << 8 | v >> 8);
     v &= 0xffff;
     if (v == 0xffff)
         v = -1;
