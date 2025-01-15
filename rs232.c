@@ -538,6 +538,8 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     int ntries = size*2;
     int bytes_left = size;
     int err = 0;
+    errno = 0;
+    memset(buf, -1, size);
     if(ahp_serial_mutexes_initialized) {
         while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
@@ -587,7 +589,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
 
 static int ahp_serial_RecvByte()
 {
-    int byte = 0;
+    int byte = -1;
     int n = ahp_serial_RecvBuf((unsigned char*)&byte, 1);
     if(n < 1)
     {
