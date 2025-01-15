@@ -81,7 +81,7 @@ typedef struct {
     int direction_invert[num_axes];
     int stepping_conf[num_axes];
     int stepping_mode[num_axes];
-    int version;
+    int version[num_axes];
     int features[num_axes];
     unsigned char pwmfreq;
     double maxperiod[num_axes];
@@ -1134,11 +1134,7 @@ int ahp_gt_connect_fd(int fd)
         memset(devices, 0, sizeof(gt_info)*128);
         memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         if(!ahp_gt_detect_device()) {
-            ahp_gt_get_mc_version(0);
-            if(devices[ahp_gt_get_current_device()].version > 0) {
-                pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
-                return 0;
-            }
+            return 0;
         }
     }
     return 1;
@@ -1188,11 +1184,7 @@ retry:
             memset(devices, 0, sizeof(gt_info)*128);
             memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
             if(!ahp_gt_detect_device()) {
-                ahp_gt_get_mc_version(0);
-                if(devices[ahp_gt_get_current_device()].version > 0) {
-                    pgarb("MC Version: %02X\n", devices[ahp_gt_get_current_device()].version);
-                    return 0;
-                }
+                return 0;
             } else if(!highspeed) {
                 devices[ahp_gt_get_current_device()].baud_rate = 115200;
                 highspeed = 1;
@@ -1244,8 +1236,8 @@ int ahp_gt_get_mc_version(int axis)
     v &= 0xffff;
     if (v == 0xffff)
         v = -1;
-    devices[ahp_gt_get_current_device()].version = v;
-    return devices[ahp_gt_get_current_device()].version;
+    devices[ahp_gt_get_current_device()].version[axis] = v;
+    return devices[ahp_gt_get_current_device()].version[axis];
 }
 
 MountType ahp_gt_get_mount_type()
@@ -1608,13 +1600,17 @@ int ahp_gt_detect_device() {
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     dispatch_command(SetAddress, 0, ahp_gt_current_device);
-    if(ahp_gt_get_mc_version(0) > 0) {
+    for (a = 0; a < num_axes; a++) {
+        if(ahp_gt_get_mc_version(a) > 0) {
+            pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].version[a]);
+            ahp_gt_read_values(a);
+            ahp_gt_detected[ahp_gt_get_current_device()] = 1;
+        }
+    }
+    if(ahp_gt_detected[ahp_gt_get_current_device()]) {
         for (a = 0; a < num_axes; a++) {
             devices[ahp_gt_get_current_device()].steps[a] = 200;
         }
-        ahp_gt_read_values(Ra);
-        ahp_gt_read_values(Dec);
-        ahp_gt_detected[ahp_gt_get_current_device()] = 1;
         return 0;
     }
     return -1;
