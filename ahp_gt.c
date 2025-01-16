@@ -1089,17 +1089,37 @@ void ahp_gt_read_values(int axis)
     if(!ahp_gt_is_connected())
         return;
     int offset = 0;
+    devices[ahp_gt_get_current_device()].totalsteps [axis] = dispatch_command(InquireGridPerRevolution, axis, -1);
+    devices[ahp_gt_get_current_device()].wormsteps [axis] = dispatch_command(InquireTimerInterruptFreq, axis, -1);
+    devices[ahp_gt_get_current_device()].multiplier [axis] = dispatch_command(InquireHighSpeedRatio, axis, -1);
+    devices[ahp_gt_get_current_device()].maxspeed_value [axis] = 50;
+    devices[ahp_gt_get_current_device()].guide [axis] = 12709;
+    devices[ahp_gt_get_current_device()].one_second [axis] = 1500000;
+    devices[ahp_gt_get_current_device()].accel_steps [axis] = 43;
+    devices[ahp_gt_get_current_device()].accel_increment [axis] =  255;
+    devices[ahp_gt_get_current_device()].direction_invert [axis] = 0;
+    devices[ahp_gt_get_current_device()].stepping_conf [axis] = 0;
+    devices[ahp_gt_get_current_device()].features [axis] = 16384;
+    devices[ahp_gt_get_current_device()].gtfeature[axis] = 0;
+    devices[ahp_gt_get_current_device()].stepping_mode[axis] = 0;
+    devices[ahp_gt_get_current_device()].divider[axis] = 0;
+    devices[ahp_gt_get_current_device()].pwmfreq = 5;
+    devices[ahp_gt_get_current_device()].type = 0;
+    devices[ahp_gt_get_current_device()].mount_flags = 0;
+    devices[ahp_gt_get_current_device()].dividers = 0;
+    devices[ahp_gt_get_current_device()].address_value = 1;
+    devices[ahp_gt_get_current_device()].rs232_polarity = 0;
+    if((ahp_gt_get_mc_version(axis) & 0xff) != 0x37 && (ahp_gt_get_mc_version(axis) & 0xff) != 0x38) {
+        goto calc_ratios;
+    }
     if((ahp_gt_get_mc_version(axis) & 0xff) == 0x37)
         offset = axis * 8;
-    devices[ahp_gt_get_current_device()].totalsteps [axis] = Read(axis, offset + 0);
-    devices[ahp_gt_get_current_device()].wormsteps [axis] = Read(axis, offset + 1);
     devices[ahp_gt_get_current_device()].maxspeed_value [axis] = Read(axis, offset + 2);
     devices[ahp_gt_get_current_device()].guide [axis] = Read(axis, offset + 3);
     devices[ahp_gt_get_current_device()].one_second [axis] = Read(axis, offset + 4);
     int tmp = Read(axis, offset + 5);
     devices[ahp_gt_get_current_device()].accel_steps [axis] = ((tmp >> 18) & 0x3f);
     devices[ahp_gt_get_current_device()].accel_increment [axis] =  (tmp >> 10) & 0xff;
-    devices[ahp_gt_get_current_device()].multiplier [axis] = (tmp >> 3) & 0x7f;
     devices[ahp_gt_get_current_device()].direction_invert [axis] = tmp & 0x1;
     devices[ahp_gt_get_current_device()].stepping_conf [axis] = (tmp & 0x06)>>1;
     devices[ahp_gt_get_current_device()].features [axis] = Read(axis, offset + 6);
@@ -1118,7 +1138,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].divider[axis] = (devices[ahp_gt_get_current_device()].dividers >> (1+axis*4)) & 0xf;
     devices[ahp_gt_get_current_device()].address_value = (devices[ahp_gt_get_current_device()].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].dividers & 1;
-
+calc_ratios:
     if (devices[ahp_gt_get_current_device()].steps [axis] == 0)
         devices[ahp_gt_get_current_device()].steps [axis] = 200;
     if (devices[ahp_gt_get_current_device()].wormsteps [axis] == 0)
