@@ -1468,7 +1468,7 @@ void ahp_gt_set_axis_number(int axis, int value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     dispatch_command(SetAxis, axis, value);
-    devices[ahp_gt_get_current_device()].axis [value].axis_number = value;
+    devices[ahp_gt_get_current_device()].axis [value].index = value;
     ahp_gt_read_values(value);
 }
 
@@ -1656,7 +1656,7 @@ void ahp_gt_select_device(int address) {
     if(!ahp_gt_is_connected())
         return -1;
     address &= 0x7f;
-    if(!dispatch_command(SetAddress, a, address)) {
+    if(!dispatch_command(SetAddress, 0, address)) {
         ahp_gt_current_device = address;
         if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
             ahp_gt_detect_device();
