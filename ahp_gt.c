@@ -51,7 +51,7 @@
 #define num_axes 127 - '1'
 
 typedef struct {
-    int axis_number;
+    int index;
     int totalsteps;
     int wormsteps;
     int accel_steps;
@@ -82,26 +82,26 @@ typedef struct {
 } gt_axis;
 
 typedef struct {
+    int index;
     gt_axis axis[num_axes];
     int rs232_polarity;
+    int baud_rate;
     unsigned char pwmfreq;
-    int address_value;
     int dividers;
     MountType type;
+    int flipped;
+    int will_flip;
+    int tracking_mode;
     GTFlags mount_flags;
+    int is_aligned;
     double lat;
     double lon;
     double el;
     time_t time_offset;
     int time_zone;
     int isdst;
-    int is_aligned;
     int connfd;
-    int flipped;
-    int will_flip;
-    int tracking_mode;
     int threads_running;
-    int baud_rate;
     pthread_t tracking_thread;
 } gt_info;
 
@@ -713,7 +713,7 @@ static int read_eqmod()
 {
     char * reply;
     int err_code = 0, nbytes_read = 0;
-    int max_err = 80;
+    int max_err = 10;
     // Clear string
     memset(response, '\0', 32);
     char c = 0;
@@ -727,7 +727,7 @@ static int read_eqmod()
     }
     if (err_code == max_err)
     {
-        return 0;
+        return -1;
     }
     nbytes_read++;
     if(!strncmp(command, response, strlen(command))) {
@@ -849,9 +849,9 @@ static void optimize_values(int axis)
     double degrees = devices[ahp_gt_get_current_device()].axis [axis].acceleration * (double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / (M_PI * 2.0);
     devices[ahp_gt_get_current_device()].axis [axis].accel_steps = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
     devices[ahp_gt_get_current_device()].axis [axis].accel_increment = (int)fmin (0xff, devices[ahp_gt_get_current_device()].axis [axis].guide / devices[ahp_gt_get_current_device()].axis [axis].accel_steps);
-    devices[ahp_gt_get_current_device()].address_value &= 0x7f;
+    devices[ahp_gt_get_current_device()].index &= 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
-    devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].address_value << 9);
+    devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x238)
         devices[ahp_gt_get_current_device()].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [0].divider << 1);
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x338)
@@ -1091,7 +1091,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].type = 0;
     devices[ahp_gt_get_current_device()].mount_flags = 0;
     devices[ahp_gt_get_current_device()].dividers = 0;
-    devices[ahp_gt_get_current_device()].address_value = 1;
+    devices[ahp_gt_get_current_device()].index = 1;
     devices[ahp_gt_get_current_device()].rs232_polarity = 0;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x37 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x38) {
         goto calc_ratios;
@@ -1123,7 +1123,7 @@ void ahp_gt_read_values(int axis)
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].dividers >> (1+axis*4)) & 0xf;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38)
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].dividers >> 1) & 0xf;
-    devices[ahp_gt_get_current_device()].address_value = (devices[ahp_gt_get_current_device()].dividers >> 9) & 0x7f;
+    devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].dividers & 1;
 calc_ratios:
     if (devices[ahp_gt_get_current_device()].axis [axis].steps == 0)
@@ -1549,7 +1549,7 @@ void ahp_gt_set_rs232_polarity(int value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].rs232_polarity = value&1;
-    for(a = 0; a < 16; a++)
+    for(a = 0; a < num_axes; a++)
         optimize_values(a);
 }
 
@@ -1628,7 +1628,7 @@ void ahp_gt_set_wormsteps(int axis, int value)
 }
 
 int ahp_gt_get_current_device() {
-    return ahp_gt_current_device&0x7f;
+    return ahp_gt_current_device;
 }
 
 int ahp_gt_detect_device() {
@@ -1637,23 +1637,30 @@ int ahp_gt_detect_device() {
     int a = 0;
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
-    dispatch_command(SetAddress, 0, ahp_gt_current_device);
     for (a = 0; a < num_axes; a++) {
-        if(ahp_gt_get_mc_version(a) > 0) {
-            pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
-            devices[ahp_gt_get_current_device()].axis[a].motor = 200;
-            ahp_gt_read_values(a);
-            ahp_gt_detected[ahp_gt_get_current_device()] = 1;
-        }
+        if(!dispatch_command(SetAddress, a, ahp_gt_get_current_device()))
+            if(ahp_gt_get_mc_version(a) > 0) {
+                pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
+                devices[ahp_gt_get_current_device()].axis[a].motor = 200;
+                ahp_gt_read_values(a);
+                ahp_gt_detected[ahp_gt_get_current_device()] = 1;
+            }
     }
-    if(ahp_gt_detected[ahp_gt_get_current_device()]) {
+    if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
         return 0;
     }
     return -1;
 }
 
 void ahp_gt_select_device(int address) {
-    ahp_gt_current_device = address&0x7f;
+    if(!ahp_gt_is_connected())
+        return -1;
+    address &= 0x7f;
+    if(!dispatch_command(SetAddress, a, address)) {
+        ahp_gt_current_device = address;
+        if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+            ahp_gt_detect_device();
+    }
 }
 
 void ahp_gt_set_address(int address)
@@ -1661,8 +1668,8 @@ void ahp_gt_set_address(int address)
     int a;
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].address_value = address;
-    for(a = 0; a < 16; a++)
+    devices[ahp_gt_get_current_device()].index = address;
+    for(a = 0; a < num_axes; a++)
         optimize_values(a);
 }
 
@@ -1670,7 +1677,7 @@ int ahp_gt_get_address()
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return devices[ahp_gt_get_current_device()].address_value;
+    return devices[ahp_gt_get_current_device()].index;
 }
 
 SkywatcherAxisStatus ahp_gt_get_status(int axis)
