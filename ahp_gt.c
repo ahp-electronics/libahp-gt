@@ -1668,7 +1668,7 @@ void ahp_gt_set_address(int address)
     int a;
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].index = address;
+    devices[ahp_gt_get_current_device()].index = fmax(1, fmin(address, 128)) - 1;
     for(a = 0; a < num_axes; a++)
         optimize_values(a);
 }
