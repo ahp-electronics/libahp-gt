@@ -48,7 +48,7 @@
 #ifndef SIDEREAL_24
 #define SIDEREAL_24 SIDEREAL_DAY * 24.0 / SOLAR_DAY
 #endif
-#define num_axes 127 - '1'
+#define num_axes 127
 
 typedef struct {
     int index;
