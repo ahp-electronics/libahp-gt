@@ -1652,15 +1652,17 @@ int ahp_gt_detect_device() {
     return -1;
 }
 
-void ahp_gt_select_device(int address) {
+int ahp_gt_select_device(int address) {
     if(!ahp_gt_is_connected())
         return -1;
-    address &= 0x7f;
+    address &= 0xff;
     if(!dispatch_command(SetAddress, 0, address)) {
         ahp_gt_current_device = address;
         if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-            ahp_gt_detect_device();
+            return ahp_gt_detect_device();
+        return 0;
     }
+    return -1;
 }
 
 void ahp_gt_set_address(int address)
