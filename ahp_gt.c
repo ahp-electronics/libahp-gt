@@ -1638,13 +1638,13 @@ int ahp_gt_detect_device() {
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     for (a = 0; a < num_axes; a++) {
-        if(!dispatch_command(SetAddress, a, ahp_gt_get_current_device()))
-            if(ahp_gt_get_mc_version(a) > 0) {
-                pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
-                devices[ahp_gt_get_current_device()].axis[a].motor = 200;
-                ahp_gt_read_values(a);
-                ahp_gt_detected[ahp_gt_get_current_device()] = 1;
-            }
+        dispatch_command(SetAddress, a, ahp_gt_get_current_device());
+        if(ahp_gt_get_mc_version(a) > 0) {
+            pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
+            devices[ahp_gt_get_current_device()].axis[a].motor = 200;
+            ahp_gt_read_values(a);
+            ahp_gt_detected[ahp_gt_get_current_device()] = 1;
+        }
     }
     if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
         return 0;
@@ -1656,13 +1656,11 @@ int ahp_gt_select_device(int address) {
     if(!ahp_gt_is_connected())
         return -1;
     address &= 0xff;
-    if(!dispatch_command(SetAddress, 0, address)) {
-        ahp_gt_current_device = address;
-        if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-            return ahp_gt_detect_device();
-        return 0;
-    }
-    return -1;
+    dispatch_command(SetAddress, 0, address);
+    ahp_gt_current_device = address;
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return ahp_gt_detect_device();
+    return 0;
 }
 
 void ahp_gt_set_address(int address)
