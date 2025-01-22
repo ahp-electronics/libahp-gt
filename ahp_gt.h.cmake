@@ -92,7 +92,7 @@ DLL_EXPORT void ahp_set_debug_level(int value);
 * \brief get the debug level
 * \return The current debug level
 */
-DLL_EXPORT int ahp_get_debug_level();
+DLL_EXPORT int ahp_get_debug_level(void);
 /**
 * \brief set the application name
 * \param name the application name to be printed on logs
@@ -102,7 +102,7 @@ DLL_EXPORT void ahp_set_app_name(char* name);
 * \brief get the application name
 * \return The current application name printed on logs
 */
-DLL_EXPORT char* ahp_get_app_name();
+DLL_EXPORT char* ahp_get_app_name(void);
 /**
 * \brief set the output log stream
 * \param f The FILE stream pointer to set as standard output
@@ -430,12 +430,12 @@ DLL_EXPORT int ahp_gt_connect_udp(const char* address, int port);
 * \brief Return the file descriptor of the port connected to the GT controllers
 * \return The serial stream file descriptor
 */
-DLL_EXPORT int ahp_gt_get_fd();
+DLL_EXPORT int ahp_gt_get_fd(void);
 
 /**
 * \brief Disconnect from the GT controller
 */
-DLL_EXPORT void ahp_gt_disconnect();
+DLL_EXPORT void ahp_gt_disconnect(void);
 
 /**
 * \brief Set the file descriptor that links to the controller
@@ -451,7 +451,7 @@ DLL_EXPORT void ahp_gt_set_fd(int fd);
 * \sa ahp_gt_connect_fd
 * \sa ahp_gt_disconnect
 */
-DLL_EXPORT unsigned int ahp_gt_is_connected();
+DLL_EXPORT unsigned int ahp_gt_is_connected(void);
 
 /**
 * \brief Report detection status
@@ -486,7 +486,13 @@ DLL_EXPORT MountType ahp_gt_get_mount_type(void);
 * \brief Get the current GT controller axis number
 * \return The GT controller axis number
 */
-DLL_EXPORT int ahp_gt_get_axis_number();
+DLL_EXPORT int ahp_gt_get_axis_number(void);
+
+/**
+* \brief Get the current GT controller axis number limit
+* \return The GT controller axis number limit
+*/
+DLL_EXPORT int ahp_gt_get_axes_limit(void);
 
 /**
 * \brief Get the current GT features
@@ -602,7 +608,7 @@ DLL_EXPORT int ahp_gt_get_direction_invert(int axis);
 * \brief Get the mount flags
 * \return Custom 10bit GTFlags - for future usage
 */
-DLL_EXPORT GTFlags ahp_gt_get_mount_flags();
+DLL_EXPORT GTFlags ahp_gt_get_mount_flags(void);
 
 /**
 * \brief Get the stepping configuration
@@ -658,6 +664,12 @@ DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 * \param value The motor axis number
 */
 DLL_EXPORT void ahp_gt_set_axis_number(int axis, int value);
+
+/**
+* \brief Set the GT controller axis number limit
+* \param value The motor axis number limit
+*/
+DLL_EXPORT void ahp_gt_set_axes_limit(int value);
 
 /**
 * \brief Set the Skywatcher features
@@ -797,7 +809,7 @@ DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 * \brief Detect the currently selected device
 * \return -1 if no devices were detected, 0 if a device with the current address was detected
 */
-DLL_EXPORT int ahp_gt_detect_device();
+DLL_EXPORT int ahp_gt_detect_device(void);
 
 /**
 * \brief Select a device on a serial bus
@@ -810,7 +822,7 @@ DLL_EXPORT int ahp_gt_select_device(int address);
 * \brief Obtain the current device address
 * \return -1 if no devices were detected at all, or currently selected device address
 */
-DLL_EXPORT int ahp_gt_get_current_device();
+DLL_EXPORT int ahp_gt_get_current_device(void);
 
 /**
 * \brief Change the current device address
@@ -822,7 +834,7 @@ DLL_EXPORT void ahp_gt_set_address(int address);
 * \brief Get the current device address
 * \return the address of the connected GT Controller
 */
-DLL_EXPORT int ahp_gt_get_address();
+DLL_EXPORT int ahp_gt_get_address(void);
 
 /**\}
 * \defgroup Cfg Configuration
@@ -927,7 +939,7 @@ DLL_EXPORT void ahp_gt_set_aligned(int aligned);
 * \brief Get the alignment state of the current device
 * \return 1 if aligned, 0 if not yet aligned
 */
-DLL_EXPORT int ahp_gt_is_aligned();
+DLL_EXPORT int ahp_gt_is_aligned(void);
 
 /**
 * \brief Set current time
@@ -939,7 +951,7 @@ DLL_EXPORT void ahp_gt_set_time(double seconds);
 * \brief Get current time
 * \return Current time
 */
-DLL_EXPORT double ahp_gt_get_time();
+DLL_EXPORT double ahp_gt_get_time(void);
 
 
 /**
@@ -952,7 +964,7 @@ DLL_EXPORT void ahp_gt_set_time_offset(double offset);
 * \brief Get current time offset
 * \return Current time offset
 */
-DLL_EXPORT double ahp_gt_get_time_offset();
+DLL_EXPORT double ahp_gt_get_time_offset(void);
 
 /**
 * \brief Set geographic coordinates
@@ -1020,12 +1032,12 @@ DLL_EXPORT void ahp_gt_correct_tracking(int axis, double target_period, int *int
 /**
 * \brief Start the tracking thread
 */
-DLL_EXPORT void ahp_gt_start_tracking_thread();
+DLL_EXPORT void ahp_gt_start_tracking_thread(void);
 
 /**
 * \brief Stop the tracking thread
 */
-DLL_EXPORT void ahp_gt_stop_tracking_thread();
+DLL_EXPORT void ahp_gt_stop_tracking_thread(void);
 
 /**
 * \brief Set the tracking mode
@@ -1037,7 +1049,7 @@ DLL_EXPORT void ahp_gt_set_tracking_mode(int mode);
 * \brief Get the tracking mode
 * \return The tracking mode - 0: no tracking 1: EQ mode 2: AZ mode
 */
-DLL_EXPORT int ahp_gt_get_tracking_mode();
+DLL_EXPORT int ahp_gt_get_tracking_mode(void);
 
 /**
 * \brief Start a test tracking motion
@@ -1067,19 +1079,19 @@ DLL_EXPORT void ahp_gt_get_alt_az_coordinates(double Ra, double Dec, double* Alt
 * \brief Get the current hour angle
 * \return The current hour angle
 */
-DLL_EXPORT double ahp_gt_get_ha();
+DLL_EXPORT double ahp_gt_get_ha(void);
 
 /**
 * \brief Get the current right ascension
 * \return The current right ascension
 */
-DLL_EXPORT double ahp_gt_get_ra();
+DLL_EXPORT double ahp_gt_get_ra(void);
 
 /**
 * \brief Get the current declination
 * \return The current declination
 */
-DLL_EXPORT double ahp_gt_get_dec();
+DLL_EXPORT double ahp_gt_get_dec(void);
 
 /**\}
  * \}

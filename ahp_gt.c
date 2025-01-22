@@ -31,6 +31,7 @@
 
 #include "rs232.c"
 
+#define AXES_LIMIT 127
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 #define MAX_STEP_FREQ 1000
@@ -48,7 +49,6 @@
 #ifndef SIDEREAL_24
 #define SIDEREAL_24 SIDEREAL_DAY * 24.0 / SOLAR_DAY
 #endif
-#define num_axes 127
 
 typedef struct {
     int index;
@@ -83,7 +83,8 @@ typedef struct {
 
 typedef struct {
     int index;
-    gt_axis axis[num_axes];
+    int num_axes;
+    gt_axis axis[AXES_LIMIT];
     int rs232_polarity;
     int baud_rate;
     unsigned char pwmfreq;
@@ -709,21 +710,30 @@ static void long2Revu24str(unsigned int n, char *str)
     str[6]        = '\0';
 }
 
-static int read_eqmod()
+static int read_eqmod(int cmd)
 {
+    char * str;
     char * reply;
+    char * response;
     int err_code = 0, nbytes_read = 0;
     int max_err = 15;
     // Clear string
-    memset(response, '\0', 32);
+    str = (char*)malloc(32);
+    reply = (char*)malloc(32);
+    memset(str, 0, 32);
+    memset(reply, 0, 32);
+    response = str;
     unsigned char c = 0;
-    while(c != '\r' && err_code < max_err) {
-        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
-            response[nbytes_read++] = c;
-        } else {
-            err_code++;
+    int len = 7 + (cmd == GetAxisStatus ? 0 : 3);
+    while(nbytes_read < len && err_code < max_err) {
+        int nread = ahp_serial_RecvBuf(str, len-nbytes_read);
+        if(nread > 0) {
+            str += nread;
+            nbytes_read += nread;
             usleep(1000);
+            break;
         }
+        err_code++;
     }
     if (err_code == max_err)
     {
@@ -786,12 +796,10 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     pgarb("%s\n", command);
 
     ahp_serial_flushRXTX();
-    for(c = 0; c < n; c++) {
-        if ((ahp_serial_SendByte((unsigned char)command[c])) < 0)
-            goto ret_err;
-    }
+    if(ahp_serial_SendBuf(command, n) < 0)
+        goto ret_err;
 
-    ret = read_eqmod();
+    ret = ((cmd == SetAddress || cmd == SetAxis) ? 0 : read_eqmod(cmd));
     if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
     return ret;
@@ -1076,9 +1084,15 @@ void ahp_gt_read_values(int axis)
     if(!ahp_gt_is_connected())
         return;
     int offset = 0;
-    devices[ahp_gt_get_current_device()].axis [axis].totalsteps = dispatch_command(InquireGridPerRevolution, axis, -1);
-    devices[ahp_gt_get_current_device()].axis [axis].wormsteps = dispatch_command(InquireTimerInterruptFreq, axis, -1);
-    devices[ahp_gt_get_current_device()].axis [axis].multiplier = dispatch_command(InquireHighSpeedRatio, axis, -1);
+    double value = dispatch_command(InquireGridPerRevolution, axis, -1);
+    if(value > 0)
+        devices[ahp_gt_get_current_device()].axis [axis].totalsteps = value;
+    value = dispatch_command(InquireTimerInterruptFreq, axis, -1);
+    if(value > 0)
+        devices[ahp_gt_get_current_device()].axis [axis].wormsteps = value;
+    value = dispatch_command(InquireHighSpeedRatio, axis, -1);
+    if(value > 0)
+        devices[ahp_gt_get_current_device()].axis [axis].multiplier = value;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = 50;
     devices[ahp_gt_get_current_device()].axis [axis].guide = 12709;
     devices[ahp_gt_get_current_device()].axis [axis].one_second = 1500000;
@@ -1218,7 +1232,6 @@ int ahp_gt_connect(const char* port)
 retry:
         if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
             ahp_gt_connected = 1;
-            memset(devices, 0, sizeof(gt_info)*128);
             memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
             if(!ahp_gt_detect_device()) {
                 return 0;
@@ -1475,6 +1488,16 @@ void ahp_gt_set_axis_number(int axis, int value)
     ahp_gt_read_values(value);
 }
 
+void ahp_gt_set_axes_limit(int value)
+{
+    devices[ahp_gt_get_current_device()].num_axes = value;
+}
+
+int ahp_gt_get_axes_limit()
+{
+    return devices[ahp_gt_get_current_device()].num_axes;
+}
+
 void ahp_gt_set_features(int axis, SkywatcherFeature value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1552,7 +1575,7 @@ void ahp_gt_set_rs232_polarity(int value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].rs232_polarity = value&1;
-    for(a = 0; a < num_axes; a++)
+    for(a = 0; a < devices[ahp_gt_get_current_device()].num_axes; a++)
         optimize_values(a);
 }
 
@@ -1640,6 +1663,7 @@ int ahp_gt_detect_device() {
     int a = 0;
     ahp_gt_detected[ahp_gt_get_current_device()] = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
+    int num_axes = ahp_gt_get_axes_limit();
     for (a = 0; a < num_axes; a++) {
         dispatch_command(SetAddress, a, ahp_gt_get_current_device());
         if(ahp_gt_get_mc_version(a) > 0) {
@@ -1649,6 +1673,7 @@ int ahp_gt_detect_device() {
             ahp_gt_detected[ahp_gt_get_current_device()] = 1;
         }
     }
+    ahp_gt_set_axes_limit(a);
     if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
         return 0;
     }
@@ -1672,7 +1697,7 @@ void ahp_gt_set_address(int address)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].index = fmax(1, fmin(address, 128)) - 1;
-    for(a = 0; a < num_axes; a++)
+    for(a = 0; a < devices[ahp_gt_get_current_device()].num_axes; a++)
         optimize_values(a);
 }
 

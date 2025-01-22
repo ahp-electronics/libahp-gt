@@ -555,8 +555,6 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         }
         pthread_mutex_unlock(&ahp_serial_mutex);
     }
-    if(nbytes < size)
-        return err;
     return nbytes;
 }
 
