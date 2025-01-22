@@ -713,27 +713,29 @@ static int read_eqmod()
 {
     char * reply;
     int err_code = 0, nbytes_read = 0;
-    int max_err = 10;
+    int max_err = 15;
     // Clear string
     memset(response, '\0', 32);
-    char c = 0;
-    while(c != '\r' && err_code < max_err && nbytes_read < 32) {
-        c = ahp_serial_RecvByte();
-        if(errno != 0 || c < '0') {
+    unsigned char c = 0;
+    while(c != '\r' && err_code < max_err) {
+        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
+            response[nbytes_read++] = c;
+        } else {
             err_code++;
-            continue;
+            usleep(1000);
         }
-        response[nbytes_read++] = c;
     }
     if (err_code == max_err)
     {
-        return -1;
+        return 0;
     }
-    nbytes_read++;
     if(!strncmp(command, response, strlen(command))) {
         reply = &response[strlen(command)];
         nbytes_read -= strlen(command);
     } else reply = response;
+
+    // Remove CR
+    reply[nbytes_read - 1] = '\0';
 
     pwarn("%s\n", reply);
 
@@ -914,6 +916,7 @@ static int WriteAndCheck(int axis, int pos, int val)
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
+            usleep(10000);
             ret = dispatch_command(SetVars, pos, val);
             if (ret>-1)
             {
