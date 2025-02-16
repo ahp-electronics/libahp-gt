@@ -799,7 +799,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     if(ahp_serial_SendBuf(command, n) < 0)
         goto ret_err;
 
-    ret = ((cmd == SetAddress || cmd == SetAxis) ? 0 : read_eqmod(cmd));
+    ret = ((cmd == SetAddress || cmd == SetAxis || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod(cmd));
     if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
     return ret;
