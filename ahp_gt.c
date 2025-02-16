@@ -20,7 +20,7 @@
 *    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 *    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 *    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-*    SOFTWARE.
+*    SOFTWARE._
 */
 
 #include "ahp_gt.h"
@@ -710,30 +710,21 @@ static void long2Revu24str(unsigned int n, char *str)
     str[6]        = '\0';
 }
 
-static int read_eqmod(int cmd)
+static int read_eqmod()
 {
-    char * str;
     char * reply;
-    char * response;
     int err_code = 0, nbytes_read = 0;
-    int max_err = 15;
+    int max_err = 30;
     // Clear string
-    str = (char*)malloc(32);
-    reply = (char*)malloc(32);
-    memset(str, 0, 32);
-    memset(reply, 0, 32);
-    response = str;
+    memset(response, '\0', 32);
     unsigned char c = 0;
-    int len = 7 + (cmd == GetAxisStatus ? 0 : 3);
-    while(nbytes_read < len && err_code < max_err) {
-        int nread = ahp_serial_RecvBuf(str, len-nbytes_read);
-        if(nread > 0) {
-            str += nread;
-            nbytes_read += nread;
+    while(c != '\r' && err_code < max_err) {
+        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
+            response[nbytes_read++] = c;
+        } else {
+            err_code++;
             usleep(1000);
-            break;
         }
-        err_code++;
     }
     if (err_code == max_err)
     {
@@ -799,7 +790,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     if(ahp_serial_SendBuf(command, n) < 0)
         goto ret_err;
 
-    ret = ((cmd == SetAddress || cmd == SetAxis || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod(cmd));
+    ret = ((cmd == SetAddress || cmd == SetAxis || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
     if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
     return ret;
@@ -903,6 +894,7 @@ static int Read(int axis, int pos)
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
+            usleep(10000);
             ret = dispatch_command(GetVars, pos, -1);
             if (ret>-1)
             {
@@ -918,7 +910,7 @@ static int Read(int axis, int pos)
 static int WriteAndCheck(int axis, int pos, int val)
 {
     int ret = 0;
-    int ntries = 10;
+    int ntries = 30;
     while (!ret && ntries-- > 0)
     {
         ret = dispatch_command(FlashEnable, axis, -1);
@@ -928,6 +920,7 @@ static int WriteAndCheck(int axis, int pos, int val)
             ret = dispatch_command(SetVars, pos, val);
             if (ret>-1)
             {
+                usleep(10000);
                 if (Read(axis, pos) == val) {
                     ntries = 0;
                     return 1;
