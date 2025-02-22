@@ -1053,11 +1053,11 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     *percent = *percent + 6.25;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         idx += axis;
-    if (!WriteAndCheck (axis, offset + 7, values[idx++])) {
-        *finished = -1;
-        return;
-    }
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
+        if (!WriteAndCheck (axis, 7, values[idx++])) {
+            *finished = -1;
+            return;
+        }
         if (!WriteAndCheck (axis, 15, values[idx++])) {
             *finished = -1;
             return;
@@ -1067,6 +1067,11 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
                 *finished = -1;
                 return;
             }
+    } else {
+        if (!WriteAndCheck (axis, offset + 7, values[idx++])) {
+            *finished = -1;
+            return;
+        }
     }
     *percent = *percent + 6.25;
     Reload(axis);

@@ -369,6 +369,30 @@ DIRECTION_FORWARD = 0x00,
 DIRECTION_BACKWARD = 0x01,
 } SkywatcherDirection;
 
+///Axis Indexes
+typedef enum {
+Ra = 0,
+Dec,
+Focus,
+Filter,
+Rotator,
+TipX,
+TipY,
+TipZ,
+TiltX,
+TiltY,
+TiltZ,
+PlaneX,
+PlaneY,
+PlaneZ,
+RailX,
+RailY,
+RailZ,
+///Guide, following indexes add motion compensation to the previous axes, starting  from Ra
+Guide = 64,
+NumAxes,
+}  SkywatcherAxis;
+
 ///Axis Status
 typedef struct {
 ///Motor was initialized
