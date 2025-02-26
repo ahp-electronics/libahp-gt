@@ -853,13 +853,9 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].index &= 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
     devices[ahp_gt_get_current_device()].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x238)
-        devices[ahp_gt_get_current_device()].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [0].divider << 1);
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x338)
-        devices[ahp_gt_get_current_device()].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [1].divider << 1);
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538)
         devices[ahp_gt_get_current_device()].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [axis].divider << 1);
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
+    else
         devices[ahp_gt_get_current_device()].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [0].divider << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].axis [1].divider) << 5);
 }
 
@@ -1051,8 +1047,6 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = *percent + 6.25;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
-        idx += axis;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         if (!WriteAndCheck (axis, 7, values[idx++])) {
             *finished = -1;
@@ -1062,11 +1056,12 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
             *finished = -1;
             return;
         }
-        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538)
+        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
             if (!WriteAndCheck (axis, 8, values[idx++])) {
                 *finished = -1;
                 return;
             }
+        }
     } else {
         if (!WriteAndCheck (axis, offset + 7, values[idx++])) {
             *finished = -1;
