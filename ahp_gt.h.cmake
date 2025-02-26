@@ -636,9 +636,10 @@ DLL_EXPORT int ahp_gt_get_rs232_polarity(void);
 
 /**
 * \brief Get the microstepping pwm frequency
+* \param axis The motor to query
 * \return The PWM frequency index - microstepping only
 */
-DLL_EXPORT int ahp_gt_get_pwm_frequency(void);
+DLL_EXPORT int ahp_gt_get_pwm_frequency(int axis);
 
 /**
 * \brief Get the forward direction
@@ -806,9 +807,10 @@ DLL_EXPORT void ahp_gt_set_rs232_polarity(int value);
 
 /**
 * \brief Set the microstepping pwm frequency
+* \param axis The motor to reconfigure
 * \param value The microstepping PWM frequency index after ahp_gt_write_values
 */
-DLL_EXPORT void ahp_gt_set_pwm_frequency(int value);
+DLL_EXPORT void ahp_gt_set_pwm_frequency(int axis, int value);
 
 /**
 * \brief Set the forward direction
