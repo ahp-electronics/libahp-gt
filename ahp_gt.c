@@ -56,6 +56,7 @@ typedef struct {
     int wormsteps;
     int accel_steps;
     int divider;
+    int torque;
     int multiplier;
     int direction_invert;
     int stepping_conf;
@@ -854,7 +855,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
     devices[ahp_gt_get_current_device()].axis [axis].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38)
-        devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [axis].divider << 1);
+        devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [axis].divider << 1) | ((((unsigned char)(devices[ahp_gt_get_current_device()].axis[axis].torque + 8)) & 0xf) << 5);
     else
         devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [0].divider << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].axis [1].divider) << 5);
 }
@@ -1414,6 +1415,13 @@ int ahp_gt_get_rs232_polarity()
     return devices[ahp_gt_get_current_device()].rs232_polarity;
 }
 
+int ahp_gt_get_torque(int axis)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    return devices[ahp_gt_get_current_device()].axis[axis].torque;
+}
+
 int ahp_gt_get_pwm_frequency(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1565,6 +1573,14 @@ void ahp_gt_set_guide_steps(int axis, double value)
     optimize_values(axis);
 }
 
+void ahp_gt_set_torque(int axis, int value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].axis[axis].torque = fmin(7, fmax(-7, value));
+    optimize_values(axis);
+}
+
 void ahp_gt_set_pwm_frequency(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1606,7 +1622,13 @@ void ahp_gt_set_mount_flags(GTFlags value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].mount_flags = value;
+    devices[ahp_gt_get_current_device()].mount_flags = value & ~0x1;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x385) {
+        if((value & torqueControl) != 0)
+            devices[ahp_gt_get_current_device()].mount_flags |= 1;
+    } else if((value & isForkMount) != 0) {
+        devices[ahp_gt_get_current_device()].mount_flags |= 1;
+    }
 }
 
 void ahp_gt_set_stepping_conf(int axis, GTSteppingConfiguration value)

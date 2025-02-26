@@ -161,6 +161,8 @@ halfCurrentRA = 0x2,
 halfCurrentDec = 0x4,
 ///high Baud Rate 115200
 bauds_115200 = 0x8,
+///Control torque
+torqueControl = 0x10,
 } GTFlags;
 
 ///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only
@@ -635,6 +637,13 @@ DLL_EXPORT double ahp_gt_get_acceleration_angle(int axis);
 DLL_EXPORT int ahp_gt_get_rs232_polarity(void);
 
 /**
+* \brief Get the motor torque offset
+* \param axis The motor to reconfigure
+* \return The torque amount, can be negative, ranges from -7 to +7
+*/
+DLL_EXPORT int ahp_gt_get_torque(int axis);
+
+/**
 * \brief Get the microstepping pwm frequency
 * \param axis The motor to query
 * \return The PWM frequency index - microstepping only
@@ -806,6 +815,13 @@ DLL_EXPORT void ahp_gt_set_acceleration_angle(int axis, double value);
 DLL_EXPORT void ahp_gt_set_rs232_polarity(int value);
 
 /**
+* \brief Set the motor torque offset
+* \param axis The motor to reconfigure
+* \param value The torque amount expected, can be negative, ranges from -7 to +7
+*/
+DLL_EXPORT void ahp_gt_set_torque(int axis, int value);
+
+/**
 * \brief Set the microstepping pwm frequency
 * \param axis The motor to reconfigure
 * \param value The microstepping PWM frequency index after ahp_gt_write_values
@@ -821,7 +837,7 @@ DLL_EXPORT void ahp_gt_set_direction_invert(int axis, int value);
 
 /**
 * \brief Set the mount flags
-* \param value Only isForkMount is supported at the moment
+* \param value Only isForkMount and torqueControl are supported at the moment
 */
 DLL_EXPORT void ahp_gt_set_mount_flags(GTFlags value);
 
