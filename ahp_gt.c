@@ -1000,6 +1000,13 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)
         *percent = axis * 50;
     int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
+    int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x385) {
+        if((ahp_gt_get_mount_flags() & torqueControl) != 0)
+            mount_flags |= 1;
+    } else if((ahp_gt_get_mount_flags() & isForkMount) != 0) {
+        mount_flags |= 1;
+    }
     int values[] = {
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps,
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps,
@@ -1008,8 +1015,8 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     devices[ahp_gt_get_current_device()].axis [axis].one_second,
     ((int)devices[ahp_gt_get_current_device()].axis [axis].accel_steps << 18) | ((int)devices[ahp_gt_get_current_device()].axis [axis].accel_increment << 10) | (((int)devices[ahp_gt_get_current_device()].axis [axis].multiplier & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].axis[axis].stepping_conf & 0x03) << 1) | (devices[ahp_gt_get_current_device()].axis[axis].direction_invert & 1),
     (int)devices[ahp_gt_get_current_device()].axis [axis].features,
-        ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((devices[ahp_gt_get_current_device()].mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
-    ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((devices[ahp_gt_get_current_device()].mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | (((devices[ahp_gt_get_current_device()].mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
+        ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
+    ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
     axis
     };
     int idx = 0;
@@ -1185,6 +1192,14 @@ calc_ratios:
     devices[ahp_gt_get_current_device()].axis [axis].worm = fabs(round(worm));
     double sidereal_period = (double)(devices[ahp_gt_get_current_device()].axis[axis].multiplier * devices[ahp_gt_get_current_device()].axis[axis].wormsteps) / devices[ahp_gt_get_current_device()].axis[axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period * SIDEREAL_DAY / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
+    int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x385) {
+        if((value & torqueControl) != 0)
+            mount_flags |= 1;
+    } else if((value & isForkMount) != 0) {
+        mount_flags |= 1;
+    }
+    devices[ahp_gt_get_current_device()].mount_flags = mount_flags;
     optimize_values(axis);
 }
 
@@ -1622,13 +1637,7 @@ void ahp_gt_set_mount_flags(GTFlags value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].mount_flags = value & ~0x1;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x385) {
-        if((value & torqueControl) != 0)
-            devices[ahp_gt_get_current_device()].mount_flags |= 1;
-    } else if((value & isForkMount) != 0) {
-        devices[ahp_gt_get_current_device()].mount_flags |= 1;
-    }
+    devices[ahp_gt_get_current_device()].mount_flags = value;
 }
 
 void ahp_gt_set_stepping_conf(int axis, GTSteppingConfiguration value)
