@@ -1017,7 +1017,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     devices[ahp_gt_get_current_device()].axis [axis].one_second,
     ((int)devices[ahp_gt_get_current_device()].axis [axis].accel_steps << 18) | ((int)devices[ahp_gt_get_current_device()].axis [axis].accel_increment << 10) | (((int)devices[ahp_gt_get_current_device()].axis [axis].multiplier & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].axis[axis].stepping_conf & 0x03) << 1) | (devices[ahp_gt_get_current_device()].axis[axis].direction_invert & 1),
     (int)devices[ahp_gt_get_current_device()].axis [axis].features,
-        ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
+    ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
     ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
     axis
     };
@@ -1160,8 +1160,11 @@ void ahp_gt_read_values(int axis)
     }
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38)
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 1) & 0xf;
+        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538)
+            devices[ahp_gt_get_current_device()].axis[axis].torque = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 5) & 0xf;
+    }
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
 calc_ratios:
