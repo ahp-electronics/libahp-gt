@@ -1175,6 +1175,13 @@ DLL_EXPORT double ahp_gt_get_dec(void);
 /**\}
  * \}
  * \}*/
+ 
+#if (AHP_GT_VERSION < 0x173)
+#define GT GT1
+#define ahp_gt_connect(a, b) ahp_gt_connect(a)
+#define ahp_gt_set_pwm_frequency(a, b) ahp_gt_set_pwm_frequency(b)
+#define ahp_gt_get_pwm_frequency(a) ahp_gt_get_pwm_frequency()
+#endif
 
 #ifdef __cplusplus
 } // extern "C"
