@@ -737,6 +737,13 @@ DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 DLL_EXPORT void ahp_gt_set_axis_number(int axis, int value);
 
 /**
+* \brief Get the GT controller axis name
+* \param axis The motor axis number
+* \return The motor axis name or actuation destination
+*/
+DLL_EXPORT const char* ahp_gt_axis_name(int axis);
+
+/**
 * \brief Set the GT controller axis number limit
 * \param value The motor axis number limit
 */
@@ -818,6 +825,28 @@ DLL_EXPORT void ahp_gt_set_wormsteps(int axis, int value);
 * \param value The guiding speed in radians per second after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
+
+
+/**
+* \brief Set the voltage for torque or intensity estimation
+* \param axis The motor to reconfigure
+* \param value The voltage or constant used as
+*/
+void ahp_gt_set_voltage(int axis, double value);
+
+/**
+* \brief Add an intensity deviator for the torque or intensiry estimation
+* \param axis The motor to reconfigure
+* \param deviator The estimator a second order polynome describing the deviation
+*/
+void ahp_gt_add_current_deviator(int axis, gt_deviator deviator);
+
+/**
+* \brief Get the intensity or torque estimated at a given frequency
+* \param freq The frequency at will be measured
+* \return The torque or intensity calculated
+*/
+double ahp_gt_get_current_deviation(int axis, double freq);
 
 /**
 * \brief Set the acceleration in high speed mode

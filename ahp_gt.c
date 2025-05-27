@@ -51,6 +51,12 @@
 #endif
 
 typedef struct {
+    double variable;
+    double constant;
+    double exponent;
+} gt_deviator;
+
+typedef struct {
     int index;
     int totalsteps;
     int wormsteps;
@@ -79,6 +85,9 @@ typedef struct {
     double maxspeed_value;
     double accel_increment;
     unsigned char pwmfreq;
+    double voltage;
+    gt_deviator *deviators;
+    int deviators_n;
     SkywatcherMotionMode motionmode;
     SkywatcherAxisStatus axisstatus;
     GTFeature gtfeature;
@@ -104,6 +113,7 @@ typedef struct {
     int isdst;
     int connfd;
     int threads_running;
+    int detected;
     pthread_t tracking_thread;
 } gt_info;
 
@@ -1216,7 +1226,6 @@ int ahp_gt_connect_fd(int fd)
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
         memset(devices, 0, sizeof(gt_info)*128);
-        memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         if(!ahp_gt_detect_device()) {
             return 0;
         }
@@ -1297,7 +1306,6 @@ void ahp_gt_disconnect()
             mutexes_initialized = 0;
         }
         memset(devices, 0, sizeof(gt_info)*128);
-        memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
         ahp_gt_connected = 0;
     }
 }
@@ -1309,7 +1317,7 @@ unsigned int ahp_gt_is_connected()
 
 unsigned int ahp_gt_is_detected(int index)
 {
-    return ahp_gt_detected[index];
+    return devices[index].detected;
 }
 
 int ahp_gt_get_mc_version(int axis)
@@ -1705,6 +1713,26 @@ void ahp_gt_set_wormsteps(int axis, int value)
     devices[ahp_gt_get_current_device()].axis[axis].wormsteps = abs(value);
 }
 
+void ahp_gt_set_voltage(int axis, double value) {
+    devices[ahp_gt_get_current_device()].axis[axis].voltage = value;
+}
+
+void ahp_gt_add_current_deviator(int axis, gt_deviator deviator) {
+    devices[ahp_gt_get_current_device()].axis[axis].deviators_n++;
+    devices[ahp_gt_get_current_device()].axis[axis].deviators = (gt_deviator*)realloc(devices[ahp_gt_get_current_device()].axis[axis].deviators, devices[ahp_gt_get_current_device()].axis[axis].deviators_n * sizeof(gt_deviator));
+    memcpy(&devices[ahp_gt_get_current_device()].axis[axis].deviators[devices[ahp_gt_get_current_device()].axis[axis].deviators_n-1], &deviator, sizeof(gt_deviator));
+}
+
+double ahp_gt_get_current_deviation(int axis, double freq) {
+    int x;
+    double y = 0;
+    for (x = 0; x < devices[ahp_gt_get_current_device()].axis[axis].deviators_n; x ++) {
+        y += devices[ahp_gt_get_current_device()].axis[axis].deviators[x].constant;
+        y += pow(devices[ahp_gt_get_current_device()].axis[axis].deviators[x].variable, devices[ahp_gt_get_current_device()].axis[axis].deviators[x].exponent);
+    }
+    return devices[ahp_gt_get_current_device()].axis[axis].voltage/pow(y, 0.5);
+}
+
 int ahp_gt_get_current_device() {
     return ahp_gt_current_device;
 }
@@ -1713,7 +1741,7 @@ int ahp_gt_detect_device() {
     if(!ahp_gt_is_connected())
         return -1;
     int a = 0;
-    ahp_gt_detected[ahp_gt_get_current_device()] = 0;
+    devices[ahp_gt_get_current_device()].detected = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     int num_axes = ahp_gt_get_axes_limit();
     for (a = 0; a < num_axes; a++) {
@@ -1722,7 +1750,7 @@ int ahp_gt_detect_device() {
             pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
             devices[ahp_gt_get_current_device()].axis[a].motor = 200;
             ahp_gt_read_values(a);
-            ahp_gt_detected[ahp_gt_get_current_device()] = 1;
+            devices[ahp_gt_get_current_device()].detected = 1;
         }
     }
     ahp_gt_set_axes_limit(a);
@@ -2072,4 +2100,64 @@ int ahp_gt_is_aligned() {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
     return devices[ahp_gt_get_current_device()].is_aligned;
+}
+
+const char* ahp_gt_axis_name(int axis) {
+    const char * ret[] =
+    {
+    "Ra",
+    "Dec",
+    "Focus",
+    "Filter",
+    "Rotator",
+    "Iris",
+    "Shutter",
+    "Dome",
+    "Instrument",
+    "TipX",
+    "TipY",
+    "TipZ",
+    "TiltX",
+    "TiltY",
+    "TiltZ",
+    "InstrumentX",
+    "InstrumentY",
+    "InstrumentZ",
+    "InstrumentRotationX",
+    "InstrumentRotationY",
+    "InstrumentRotationZ",
+    "PhasePrimaryX",
+    "PhasePrimaryY",
+    "PhasePrimaryZ",
+    "PhaseSecondaryX",
+    "PhaseSecondaryY",
+    "PhaseSecondaryZ",
+    "PhaseTertiaryX",
+    "PhaseTertiaryY",
+    "PhaseTertiaryZ",
+    "FrequencyPrimaryX",
+    "FrequencyPrimaryY",
+    "FrequencyPrimaryZ",
+    "FrequencySecondaryX",
+    "FrequencySecondaryY",
+    "FrequencySecondaryZ",
+    "FrequencyTertiaryX",
+    "FrequencyTertiaryY",
+    "FrequencyTertiaryZ",
+    "PCMPrimaryX",
+    "PCMPrimaryY",
+    "PCMPrimaryZ",
+    "PCMSecondaryX",
+    "PCMSecondaryY",
+    "PCMSecondaryZ",
+    "PCMTertiaryX",
+    "PCMTertiaryY",
+    "PCMTertiaryZ",
+    "PlaneX",
+    "PlaneY",
+    "PlaneZ",
+    "RailX",
+    "RailY",
+    "RailZ"};
+    return ret[axis];
 }
