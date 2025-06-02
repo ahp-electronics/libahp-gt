@@ -51,18 +51,12 @@
 #endif
 
 typedef struct {
-    double variable;
-    double constant;
-    double exponent;
-} gt_deviator;
-
-typedef struct {
     int index;
     int totalsteps;
     int wormsteps;
     int accel_steps;
     int divider;
-    int torque;
+    int intensity;
     int multiplier;
     int direction_invert;
     int stepping_conf;
@@ -865,7 +859,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
     devices[ahp_gt_get_current_device()].axis [axis].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538)
-        devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [axis].divider << 1) | ((((unsigned char)(devices[ahp_gt_get_current_device()].axis[axis].torque)) & 0xf) << 5);
+        devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [axis].divider << 1) | ((((unsigned char)(devices[ahp_gt_get_current_device()].axis[axis].intensity)) & 0xf) << 5);
     else if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [0].divider << 1) | (((unsigned char)devices[ahp_gt_get_current_device()].axis [1].divider) << 5);
     else
@@ -1173,7 +1167,7 @@ void ahp_gt_read_values(int axis)
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 1) & 0xf;
         if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538)
-            devices[ahp_gt_get_current_device()].axis[axis].torque = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 5) & 0xf;
+            devices[ahp_gt_get_current_device()].axis[axis].intensity = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 5) & 0xf;
     }
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
@@ -1200,8 +1194,10 @@ calc_ratios:
             decimals = fabs(motor - round(motor));
         if(decimals == 0) break;
         worm /= decimals;
-        motor /= decimals;
+        motor /= decimals;  
     }
+    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
+    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
     devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
     devices[ahp_gt_get_current_device()].axis [axis].motor = fabs(round(motor));
     devices[ahp_gt_get_current_device()].axis [axis].worm = fabs(round(worm));
@@ -1443,18 +1439,18 @@ int ahp_gt_get_rs232_polarity()
     return devices[ahp_gt_get_current_device()].rs232_polarity;
 }
 
-int ahp_gt_get_torque(int axis)
+int ahp_gt_get_intensity(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return devices[ahp_gt_get_current_device()].axis[axis].torque;
+    return devices[ahp_gt_get_current_device()].axis[axis].intensity;
 }
 
 int ahp_gt_get_pwm_frequency(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    devices[ahp_gt_get_current_device()].axis [axis].pwmfreq;
+    return devices[ahp_gt_get_current_device()].axis [axis].pwmfreq;
 }
 
 int ahp_gt_get_direction_invert(int axis)
@@ -1601,14 +1597,6 @@ void ahp_gt_set_guide_steps(int axis, double value)
     optimize_values(axis);
 }
 
-void ahp_gt_set_torque(int axis, int value)
-{
-    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return;
-    devices[ahp_gt_get_current_device()].axis[axis].torque = value;
-    optimize_values(axis);
-}
-
 void ahp_gt_set_pwm_frequency(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1717,13 +1705,21 @@ void ahp_gt_set_voltage(int axis, double value) {
     devices[ahp_gt_get_current_device()].axis[axis].voltage = value;
 }
 
-void ahp_gt_add_current_deviator(int axis, gt_deviator deviator) {
+void ahp_gt_set_intensity(int axis, int value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity = value;
+    optimize_values(axis);
+}
+
+void ahp_gt_add_intensity_deviator(int axis, gt_deviator deviator) {
     devices[ahp_gt_get_current_device()].axis[axis].deviators_n++;
     devices[ahp_gt_get_current_device()].axis[axis].deviators = (gt_deviator*)realloc(devices[ahp_gt_get_current_device()].axis[axis].deviators, devices[ahp_gt_get_current_device()].axis[axis].deviators_n * sizeof(gt_deviator));
     memcpy(&devices[ahp_gt_get_current_device()].axis[axis].deviators[devices[ahp_gt_get_current_device()].axis[axis].deviators_n-1], &deviator, sizeof(gt_deviator));
 }
 
-double ahp_gt_get_current_deviation(int axis, double freq) {
+double ahp_gt_get_intensity_deviation(int axis, double freq) {
     int x;
     double y = 0;
     for (x = 0; x < devices[ahp_gt_get_current_device()].axis[axis].deviators_n; x ++) {

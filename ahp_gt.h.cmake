@@ -432,6 +432,16 @@ Guide = 64,
 NumAxes,
 }  SkywatcherAxis;
 
+///Axis Intensity predictor
+typedef struct {
+///2nd order variable
+    double variable;
+///offset constant
+    double constant;
+///2nd order exponent
+    double exponent;
+} gt_deviator;
+
 ///Axis Status
 typedef struct {
 ///Motor was initialized
@@ -655,13 +665,6 @@ DLL_EXPORT double ahp_gt_get_acceleration_angle(int axis);
 DLL_EXPORT int ahp_gt_get_rs232_polarity(void);
 
 /**
-* \brief Get the motor torque offset
-* \param axis The motor to reconfigure
-* \return The torque amount, can be negative, ranges from -7 to +7
-*/
-DLL_EXPORT int ahp_gt_get_torque(int axis);
-
-/**
 * \brief Get the microstepping pwm frequency
 * \param axis The motor to query
 * \return The PWM frequency index - microstepping only
@@ -826,27 +829,40 @@ DLL_EXPORT void ahp_gt_set_wormsteps(int axis, int value);
 */
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
 
+/**
+* \brief Set the motor intensity offset
+* \param axis The motor to reconfigure
+* \param value The intensity amount expected, can be negative, ranges from -7 to +7
+*/
+DLL_EXPORT void ahp_gt_set_intensity(int axis, int value);
 
 /**
-* \brief Set the voltage for torque or intensity estimation
+* \brief Get the motor intensity offset
+* \param axis The motor to reconfigure
+* \return The intensity amount, can be negative, ranges from -7 to +7
+*/
+DLL_EXPORT int ahp_gt_get_intensity(int axis);
+
+/**
+* \brief Set the voltage for intensity or intensity estimation
 * \param axis The motor to reconfigure
 * \param value The voltage or constant used as
 */
 void ahp_gt_set_voltage(int axis, double value);
 
 /**
-* \brief Add an intensity deviator for the torque or intensiry estimation
+* \brief Add an intensity deviator for the intensiry estimation
 * \param axis The motor to reconfigure
 * \param deviator The estimator a second order polynome describing the deviation
 */
-void ahp_gt_add_current_deviator(int axis, gt_deviator deviator);
+void ahp_gt_add_intensity_deviator(int axis, gt_deviator deviator);
 
 /**
-* \brief Get the intensity or torque estimated at a given frequency
+* \brief Get the intensity or intensiry estimated at a given frequency
 * \param freq The frequency at will be measured
-* \return The torque or intensity calculated
+* \return The intensity calculated
 */
-double ahp_gt_get_current_deviation(int axis, double freq);
+double ahp_gt_get_intensity_deviation(int axis, double freq);
 
 /**
 * \brief Set the acceleration in high speed mode
@@ -860,13 +876,6 @@ DLL_EXPORT void ahp_gt_set_acceleration_angle(int axis, double value);
 * \param value If 1 is passed communication port polarity will be inverted after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_rs232_polarity(int value);
-
-/**
-* \brief Set the motor torque offset
-* \param axis The motor to reconfigure
-* \param value The torque amount expected, can be negative, ranges from -7 to +7
-*/
-DLL_EXPORT void ahp_gt_set_torque(int axis, int value);
 
 /**
 * \brief Set the microstepping pwm frequency
