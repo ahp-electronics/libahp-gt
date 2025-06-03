@@ -162,7 +162,7 @@ halfCurrentDec = 0x4,
 ///high Baud Rate 115200
 bauds_115200 = 0x8,
 ///Control torque
-torqueControl = 0x10,
+torqueControl = 0x400,
 } GTFlags;
 
 ///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only
@@ -830,18 +830,32 @@ DLL_EXPORT void ahp_gt_set_wormsteps(int axis, int value);
 DLL_EXPORT void ahp_gt_set_guide_steps(int axis, double value);
 
 /**
-* \brief Set the motor intensity offset
+* \brief Limit the axis in intensity
 * \param axis The motor to reconfigure
-* \param value The intensity amount expected, can be negative, ranges from -7 to +7
+* \param value pass 1 to limit the axis
 */
-DLL_EXPORT void ahp_gt_set_intensity(int axis, int value);
+DLL_EXPORT void ahp_gt_limit_intensity(int axis, int value);
 
 /**
-* \brief Get the motor intensity offset
-* \param axis The motor to reconfigure
-* \return The intensity amount, can be negative, ranges from -7 to +7
+* \brief Query if the axis is intensity limited
+* \param axis The motor to query
+* \return Non-zero if the axis is limited
 */
-DLL_EXPORT int ahp_gt_get_intensity(int axis);
+DLL_EXPORT int ahp_gt_is_intensity_limited(int axis);
+
+/**
+* \brief Set the intensity limit
+* \param axis The motor to reconfigure
+* \param value The intensity limit
+*/
+DLL_EXPORT void ahp_gt_set_intensity_limit(int axis, double value);
+
+/**
+* \brief Get the intensity limit
+* \param axis The motor to query
+* \return The intensity limit ahp_gt_set_intensity_limit
+*/
+DLL_EXPORT double ahp_gt_get_intensity_limit(int axis);
 
 /**
 * \brief Set the voltage for intensity or intensity estimation
@@ -851,14 +865,14 @@ DLL_EXPORT int ahp_gt_get_intensity(int axis);
 void ahp_gt_set_voltage(int axis, double value);
 
 /**
-* \brief Add an intensity deviator for the intensiry estimation
+* \brief Add an intensity deviator for the intensity estimation
 * \param axis The motor to reconfigure
 * \param deviator The estimator a second order polynome describing the deviation
 */
 void ahp_gt_add_intensity_deviator(int axis, gt_deviator deviator);
 
 /**
-* \brief Get the intensity or intensiry estimated at a given frequency
+* \brief Get the intensity or intensity estimated at a given frequency
 * \param freq The frequency at will be measured
 * \return The intensity calculated
 */

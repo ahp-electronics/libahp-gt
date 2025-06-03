@@ -56,6 +56,7 @@ typedef struct {
     int wormsteps;
     int accel_steps;
     int divider;
+    int intensity_limited;
     int intensity;
     int multiplier;
     int direction_invert;
@@ -1002,9 +1003,9 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         *percent = axis * 50;
     int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
-        if((ahp_gt_get_mount_flags() & torqueControl) != 0)
-            mount_flags |= 1;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x38) {
+        devices[ahp_gt_get_current_device()].axis [axis].wormsteps = devices[ahp_gt_get_current_device()].axis[axis].intensity;
+        devices[ahp_gt_get_current_device()].axis [axis].wormsteps |= (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited != 0) ? 0x400 : 0;
     } else if((ahp_gt_get_mount_flags() & isForkMount) != 0) {
         mount_flags |= 1;
     }
@@ -1123,6 +1124,11 @@ void ahp_gt_read_values(int axis)
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x37 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x38) {
         goto calc_ratios;
     }
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
+        devices[ahp_gt_get_current_device()].axis[axis].intensity = dispatch_command(InquireGridPerRevolution, 9, -1);
+        devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = ~(torqueControl^devices[ahp_gt_get_current_device()].axis[axis].intensity_limited);
+    }
+
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         offset = axis * 8;
     value = Read(axis, offset + 2);
@@ -1168,9 +1174,10 @@ void ahp_gt_read_values(int axis)
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 1) & 0xf;
-        devices[ahp_gt_get_current_device()].axis[axis].intensity = dispatch_command(InquireTimerInterruptFreq, 1, -1);
+        devices[ahp_gt_get_current_device()].axis[axis].intensity = (dispatch_command(InquireTimerInterruptFreq, 1, -1) & 0x3ff);
+        devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = (dispatch_command(InquireTimerInterruptFreq, 1, -1) & torqueControl) != 0;
     }
-    devices[ahp_gt_get_cuenrrent_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
+    devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
 calc_ratios:
     if (devices[ahp_gt_get_current_device()].axis [axis].steps == 0)
@@ -1197,8 +1204,6 @@ calc_ratios:
         worm /= decimals;
         motor /= decimals;  
     }
-    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
-    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
     devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
     devices[ahp_gt_get_current_device()].axis [axis].motor = fabs(round(motor));
     devices[ahp_gt_get_current_device()].axis [axis].worm = fabs(round(worm));
@@ -1440,7 +1445,29 @@ int ahp_gt_get_rs232_polarity()
     return devices[ahp_gt_get_current_device()].rs232_polarity;
 }
 
-int ahp_gt_get_intensity(int axis)
+void ahp_gt_limit_intensity(int axis, int value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited &= ~0x400;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited |= value ? 0x400 : 0;
+}
+
+int ahp_gt_is_intensity_limited(int axis)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return 0;
+    return (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited & 0x400) != 0;
+}
+
+void ahp_gt_set_intensity_limit(int axis, double value)
+{
+    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
+        return;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity = value;
+}
+
+double ahp_gt_get_intensity_limit(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
