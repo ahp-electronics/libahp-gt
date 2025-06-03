@@ -57,7 +57,7 @@ typedef struct {
     int accel_steps;
     int divider;
     int intensity_limited;
-    int intensity;
+    double intensity;
     int multiplier;
     int direction_invert;
     int stepping_conf;
@@ -1017,7 +1017,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
     ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
     axis,
-    (devices[ahp_gt_get_current_device()].axis[axis].intensity | (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited << 10)),
+    (devices[ahp_gt_get_current_device()].axis[axis].intensity + (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited ? torqueControl : 0)),
     };
     int idx = 0;
     if (!WriteAndCheck (axis, offset + 0, values[idx++])) {
@@ -1121,10 +1121,6 @@ void ahp_gt_read_values(int axis)
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x37 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x38) {
         goto calc_ratios;
     }
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
-        devices[ahp_gt_get_current_device()].axis[axis].intensity = dispatch_command(InquireGridPerRevolution, 9, -1);
-        devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = ~(torqueControl^devices[ahp_gt_get_current_device()].axis[axis].intensity_limited);
-    }
 
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         offset = axis * 8;
@@ -1171,7 +1167,7 @@ void ahp_gt_read_values(int axis)
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 1) & 0xf;
-        devices[ahp_gt_get_current_device()].axis[axis].intensity = (dispatch_command(InquireTimerInterruptFreq, 1, -1) & 0x3ff);
+        devices[ahp_gt_get_current_device()].axis[axis].intensity = fmin(dispatch_command(InquireTimerInterruptFreq, 1, -1), torqueControl - 1);
         devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = (dispatch_command(InquireTimerInterruptFreq, 1, -1) & torqueControl) != 0;
     }
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
@@ -1207,10 +1203,7 @@ calc_ratios:
     double sidereal_period = (double)(devices[ahp_gt_get_current_device()].axis[axis].multiplier * devices[ahp_gt_get_current_device()].axis[axis].wormsteps) / devices[ahp_gt_get_current_device()].axis[axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period * SIDEREAL_DAY / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
-        if((value & torqueControl) != 0)
-            mount_flags |= 1;
-    } else if((value & isForkMount) != 0) {
+    if((value & isForkMount) != 0 && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
         mount_flags |= 1;
     }
     devices[ahp_gt_get_current_device()].mount_flags = mount_flags;
@@ -1446,15 +1439,14 @@ void ahp_gt_limit_intensity(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited &= ~torqueControl;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited |= value ? torqueControl : 0;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = value;
 }
 
 int ahp_gt_is_intensity_limited(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited & torqueControl) != 0;
+    return (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited);
 }
 
 void ahp_gt_set_intensity_limit(int axis, double value)
