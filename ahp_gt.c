@@ -2116,7 +2116,7 @@ int ahp_gt_is_aligned() {
 }
 
 const char* ahp_gt_axis_name(int axis) {
-    const char * ret[] =
+    const char ret [][32] =
     {
     "Ra",
     "Dec",
@@ -2126,13 +2126,25 @@ const char* ahp_gt_axis_name(int axis) {
     "Iris",
     "Shutter",
     "Dome",
-    "Instrument",
     "TipX",
     "TipY",
     "TipZ",
     "TiltX",
     "TiltY",
     "TiltZ",
+    "Heater",
+    "DeflectorPrimaryX",
+    "DeflectorPrimaryY",
+    "DeflectorPrimaryZ",
+    "DeflectorSecondaryX",
+    "DeflectorSecondaryY",
+    "DeflectorSecondaryZ",
+    "DeflectorTertiaryX",
+    "DeflectorTertiaryY",
+    "DeflectorTertiaryZ",
+    "PolarizerX",
+    "PolarizerY",
+    "PolarizerZ",
     "InstrumentX",
     "InstrumentY",
     "InstrumentZ",
@@ -2166,9 +2178,6 @@ const char* ahp_gt_axis_name(int axis) {
     "PCMTertiaryX",
     "PCMTertiaryY",
     "PCMTertiaryZ",
-    "PlaneX",
-    "PlaneY",
-    "PlaneZ",
     "RailX",
     "RailY",
     "RailZ"};
