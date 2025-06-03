@@ -1003,10 +1003,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         *percent = axis * 50;
     int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x38) {
-        devices[ahp_gt_get_current_device()].axis [axis].wormsteps = devices[ahp_gt_get_current_device()].axis[axis].intensity;
-        devices[ahp_gt_get_current_device()].axis [axis].wormsteps |= (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited != 0) ? 0x400 : 0;
-    } else if((ahp_gt_get_mount_flags() & isForkMount) != 0) {
+    if((ahp_gt_get_mount_flags() & isForkMount) && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
         mount_flags |= 1;
     }
     int values[] = {
@@ -1019,8 +1016,8 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     (int)devices[ahp_gt_get_current_device()].axis [axis].features,
     ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
     ((((0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq) << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
-    devices[ahp_gt_get_current_device()].axis[axis].intensity,
-    axis
+    axis,
+    (devices[ahp_gt_get_current_device()].axis[axis].intensity | (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited << 10)),
     };
     int idx = 0;
     if (!WriteAndCheck (axis, offset + 0, values[idx++])) {
@@ -1449,15 +1446,15 @@ void ahp_gt_limit_intensity(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited &= ~0x400;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited |= value ? 0x400 : 0;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited &= ~torqueControl;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity_limited |= value ? torqueControl : 0;
 }
 
 int ahp_gt_is_intensity_limited(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited & 0x400) != 0;
+    return (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited & torqueControl) != 0;
 }
 
 void ahp_gt_set_intensity_limit(int axis, double value)
@@ -1752,7 +1749,7 @@ double ahp_gt_get_intensity_deviation(int axis, double freq) {
     double y = 0;
     for (x = 0; x < devices[ahp_gt_get_current_device()].axis[axis].deviators_n; x ++) {
         y += devices[ahp_gt_get_current_device()].axis[axis].deviators[x].constant;
-        y += pow(devices[ahp_gt_get_current_device()].axis[axis].deviators[x].variable, devices[ahp_gt_get_current_device()].axis[axis].deviators[x].exponent);
+        y += pow(devices[ahp_gt_get_current_device()].axis[axis].deviators[x].variable, 2);
     }
     return devices[ahp_gt_get_current_device()].axis[axis].voltage/pow(y, 0.5);
 }

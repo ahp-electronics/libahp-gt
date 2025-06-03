@@ -438,8 +438,6 @@ typedef struct {
     double variable;
 ///offset constant
     double constant;
-///2nd order exponent
-    double exponent;
 } gt_deviator;
 
 ///Axis Status
