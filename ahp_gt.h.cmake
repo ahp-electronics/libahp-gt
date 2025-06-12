@@ -262,8 +262,6 @@ typedef enum {
     Flash                     = '#',
     FlashEnable               = '!',
     SetAddress                = '=',
-    SetAxis                   = '.',
-    GetAxis                   = ',',
 } SkywatcherCommand;
 
 /// Commands for the SynScan protocol implementation
@@ -473,16 +471,30 @@ double timestamp;
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
 #define AHP_GT_ONE_SECOND 1500000
+#define DEVICES_LIMIT 127
+#define AXES_LIMIT 127
 
 /**\}
  * \defgroup Conn Connection
  * \{*/
 
- /**
+/**
  * \brief Obtain the current libahp-gt version
  * \return The current API version
  */
- DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
+DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
+
+/**
+* \brief Percent pointer variable
+* \param percent The percent pointer for writing operations
+*/
+DLL_EXPORT  void ahp_gt_set_stdpercent(int *percent);
+
+ /**
+ * \brief Indicate no writes are in progress
+ * \param finished The finished state of write operations
+ */
+DLL_EXPORT  void ahp_gt_set_stdfinished(int *finished);
 
 /**
 * \brief Connect to the GT controller
@@ -546,6 +558,14 @@ DLL_EXPORT unsigned int ahp_gt_is_connected(void);
 DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 
 /**
+* \brief Report detection status of the selected axis on current device
+* \param axis the axis to check
+* \return non-zero if already detected
+* \sa ahp_gt_detect_device
+* \sa ahp_gt_is_detected
+*/
+DLL_EXPORT unsigned int ahp_gt_is_axis_detected(int axis);
+/**
 * \brief Get the GT firmware version
 * \param axis The axis number if checking for a single axis module
 * \return The GT controller firmware version
@@ -561,12 +581,6 @@ DLL_EXPORT int ahp_gt_get_mc_version(int axis);
 * \return The GT controller MountType configuration
 */
 DLL_EXPORT MountType ahp_gt_get_mount_type(void);
-
-/**
-* \brief Get the current GT controller axis number
-* \return The GT controller axis number
-*/
-DLL_EXPORT int ahp_gt_get_axis_number(void);
 
 /**
 * \brief Get the current GT controller axis number limit
@@ -738,6 +752,26 @@ DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
 * \param value The MountType after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
+
+/**
+* \brief Delete the selected axis and all its characteristics
+* \param axis The motor axis number
+*/
+void ahp_gt_delete_axis(int axis);
+
+/**
+* \brief Move the selected axis to another one keeping all characteristics
+* \param axis The motor old axis number
+* \param value The new motor axis number
+*/
+void ahp_gt_copy_axis(int axis, int value);
+
+/**
+* \brief Move the selected axis to another one keeping all characteristics, deleting the old one
+* \param axis The motor old axis number
+* \param value The new motor axis number
+*/
+void ahp_gt_move_axis(int axis, int value);
 
 /**
 * \brief Set the GT controller axis number
@@ -981,10 +1015,8 @@ DLL_EXPORT int ahp_gt_get_address(void);
 /**
 * \brief Write values from the GT controller
 * \param axis The motor to configure
-* \param percent Operation progress indication int32_t poiner.
-* \param finished Operation completed flag int32_t poiner.
 */
-DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
+DLL_EXPORT void ahp_gt_write_values(int axis);
 
 /**
 * \brief Read values from the GT controller
