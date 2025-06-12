@@ -1015,8 +1015,10 @@ DLL_EXPORT int ahp_gt_get_address(void);
 /**
 * \brief Write values from the GT controller
 * \param axis The motor to configure
+* \param percent The Percentual progress of the write
+* \param finished One when finished
 */
-DLL_EXPORT void ahp_gt_write_values(int axis);
+DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
 
 /**
 * \brief Read values from the GT controller
