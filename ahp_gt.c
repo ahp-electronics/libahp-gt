@@ -1689,7 +1689,7 @@ void ahp_gt_set_pwm_frequency(int axis, int value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     value = 15-fmin(0xf, fmax(0, value));
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 0x7) {
         devices[ahp_gt_get_current_device()].axis [0].pwmfreq = value;
         devices[ahp_gt_get_current_device()].axis [1].pwmfreq = value;
     }
