@@ -724,42 +724,36 @@ static char response[32];
 static int max_err = 15;
 static int read_eqmod()
 {
-    char * reply;
     int err_code = 0, nbytes_read = 0;
+    int max_err = 100;
     // Clear string
-    memset(response, '\0', 32);
+    response[0] = '\0';
     unsigned char c = 0;
+    usleep(100000);
     while(c != '\r' && err_code < max_err) {
         if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
             response[nbytes_read++] = c;
-            usleep(10000);
         } else {
             err_code++;
-            usleep(10000);
         }
     }
     if (err_code == max_err)
     {
         return 0;
     }
-    if(!strncmp(command, response, strlen(command))) {
-        reply = &response[strlen(command)];
-        nbytes_read -= strlen(command);
-    } else reply = response;
-
     // Remove CR
-    reply[nbytes_read - 1] = '\0';
+    response[nbytes_read - 1] = '\0';
 
-    pwarn("%s\n", reply);
+    pwarn("%s\n", response);
 
-    switch (reply[0])
+    switch (response[0])
     {
         case '=':
             if(nbytes_read > 2) {
                 if(nbytes_read > 5)
-                    return Revu24str2long(reply+1);
+                    return Revu24str2long(response+1);
                 else
-                    return Highstr2long(reply+1);
+                    return Highstr2long(response+1);
             }
             break;
         case '!':
@@ -774,8 +768,8 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int c;
-    memset(response, '0', 32);
+    int maxtries = 10;
+    unsigned char i;
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -784,33 +778,47 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     while(pthread_mutex_trylock(&mutex))
         usleep(100);
-    command[0] = '\0';
-    char command_arg[28];
-    int n;
-    if (arg < 0) {
-        snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
-        n = 4;
-    } else {
-        arg = (int)fmin((double)0xffffff, arg);
-        long2Revu24str((unsigned int)arg, command_arg);
-        snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
-        n = 10;
+    for(i = 0; i < maxtries; i++)
+    {
+        // Clear string
+        command[0] = '\0';
+        char command_arg[28];
+        int n;
+        if (arg < 0) {
+            snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
+            n = 4;
+        } else {
+            arg = (int)fmin((double)0xffffff, arg);
+            long2Revu24str((unsigned int)arg, command_arg);
+            snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
+            n = 10;
+        }
+        pgarb("%s\n", command);
+
+        ahp_serial_flushRXTX();
+        if ((ahp_serial_SendBuf((unsigned char*)command, n)) < n)
+        {
+            if (i == maxtries-1)
+            {
+                ret = -1;
+                break;
+            }
+            else
+            {
+                usleep(100);
+                continue;
+            }
+        }
+        usleep(10000);
+
+        command[n-1] = '\0';
+
+        ret = ((cmd == SetAddress || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
+        if(ret == -2) continue;
+        break;
     }
-    pgarb("%s\n", command);
-
-
-    ahp_serial_flushRXTX();
-    if(ahp_serial_SendBuf(command, n) < 0)
-        goto ret_err;
-
-
-    ret = ((cmd == SetAddress || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
-    if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
     return ret;
-ret_err:
-    pthread_mutex_unlock(&mutex);
-    return -1;
 }
 
 static void optimize_values(int axis)
@@ -1680,7 +1688,7 @@ void ahp_gt_set_pwm_frequency(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    value = 15-fmin(0xb, fmax(0, value));
+    value = 15-fmin(0xf, fmax(0, value));
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
         devices[ahp_gt_get_current_device()].axis [0].pwmfreq = value;
         devices[ahp_gt_get_current_device()].axis [1].pwmfreq = value;
