@@ -77,6 +77,11 @@ extern "C" {
 * \defgroup Debug Debug features
 * \{*/
 
+#define GT1SteppingConfiguration GTSteppingConfiguration
+#define GT1SteppingMode GTSteppingMode
+#define GT1Feature GTFeature
+#define GT1Flags GTFlags
+
 #ifndef AHP_DEBUG
 #define AHP_DEBUG
 #define AHP_DEBUG_INFO 0
@@ -889,7 +894,7 @@ DLL_EXPORT int ahp_gt_is_intensity_limited(int axis);
 * \param axis The motor to reconfigure
 * \param value The intensity limit
 */
-DLL_EXPORT void ahp_gt_set_intensity_limit(int axis, double value);
+DLL_EXPORT void ahp_gt_set_intensity_limit(int axis, int value);
 
 /**
 * \brief Get the intensity limit
@@ -1268,13 +1273,6 @@ DLL_EXPORT double ahp_gt_get_dec(void);
 /**\}
  * \}
  * \}*/
- 
-#if (AHP_GT_VERSION < 0x173)
-#define GT GT1
-#define ahp_gt_connect(a, b) ahp_gt_connect(a)
-#define ahp_gt_set_pwm_frequency(a, b) ahp_gt_set_pwm_frequency(b)
-#define ahp_gt_get_pwm_frequency(a) ahp_gt_get_pwm_frequency()
-#endif
 
 #ifdef __cplusplus
 } // extern "C"
