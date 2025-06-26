@@ -51,27 +51,20 @@
 #endif
 
 typedef struct {
-    SkywatcherCommand command;
-    SkywatcherAxis axis;
-    long value;
-} SyntaCommand;
-
-typedef struct {
-    int detected;
+    int index;
     int totalsteps;
     int wormsteps;
     int accel_steps;
     int divider;
     int intensity_limited;
-    int intensity;
-    int new_index;
+    double intensity;
     int multiplier;
     int direction_invert;
     int stepping_conf;
     int stepping_mode;
     int version;
     int features;
-    int switches;
+    int dividers;
     double maxperiod;
     double minperiod;
     double speed_limit;
@@ -123,9 +116,13 @@ const double rates[9] = { 1, 8, 16, 32, 64, 128, 400, 600, 800 };
 static int mutexes_initialized = 0;
 static pthread_mutexattr_t mutex_attr;
 static pthread_mutex_t mutex;
-static int dispatch_command(SkywatcherCommand cmd, int axis, int arg);
+static pthread_mutex_t mutex_rw;
+static char command[32];
+static char response[32];
+static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
+static unsigned int ahp_gt_detected[128] = { 0 };
 static gt_info devices[128] = { 0 };
 static int sockfd;
 
@@ -719,41 +716,44 @@ static void long2Revu24str(unsigned int n, char *str)
     str[6]        = '\0';
 }
 
-static char command[32];
-static char response[32];
-static int max_err = 15;
 static int read_eqmod()
 {
+    char * reply;
     int err_code = 0, nbytes_read = 0;
-    int max_err = 100;
+    int max_err = 30;
     // Clear string
-    response[0] = '\0';
+    memset(response, '\0', 32);
     unsigned char c = 0;
-    usleep(100000);
     while(c != '\r' && err_code < max_err) {
         if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
             response[nbytes_read++] = c;
         } else {
             err_code++;
+            usleep(1000);
         }
     }
     if (err_code == max_err)
     {
         return 0;
     }
+    if(!strncmp(command, response, strlen(command))) {
+        reply = &response[strlen(command)];
+        nbytes_read -= strlen(command);
+    } else reply = response;
+
     // Remove CR
-    response[nbytes_read - 1] = '\0';
+    reply[nbytes_read - 1] = '\0';
 
-    pwarn("%s\n", response);
+    pwarn("%s\n", reply);
 
-    switch (response[0])
+    switch (reply[0])
     {
         case '=':
             if(nbytes_read > 2) {
                 if(nbytes_read > 5)
-                    return Revu24str2long(response+1);
+                    return Revu24str2long(reply+1);
                 else
-                    return Highstr2long(response+1);
+                    return Highstr2long(reply+1);
             }
             break;
         case '!':
@@ -768,8 +768,8 @@ static int read_eqmod()
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     int ret = -1;
-    int maxtries = 10;
-    unsigned char i;
+    int c;
+    memset(response, '0', 32);
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -778,56 +778,73 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     while(pthread_mutex_trylock(&mutex))
         usleep(100);
-    for(i = 0; i < maxtries; i++)
-    {
-        // Clear string
-        command[0] = '\0';
-        char command_arg[28];
-        int n;
-        if (arg < 0) {
-            snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
-            n = 4;
-        } else {
-            arg = (int)fmin((double)0xffffff, arg);
-            long2Revu24str((unsigned int)arg, command_arg);
-            snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
-            n = 10;
-        }
-        pgarb("%s\n", command);
-
-        ahp_serial_flushRXTX();
-        if ((ahp_serial_SendBuf((unsigned char*)command, n)) < n)
-        {
-            if (i == maxtries-1)
-            {
-                ret = -1;
-                break;
-            }
-            else
-            {
-                usleep(100);
-                continue;
-            }
-        }
-        usleep(10000);
-
-        command[n-1] = '\0';
-
-        ret = ((cmd == SetAddress || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
-        if(ret == -2) continue;
-        break;
+    command[0] = '\0';
+    char command_arg[28];
+    int n;
+    if (arg < 0) {
+        snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
+        n = 4;
+    } else {
+        arg = (int)fmin((double)0xffffff, arg);
+        long2Revu24str((unsigned int)arg, command_arg);
+        snprintf(command, 32, ":%c%c%s\r", (char)cmd, (char)(axis+'1'), command_arg);
+        n = 10;
     }
+    pgarb("%s\n", command);
+
+    ahp_serial_flushRXTX();
+    if(ahp_serial_SendBuf(command, n) < 0)
+        goto ret_err;
+
+    ret = ((cmd == SetAddress || cmd == SetAxis || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
+    if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
     return ret;
+ret_err:
+    pthread_mutex_unlock(&mutex);
+    return -1;
 }
 
 static void optimize_values(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    if (devices[ahp_gt_get_current_device()].axis [axis].steps == 0)
+        devices[ahp_gt_get_current_device()].axis [axis].steps = 200;
+    if (devices[ahp_gt_get_current_device()].axis [axis].wormsteps == 0)
+        devices[ahp_gt_get_current_device()].axis [axis].wormsteps = 1;
+    if (devices[ahp_gt_get_current_device()].axis [axis].totalsteps == 0)
+        devices[ahp_gt_get_current_device()].axis [axis].totalsteps = 1;
+    if (devices[ahp_gt_get_current_device()].axis [axis].multiplier == 0)
+        devices[ahp_gt_get_current_device()].axis [axis].multiplier = 1;
+    if (devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value == 0)
+        devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = 1;
+    double degrees = pow(devices[ahp_gt_get_current_device()].axis [axis].accel_steps - 1, 2.5) / 2.0;
+    double crown = (double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].wormsteps;
+    double worm = (double)devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].steps / devices[ahp_gt_get_current_device()].axis [axis].multiplier;
+    double motor = 1.0;
+    devices[ahp_gt_get_current_device()].axis [axis].acceleration = degrees / ((double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / (M_PI * 2.0));
+    int n_iterations = 10;
+    while(((round(worm)-worm) != 0 || (round(motor)-motor) != 0) && n_iterations-- > 0) {
+        double decimals = fabs(worm - round(worm));
+        if(decimals == 0)
+            decimals = fabs(motor - round(motor));
+        if(decimals == 0) break;
+        worm /= decimals;
+        motor /= decimals;
+    }
+    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
+    devices[ahp_gt_get_current_device()].axis [axis].motor = fabs(round(motor));
+    devices[ahp_gt_get_current_device()].axis [axis].worm = fabs(round(worm));
+    double sidereal_period = (double)devices[ahp_gt_get_current_device()].axis[axis].multiplier * devices[ahp_gt_get_current_device()].axis[axis].wormsteps / devices[ahp_gt_get_current_device()].axis[axis].totalsteps;
+    devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period * SIDEREAL_DAY / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
+    int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
+    if((ahp_gt_get_mount_flags() & isForkMount) != 0 && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
+        mount_flags |= 1;
+    }
+    devices[ahp_gt_get_current_device()].mount_flags = mount_flags;
     double usteps = 62.0;
     double maxdiv = 14.0;
-
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].steps * devices[ahp_gt_get_current_device()].axis [axis].worm / devices[ahp_gt_get_current_device()].axis [axis].motor);
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].crown * devices[ahp_gt_get_current_device()].axis [axis].wormsteps);
     int maxsteps = 0xffffff;
@@ -846,45 +863,44 @@ static void optimize_values(int axis)
     switch(devices[ahp_gt_get_current_device()].axis[axis].stepping_mode) {
     case HalfStep:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier = 1;
+        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ;
         break;
     case Microstep:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier += (int)usteps;
+        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
         break;
     case Mixed:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier += (int)usteps;
+        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
         break;
     default:
         break;
     }
+    devices[ahp_gt_get_current_device()].axis [axis].speed_limit /= devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps *= (double)devices[ahp_gt_get_current_device()].axis [axis].multiplier / (double)devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].crown * devices[ahp_gt_get_current_device()].axis [axis].wormsteps);
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / devices[ahp_gt_get_current_device()].axis [axis].divider;
 
-    double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis[axis].multiplier * devices[ahp_gt_get_current_device()].axis[axis].wormsteps / devices[ahp_gt_get_current_device()].axis[axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxperiod = (int)sidereal_period;
+    devices[ahp_gt_get_current_device()].axis [axis].speed_limit *= ((double)devices[ahp_gt_get_current_device()].axis[axis].multiplier / devices[ahp_gt_get_current_device()].axis [axis].totalsteps);
     devices[ahp_gt_get_current_device()].axis [axis].minperiod = 1;
-    devices[ahp_gt_get_current_device()].axis [axis].maxspeed = fmin(devices[ahp_gt_get_current_device()].axis [axis].speed_limit, devices[ahp_gt_get_current_device()].axis [axis].maxspeed);
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = (int)fmax(devices[ahp_gt_get_current_device()].axis [axis].minperiod, (devices[ahp_gt_get_current_device()].axis [axis].maxperiod / devices[ahp_gt_get_current_device()].axis [axis].maxspeed));
     devices[ahp_gt_get_current_device()].axis [axis].guide = (int)(SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis[axis].one_second / devices[ahp_gt_get_current_device()].axis [axis].totalsteps);
 
-    double degrees = devices[ahp_gt_get_current_device()].axis [axis].acceleration * (double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / (M_PI * 2.0);
+    degrees = devices[ahp_gt_get_current_device()].axis [axis].acceleration * (double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / (M_PI * 2.0);
     devices[ahp_gt_get_current_device()].axis [axis].accel_steps = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
     devices[ahp_gt_get_current_device()].axis [axis].accel_increment = (int)fmin (0xff, devices[ahp_gt_get_current_device()].axis [axis].guide / devices[ahp_gt_get_current_device()].axis [axis].accel_steps);
     devices[ahp_gt_get_current_device()].index &= 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
-    devices[ahp_gt_get_current_device()].axis [axis].switches = (devices[ahp_gt_get_current_device()].rs232_polarity & 0x1) | ((devices[ahp_gt_get_current_device()].index & 0x7f) << 9);
-    devices[ahp_gt_get_current_device()].axis [axis].switches |= ((unsigned char)(devices[ahp_gt_get_current_device()].axis [0].divider & 0xf) << 1) | ((unsigned char)(devices[ahp_gt_get_current_device()].axis[1].divider & 0xf) << 5);
-    if((ahp_gt_get_mc_version(axis) & 0xf0) != 0x70) {
-
-    }
+    devices[ahp_gt_get_current_device()].axis [axis].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
+    devices[ahp_gt_get_current_device()].axis [axis].dividers |= ((unsigned char)devices[ahp_gt_get_current_device()].axis [0].divider << 1) | ((((unsigned char)(devices[ahp_gt_get_current_device()].axis[1].divider)) & 0xf) << 5);
 }
 
-static int ahp_gt_reset(int axis)
+static int Reset(int axis)
 {
     int ret = 0;
     int ntries = 10;
     while (!ret && ntries-- > 0)
-     {
+    {
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
@@ -895,18 +911,18 @@ static int ahp_gt_reset(int axis)
                 return 1;
             }
             ret = 0;
-       }
+        }
         ret = 0;
-     }
+    }
     return -1;
- }
+}
 
-static int ahp_gt_reload(int axis)
+static int Reload(int axis)
 {
     int ret = 0;
     int ntries = 10;
     while (!ret && ntries-- > 0)
-     {
+    {
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
@@ -917,18 +933,18 @@ static int ahp_gt_reload(int axis)
                 return 1;
             }
             ret = 0;
-       }
+        }
         ret = 0;
-     }
+    }
     return -1;
- }
+}
 
-static int ahp_gt_read(int axis, int pos)
- {
+static int Read(int axis, int pos)
+{
     int ret = 0;
     int ntries = 10;
     while (!ret && ntries-- > 0)
-     {
+    {
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
@@ -941,16 +957,16 @@ static int ahp_gt_read(int axis, int pos)
             }
             ret = 0;
         }
-     }
+    }
     return -1;
- }
+}
 
-static int ahp_gt_write_and_check(int axis, int pos, int val)
- {
+static int WriteAndCheck(int axis, int pos, int val)
+{
     int ret = 0;
     int ntries = 30;
     while (!ret && ntries-- > 0)
-     {
+    {
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
@@ -959,7 +975,7 @@ static int ahp_gt_write_and_check(int axis, int pos, int val)
             if (ret>-1)
             {
                 usleep(10000);
-                if (ahp_gt_read(axis, pos) == val) {
+                if (Read(axis, pos) == val) {
                     ntries = 0;
                     return 1;
                 }
@@ -967,10 +983,9 @@ static int ahp_gt_write_and_check(int axis, int pos, int val)
             }
             ret = 0;
         }
-     }
-     return 0;
- }
-
+    }
+    return 0;
+}
 
 int ahp_gt_start_synscan_server(int port, int *interrupt)
 {
@@ -1035,93 +1050,96 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     int offset = 0;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
+    *percent = 0;
+    *finished = 0;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         offset = axis * 8;
-    }
-    int switches = devices[ahp_gt_get_current_device()].axis [axis].switches;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)
+        *percent = axis * 50;
+    int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
     if((ahp_gt_get_mount_flags() & isForkMount) && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
         mount_flags |= 1;
     }
+    int pwmfreq = 0;
     int values[] = {
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps,
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps,
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value,
     devices[ahp_gt_get_current_device()].axis [axis].guide,
     devices[ahp_gt_get_current_device()].axis [axis].one_second,
-    ((int)(devices[ahp_gt_get_current_device()].axis [axis].accel_steps & 0x3f) << 18) | (((int)devices[ahp_gt_get_current_device()].axis [axis].accel_increment & 0xff) << 10) | (((int)devices[ahp_gt_get_current_device()].axis [axis].multiplier & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].axis[axis].stepping_conf & 0x03) << 1) | (devices[ahp_gt_get_current_device()].axis[axis].direction_invert & 1),
+    ((int)devices[ahp_gt_get_current_device()].axis [axis].accel_steps << 18) | ((int)devices[ahp_gt_get_current_device()].axis [axis].accel_increment << 10) | (((int)devices[ahp_gt_get_current_device()].axis [axis].multiplier & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].axis[axis].stepping_conf & 0x03) << 1) | (devices[ahp_gt_get_current_device()].axis[axis].direction_invert & 1),
     (int)devices[ahp_gt_get_current_device()].axis [axis].features,
-    ((devices[ahp_gt_get_current_device()].axis [axis].stepping_mode << 0) & 0x3) | ((devices[ahp_gt_get_current_device()].axis [axis].divider << 2) & 0x78) | ((devices[ahp_gt_get_current_device()].index << 7) & 0xfe0) | ((devices[ahp_gt_get_current_device()].axis [axis].pwmfreq << 12) & 0xf000) | ((devices[ahp_gt_get_current_device()].axis [axis].gtfeature << 16) & 0x70000) | ((devices[ahp_gt_get_current_device()].mount_flags << 19) & 0x480000),
-    ((devices[ahp_gt_get_current_device()].axis [axis].stepping_mode << 0) & 0x3) | ((devices[ahp_gt_get_current_device()].axis [axis].divider << 2) & 0x78) | ((devices[ahp_gt_get_current_device()].index << 7) & 0xfe0) | ((devices[ahp_gt_get_current_device()].axis [axis].pwmfreq << 12) & 0xf000) | ((devices[ahp_gt_get_current_device()].axis [axis].gtfeature << 16) & 0x70000) | ((devices[ahp_gt_get_current_device()].mount_flags << 19) & 0x480000),
-    (((devices[ahp_gt_get_current_device()].axis[axis].new_index & 0x80) ? ((devices[ahp_gt_get_current_device()].axis[axis].new_index & 0x7f)<<12) : 0)|((int)fmin(devices[ahp_gt_get_current_device()].axis[axis].intensity, 0x3ff) | (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited ? 0x400 : 0))),
+        (((devices[ahp_gt_get_current_device()].axis[0].pwmfreq << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[0].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[0].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[1].pwmfreq << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[1].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[1].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[axis].pwmfreq << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[axis].pwmfreq << 4) >> 2) & 0x30) | ((mount_flags << 2) & 0x8) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis [axis].index << 12) & 0x7f000) | ((int)devices[ahp_gt_get_current_device()].axis[axis].intensity & 0x3ff) | (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited ? 0x400 : 0)),
     };
     int idx = 0;
-    *percent = 0;
-    *finished = 0;
-    if (!ahp_gt_write_and_check (axis, offset + 0, values[idx])) {
+    if (!WriteAndCheck (axis, offset + 0, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, offset + 1, values[idx])) {
+    *percent = *percent + 6.25;
+    if (!WriteAndCheck (axis, offset + 1, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, offset + 2, values[idx])) {
+    *percent = *percent + 6.25;
+    if (!WriteAndCheck (axis, offset + 2, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, offset + 3, values[idx])) {
+    *percent = *percent + 6.25;
+    if (!WriteAndCheck (axis, offset + 3, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, offset + 4, values[idx])) {
+    *percent = *percent + 6.25;
+    if (!WriteAndCheck (axis, offset + 4, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, offset + 5, values[idx])) {
+    *percent = *percent + 6.25;
+    if (!WriteAndCheck (axis, offset + 5, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, offset + 6, values[idx])) {
+    *percent = *percent + 6.25;
+    if (!WriteAndCheck (axis, offset + 6, values[idx++])) {
         *finished = -1;
         return;
     }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, 7, values[idx])) {
-        *finished = -1;
-        return;
-    }
-    idx++;
-    *percent = *percent + 10;
-    if (!ahp_gt_write_and_check (axis, 15, values[idx])) {
-        *finished = -1;
-        return;
-    }
-    idx++;
-    *percent = *percent + 10;
-    if( (devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 0x8 ||
-        (devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 0x9) {
-        if (!ahp_gt_write_and_check (axis, 8, values[idx])) {
+    *percent = *percent + 6.25;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
+        if (!WriteAndCheck (0, 7, values[idx++])) {
             *finished = -1;
             return;
         }
+        if (!WriteAndCheck (1, 15, values[idx++])) {
+            *finished = -1;
+            return;
+        }
+    } else {
+        if (!WriteAndCheck (axis, 7, values[idx++])) {
+            *finished = -1;
+            return;
+        }
+        if (!WriteAndCheck (axis, 15, values[idx++])) {
+            *finished = -1;
+            return;
+        }
+        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
+            if (!WriteAndCheck (axis, 13, values[idx++])) {
+                *finished = -1;
+                return;
+            }
+        }
     }
-    ahp_gt_reload(axis);
+    *percent = *percent + 6.25;
+    Reload(axis);
     *finished = 1;
-    devices[ahp_gt_get_current_device()].axis[axis].new_index &= ~0x80;
 }
 
 void ahp_gt_read_values(int axis)
@@ -1138,23 +1156,8 @@ void ahp_gt_read_values(int axis)
     value = dispatch_command(InquireHighSpeedRatio, axis, -1);
     if(value > 0)
         devices[ahp_gt_get_current_device()].axis [axis].multiplier = value;
-    devices[ahp_gt_get_current_device()].axis[axis].divider = 1;
-    if (devices[ahp_gt_get_current_device()].axis [axis].steps == 0)
-        devices[ahp_gt_get_current_device()].axis [axis].steps = 200;
-    if (devices[ahp_gt_get_current_device()].axis [axis].wormsteps == 0)
-        devices[ahp_gt_get_current_device()].axis [axis].wormsteps = 37800;
-    if (devices[ahp_gt_get_current_device()].axis [axis].totalsteps == 0)
-        devices[ahp_gt_get_current_device()].axis [axis].totalsteps = 6804000;
-    if (devices[ahp_gt_get_current_device()].axis [axis].multiplier == 0)
-        devices[ahp_gt_get_current_device()].axis [axis].multiplier = 64;
-    if (devices[ahp_gt_get_current_device()].axis [axis].maxspeed == 0)
-        devices[ahp_gt_get_current_device()].axis [axis].maxspeed = devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / devices[ahp_gt_get_current_device()].axis [axis].divider;
-    devices[ahp_gt_get_current_device()].axis [axis].maxperiod = (int)devices[ahp_gt_get_current_device()].axis [axis].multiplier;
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / devices[ahp_gt_get_current_device()].axis [axis].divider;
-    devices[ahp_gt_get_current_device()].axis [axis].minperiod = 1;
-    devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = (int)fmax(1, (devices[ahp_gt_get_current_device()].axis [axis].maxperiod * devices[ahp_gt_get_current_device()].axis [axis].maxspeed));
-    devices[ahp_gt_get_current_device()].axis [axis].maxspeed = (int)fmax(1, devices[ahp_gt_get_current_device()].axis [axis].speed_limit);
-    devices[ahp_gt_get_current_device()].axis [axis].guide = 37800;
+    devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = 50;
+    devices[ahp_gt_get_current_device()].axis [axis].guide = 12709;
     devices[ahp_gt_get_current_device()].axis [axis].one_second = 1500000;
     devices[ahp_gt_get_current_device()].axis [axis].accel_steps = 43;
     devices[ahp_gt_get_current_device()].axis [axis].accel_increment =  255;
@@ -1163,96 +1166,77 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].axis [axis].features = 16384;
     devices[ahp_gt_get_current_device()].axis[axis].gtfeature = 0;
     devices[ahp_gt_get_current_device()].axis[axis].stepping_mode = 0;
+    devices[ahp_gt_get_current_device()].axis[axis].divider = 0;
     devices[ahp_gt_get_current_device()].axis [axis].pwmfreq = 5;
     devices[ahp_gt_get_current_device()].type = 0;
     devices[ahp_gt_get_current_device()].mount_flags = 0;
-    devices[ahp_gt_get_current_device()].axis [axis].switches = 0;
+    devices[ahp_gt_get_current_device()].axis [axis].dividers = 0;
     devices[ahp_gt_get_current_device()].index = 1;
     devices[ahp_gt_get_current_device()].rs232_polarity = 0;
-    double degrees = pow(devices[ahp_gt_get_current_device()].axis [axis].accel_steps - 1, 2.5) / 2.0;
-    double crown = (double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].wormsteps;
-    double worm = (double)devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].steps / devices[ahp_gt_get_current_device()].axis [axis].multiplier;
-    double motor = 1.0;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x37 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x38 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x39) {
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x37 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x38) {
         goto calc_ratios;
     }
 
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         offset = axis * 8;
-    value = ahp_gt_read(axis, offset + 2);
-    if(value > 0) {
+    value = Read(axis, offset + 2);
+    if(value > 0)
         devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = value;
-        double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
-        devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
-    }
-    value = ahp_gt_read(axis, offset + 3);
+    value = Read(axis, offset + 3);
     if(value > 0)
     devices[ahp_gt_get_current_device()].axis [axis].guide = value;
-    value = ahp_gt_read(axis, offset + 4);
+    value = Read(axis, offset + 4);
     if(value > 0)
     devices[ahp_gt_get_current_device()].axis [axis].one_second = value;
-    value = ahp_gt_read(axis, offset + 5);
+    value = Read(axis, offset + 5);
     if(value > 0) {
-        double degrees = pow(devices[ahp_gt_get_current_device()].axis [axis].accel_steps - 1, 2.5) / 2.0;
-        devices[ahp_gt_get_current_device()].axis [axis].acceleration = degrees / ((double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / (M_PI * 2.0));
+        devices[ahp_gt_get_current_device()].axis [axis].accel_steps = ((value >> 18) & 0x3f);
+        devices[ahp_gt_get_current_device()].axis [axis].accel_increment =  (value >> 10) & 0xff;
         devices[ahp_gt_get_current_device()].axis [axis].direction_invert = value & 0x1;
         devices[ahp_gt_get_current_device()].axis [axis].stepping_conf = (value & 0x06)>>1;
     }
-    value = ahp_gt_read(axis, offset + 6);
+    value = Read(axis, offset + 6);
     if(value > 0) {
-        devices[ahp_gt_get_current_device()].axis [axis].features = value;
+        devices[ahp_gt_get_current_device()].axis [axis].features = Read(axis, offset + 6);
     }
+    value = Read(axis, offset + 7);
     int pwmfreq = 0;
-    value = ahp_gt_read(axis, 7);
     if(value > 0) {
-        devices[ahp_gt_get_current_device()].axis[axis].stepping_mode = ((value & 0x3) >> 0);
-        devices[ahp_gt_get_current_device()].axis [axis].divider = ((value & 0x78) >> 2);
-        devices[ahp_gt_get_current_device()].index = ((value & 0xfe0) >> 7);
-        devices[ahp_gt_get_current_device()].axis [axis].pwmfreq = 0xf - ((value & 0xf000) >> 12);
-        devices[ahp_gt_get_current_device()].axis[axis].gtfeature = ((value & 0x70000) >> 16);
-        devices[ahp_gt_get_current_device()].mount_flags = ((value & 0x480000) >> 19);
+        devices[ahp_gt_get_current_device()].axis [axis].pwmfreq = (value & 0x30) >> 4;
         devices[ahp_gt_get_current_device()].axis[axis].gtfeature = value & 0x7;
+        devices[ahp_gt_get_current_device()].axis[axis].stepping_mode = (value >> 6) & 0x03;
+        devices[ahp_gt_get_current_device()].axis [axis].dividers = (value >> 8) & 0xff;
+        devices[ahp_gt_get_current_device()].mount_flags = (value & 0x8) >> 3;
         devices[ahp_gt_get_current_device()].type = (value >> 16) & 0xff;
+        pwmfreq = (value >> 4) & 0x3;
     }
-    value = ahp_gt_read(axis, 15);
+    value = Read(axis, offset + 15);
     if(value > 0) {
-        devices[ahp_gt_get_current_device()].axis[axis].stepping_mode = ((value & 0x3) >> 0);
-        devices[ahp_gt_get_current_device()].axis [axis].divider = ((value & 0x78) >> 2);
-        devices[ahp_gt_get_current_device()].index = ((value & 0xfe0) >> 7);
-        devices[ahp_gt_get_current_device()].axis [axis].pwmfreq = 0xf - ((value & 0xf000) >> 12);
-        devices[ahp_gt_get_current_device()].axis[axis].gtfeature = ((value & 0x70000) >> 16);
-        devices[ahp_gt_get_current_device()].mount_flags = ((value & 0x480000) >> 19);
+        devices[ahp_gt_get_current_device()].axis [axis].pwmfreq |= (value & 0x30) >> 2;
         devices[ahp_gt_get_current_device()].axis[axis].gtfeature = value & 0x7;
-        devices[ahp_gt_get_current_device()].type = (value >> 16) & 0xff;
+        devices[ahp_gt_get_current_device()].axis[axis].stepping_mode = (value >> 6) & 0x03;
+        devices[ahp_gt_get_current_device()].axis [axis].dividers |= value & 0xff00;
+        devices[ahp_gt_get_current_device()].mount_flags |= (value & 0x8) >> 2;
+        devices[ahp_gt_get_current_device()].mount_flags |= (value & 0xff0000) >> 14;
+        devices[ahp_gt_get_current_device()].mount_flags &= 0x3ff;
     }
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x39) {
-        value = ahp_gt_read(axis, 8);
-        if(value >= 0) {
-            devices[ahp_gt_get_current_device()].axis[axis].intensity = value & 0x3ff;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
+        devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
+        value = Read(axis, 13);
+        if(value > 0) {
+            devices[ahp_gt_get_current_device()].axis[axis].index = ((value & 0x7f) >> 12);
+            devices[ahp_gt_get_current_device()].axis[axis].intensity = fmin(value, 0x3ff);
             devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = (value & 0x400) != 0;
         }
     }
-    devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].switches >> 9) & 0x7f;
-    devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].switches & 1;
+    devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
+    devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
+    ahp_gt_select_device(devices[ahp_gt_get_current_device()].index);
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x538) {
+        ahp_gt_copy_axis(axis, devices[ahp_gt_get_current_device()].axis[axis].index);
+    }
 calc_ratios:
-    devices[ahp_gt_get_current_device()].axis [axis].acceleration = degrees / ((double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].multiplier / (M_PI * 2.0));
-    int n_iterations = 10;
-    while(((round(worm)-worm) != 0 || (round(motor)-motor) != 0) && n_iterations-- > 0) {
-        double decimals = fabs(worm - round(worm));
-        if(decimals == 0)
-            decimals = fabs(motor - round(motor));
-        if(decimals == 0) break;
-        worm /= decimals;
-        motor /= decimals;  
-    }
-    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
-    devices[ahp_gt_get_current_device()].axis [axis].motor = fabs(round(motor));
-    devices[ahp_gt_get_current_device()].axis [axis].worm = fabs(round(worm));
-    int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
-    if((value & isForkMount) != 0 && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
-        mount_flags |= 1;
-    }
-    devices[ahp_gt_get_current_device()].mount_flags = mount_flags;
     optimize_values(axis);
 }
 
@@ -1309,13 +1293,17 @@ int ahp_gt_connect(const char* port)
     if(!ahp_serial_OpenComport(port)) {
         devices[ahp_gt_get_current_device()].baud_rate = 9600;
         int highspeed = 0;
+retry:
         if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
             ahp_gt_connected = 1;
-            devices[ahp_gt_get_current_device()].baud_rate = 9600;
-            devices[ahp_gt_get_current_device()].detected = ahp_gt_connected;
-            highspeed = devices[ahp_gt_get_current_device()].baud_rate == 115200;
-            highspeed = 1;
-            return 0;
+            memset(ahp_gt_detected, 0, sizeof(unsigned int)*128);
+            if(!ahp_gt_detect_device()) {
+                return 0;
+            } else if(!highspeed) {
+                devices[ahp_gt_get_current_device()].baud_rate = 115200;
+                highspeed = 1;
+                goto retry;
+            }
         }
         ahp_serial_CloseComport();
     }
@@ -1327,7 +1315,7 @@ void ahp_gt_disconnect()
     int addr = 0;
     if(ahp_gt_is_connected()) {
         for(addr = 0; addr < 128; addr++) {
-            if(devices[addr].detected) {
+            if(ahp_gt_detected[addr]) {
                 ahp_gt_select_device(addr);
                 ahp_gt_stop_tracking_thread();
             }
@@ -1352,13 +1340,6 @@ unsigned int ahp_gt_is_connected()
 unsigned int ahp_gt_is_detected(int index)
 {
     return devices[index].detected;
-}
-
-unsigned int ahp_gt_is_axis_detected(int axis)
-{
-    devices[ahp_gt_get_current_device()].axis[axis].detected = (ahp_gt_get_mc_version(axis) != 0);
-    devices[ahp_gt_get_current_device()].detected = devices[ahp_gt_get_current_device()].axis[axis].detected;
-    return devices[ahp_gt_get_current_device()].axis[axis].detected;
 }
 
 int ahp_gt_get_mc_version(int axis)
@@ -1482,30 +1463,26 @@ void ahp_gt_limit_intensity(int axis, int value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = value;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity &= ~0x400;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity |= value ? 0x400 : 0;
 }
 
 int ahp_gt_is_intensity_limited(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return devices[ahp_gt_get_current_device()].axis[axis].intensity_limited;
+    return (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited);
 }
 
-void ahp_gt_set_intensity_limit(int axis, int value)
+void ahp_gt_set_intensity_limit(int axis, double value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].axis[axis].intensity = value & 0x3ff;
+    devices[ahp_gt_get_current_device()].axis[axis].intensity = value;
 }
 
 double ahp_gt_get_intensity_limit(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    int value = ahp_gt_read(axis, 8);
-    devices[ahp_gt_get_current_device()].axis[axis].intensity = value & 0x3ff;
     return devices[ahp_gt_get_current_device()].axis[axis].intensity;
 }
 
@@ -1513,7 +1490,7 @@ int ahp_gt_get_pwm_frequency(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return 0;
-    return 15-devices[ahp_gt_get_current_device()].axis[axis].pwmfreq;
+    return 0xf-devices[ahp_gt_get_current_device()].axis [axis].pwmfreq;
 }
 
 int ahp_gt_get_direction_invert(int axis)
@@ -1586,37 +1563,11 @@ void ahp_gt_set_mount_type(MountType value)
     devices[ahp_gt_get_current_device()].type = value;
 }
 
-void ahp_gt_delete_axis(int axis)
-{
-    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
-        memset(&devices[ahp_gt_get_current_device()].axis[axis], 0, sizeof(gt_axis));
-        optimize_values(axis);
-    }
-}
-
 void ahp_gt_copy_axis(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
-        devices[ahp_gt_get_current_device()].axis[axis].new_index = axis;
-        memcpy(&devices[ahp_gt_get_current_device()].axis[value], &devices[ahp_gt_get_current_device()].axis[axis], sizeof(gt_axis));
-        optimize_values(value);
-    }
-}
-
-void ahp_gt_move_axis(int axis, int value)
-{
-    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
-        devices[ahp_gt_get_current_device()].axis[axis].new_index = 0x80|value;
-        memcpy(&devices[ahp_gt_get_current_device()].axis[value], &devices[ahp_gt_get_current_device()].axis[axis], sizeof(gt_axis));
-        memset(&devices[ahp_gt_get_current_device()].axis[axis], 0, sizeof(gt_axis));
-        optimize_values(value);
-    }
+    memcpy(&devices[ahp_gt_get_current_device()].axis [value], &devices[ahp_gt_get_current_device()].axis [axis], sizeof(gt_axis));
 }
 
 void ahp_gt_set_axes_limit(int value)
@@ -1688,8 +1639,8 @@ void ahp_gt_set_pwm_frequency(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    value = 15-fmin(0xf, fmax(0, value));
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 0x7) {
+    value = 0xf-fmin(0xf, fmax(0, value));
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
         devices[ahp_gt_get_current_device()].axis [0].pwmfreq = value;
         devices[ahp_gt_get_current_device()].axis [1].pwmfreq = value;
     }
@@ -1823,8 +1774,20 @@ int ahp_gt_get_current_device() {
 int ahp_gt_detect_device() {
     if(!ahp_gt_is_connected())
         return -1;
-    devices[ahp_gt_get_current_device()].detected = 1;
+    int a = 0;
+    devices[ahp_gt_get_current_device()].detected = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
+    int num_axes = ahp_gt_get_axes_limit();
+    for (a = 0; a < num_axes; a++) {
+        dispatch_command(SetAddress, a, ahp_gt_get_current_device());
+        if(ahp_gt_get_mc_version(a) > 0) {
+            pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
+            devices[ahp_gt_get_current_device()].axis[a].motor = 200;
+            ahp_gt_read_values(a);
+            devices[ahp_gt_get_current_device()].detected = 1;
+        }
+    }
+    ahp_gt_set_axes_limit(a);
     if(ahp_gt_is_detected(ahp_gt_get_current_device())) {
         return 0;
     }
@@ -2021,12 +1984,12 @@ void ahp_gt_goto_absolute(int axis, double target, double speed) {
     period /= fabs(speed);
     period = fmax(devices[ahp_gt_get_current_device()].axis[axis].minperiod, period);
     devices[ahp_gt_get_current_device()].axis[axis].motionmode = mode;
-    dispatch_command(Initialize, axis, 1);
-    dispatch_command(ActivateMotor, axis, 1);
-    dispatch_command(SetGotoTarget, axis, target);
-    dispatch_command(SetStepPeriod, axis, period);
-    dispatch_command(SetMotionMode, axis, mode);
-    dispatch_command(StartMotion, axis, 1);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetGotoTarget, axis, target);
+    dispatch_command (SetStepPeriod, axis, period);
+    dispatch_command (SetMotionMode, axis, mode);
+    dispatch_command (StartMotion, axis, -1);
 }
 
 void ahp_gt_goto_relative(int axis, double increment, double speed) {
@@ -2050,12 +2013,12 @@ void ahp_gt_goto_relative(int axis, double increment, double speed) {
     mode |= (speed < 0 ? 1 : 0);
     period /= fabs(speed);
     devices[ahp_gt_get_current_device()].axis[axis].motionmode = mode;
-    dispatch_command(Initialize, axis, 1);
-    dispatch_command(ActivateMotor, axis, 1);
-    dispatch_command(SetGotoTargetIncrement, axis, (int)fabs(increment));
-    dispatch_command(SetStepPeriod, axis, period);
-    dispatch_command(SetMotionMode, axis, mode);
-    dispatch_command(StartMotion, axis, 1);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetGotoTargetIncrement, axis, (int)fabs(increment));
+    dispatch_command (SetStepPeriod, axis, period);
+    dispatch_command (SetMotionMode, axis, mode);
+    dispatch_command (StartMotion, axis, -1);
 }
 
 void ahp_gt_start_motion(int axis, double speed) {
@@ -2073,17 +2036,17 @@ void ahp_gt_start_motion(int axis, double speed) {
     mode |= (speed < 0 ? 1 : 0);
     period /= fabs(speed);
     devices[ahp_gt_get_current_device()].axis[axis].motionmode = mode;
-    dispatch_command(Initialize, axis, 1);
-    dispatch_command(ActivateMotor, axis, 1);
-    dispatch_command(SetStepPeriod, axis, period);
-    dispatch_command(SetMotionMode, axis, mode);
-    dispatch_command(StartMotion, axis, 1);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetStepPeriod, axis, period);
+    dispatch_command (SetMotionMode, axis, mode);
+    dispatch_command (StartMotion, axis, -1);
 }
 
 void ahp_gt_stop_motion(int axis, int wait) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    dispatch_command(InstantAxisStop, axis, 1);
+    dispatch_command(InstantAxisStop, axis, -1);
     if(wait) {
         while (ahp_gt_is_axis_moving(axis))
             usleep(100);
@@ -2122,11 +2085,11 @@ void ahp_gt_start_tracking(int axis) {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     double period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis[axis].wormsteps / devices[ahp_gt_get_current_device()].axis[axis].totalsteps;
-    dispatch_command(SetStepPeriod, axis, period);
-    dispatch_command(Initialize, axis, 1);
-    dispatch_command(ActivateMotor, axis, 1);
-    dispatch_command(SetMotionMode, axis, 0x10);
-    dispatch_command(StartMotion, axis, 1);
+    dispatch_command (SetStepPeriod, axis, period);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, 0x10);
+    dispatch_command (StartMotion, axis, -1);
 }
 
 void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
@@ -2139,11 +2102,11 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     double time_passed = 0;
     double polltime = 10.0 * SIDEREAL_DAY / ahp_gt_get_totalsteps(axis);
     double initial_second = ahp_gt_get_timing(axis);
-    dispatch_command(SetStepPeriod, axis, target_period);
-    dispatch_command(Initialize, axis, 1);
-    dispatch_command(ActivateMotor, axis, 1);
-    dispatch_command(SetMotionMode, axis, 0x10);
-    dispatch_command(StartMotion, axis, 1);
+    dispatch_command (SetStepPeriod, axis, target_period);
+    dispatch_command (Initialize, axis, -1);
+    dispatch_command (ActivateMotor, axis, -1);
+    dispatch_command (SetMotionMode, axis, 0x10);
+    dispatch_command (StartMotion, axis, -1);
     *interrupt = 0;
     double start_steps = ahp_gt_get_position(axis, &start_time) * ahp_gt_get_totalsteps(axis) / M_PI / 2.0;
     while(!*interrupt && time_passed < target_period) {
@@ -2157,8 +2120,8 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     ahp_gt_stop_motion(axis, 0);
     one_second = initial_second - initial_second*(one_second-1.0);
     ahp_gt_set_timing(axis, one_second);
-    ahp_gt_write_and_check (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
-    ahp_gt_reload(axis);
+    WriteAndCheck (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
+    Reload(axis);
 }
 
 void ahp_gt_set_aligned(int aligned) {

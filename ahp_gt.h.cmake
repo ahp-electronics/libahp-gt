@@ -77,11 +77,6 @@ extern "C" {
 * \defgroup Debug Debug features
 * \{*/
 
-#define GT1SteppingConfiguration GTSteppingConfiguration
-#define GT1SteppingMode GTSteppingMode
-#define GT1Feature GTFeature
-#define GT1Flags GTFlags
-
 #ifndef AHP_DEBUG
 #define AHP_DEBUG
 #define AHP_DEBUG_INFO 0
@@ -267,6 +262,8 @@ typedef enum {
     Flash                     = '#',
     FlashEnable               = '!',
     SetAddress                = '=',
+    SetAxis                   = '.',
+    GetAxis                   = ',',
 } SkywatcherCommand;
 
 /// Commands for the SynScan protocol implementation
@@ -384,25 +381,13 @@ Rotator,
 Iris,
 Shutter,
 Dome,
+Instrument,
 TipX,
 TipY,
 TipZ,
 TiltX,
 TiltY,
 TiltZ,
-Heater,
-DeflectorPrimaryX,
-DeflectorPrimaryY,
-DeflectorPrimaryZ,
-DeflectorSecondaryX,
-DeflectorSecondaryY,
-DeflectorSecondaryZ,
-DeflectorTertiaryX,
-DeflectorTertiaryY,
-DeflectorTertiaryZ,
-PolarizerX,
-PolarizerY,
-PolarizerZ,
 InstrumentX,
 InstrumentY,
 InstrumentZ,
@@ -436,12 +421,15 @@ PCMSecondaryZ,
 PCMTertiaryX,
 PCMTertiaryY,
 PCMTertiaryZ,
+PlaneX,
+PlaneY,
+PlaneZ,
 RailX,
 RailY,
 RailZ,
 ///Guide, following indexes add motion compensation to the previous axes, starting  from Ra
 Guide = 64,
-NumAxes=128,
+NumAxes,
 }  SkywatcherAxis;
 
 ///Axis Intensity predictor
@@ -476,30 +464,16 @@ double timestamp;
 ///AHP_GT_VERSION This library version
 #define AHP_GT_VERSION @AHP_GT_VERSION@
 #define AHP_GT_ONE_SECOND 1500000
-#define DEVICES_LIMIT 127
-#define AXES_LIMIT 127
 
 /**\}
  * \defgroup Conn Connection
  * \{*/
 
-/**
+ /**
  * \brief Obtain the current libahp-gt version
  * \return The current API version
  */
-DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
-
-/**
-* \brief Percent pointer variable
-* \param percent The percent pointer for writing operations
-*/
-DLL_EXPORT  void ahp_gt_set_stdpercent(int *percent);
-
- /**
- * \brief Indicate no writes are in progress
- * \param finished The finished state of write operations
- */
-DLL_EXPORT  void ahp_gt_set_stdfinished(int *finished);
+ DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
 
 /**
 * \brief Connect to the GT controller
@@ -562,14 +536,6 @@ DLL_EXPORT unsigned int ahp_gt_is_connected(void);
 */
 DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 
-/**
-* \brief Report detection status of the selected axis on current device
-* \param axis the axis to check
-* \return non-zero if already detected
-* \sa ahp_gt_detect_device
-* \sa ahp_gt_is_detected
-*/
-DLL_EXPORT unsigned int ahp_gt_is_axis_detected(int axis);
 /**
 * \brief Get the GT firmware version
 * \param axis The axis number if checking for a single axis module
@@ -759,31 +725,11 @@ DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
 /**
-* \brief Delete the selected axis and all its characteristics
-* \param axis The motor axis number
-*/
-void ahp_gt_delete_axis(int axis);
-
-/**
-* \brief Move the selected axis to another one keeping all characteristics
-* \param axis The motor old axis number
-* \param value The new motor axis number
-*/
-void ahp_gt_copy_axis(int axis, int value);
-
-/**
-* \brief Move the selected axis to another one keeping all characteristics, deleting the old one
-* \param axis The motor old axis number
-* \param value The new motor axis number
-*/
-void ahp_gt_move_axis(int axis, int value);
-
-/**
 * \brief Set the GT controller axis number
 * \param axis The motor old axis number
 * \param value The motor axis number
 */
-DLL_EXPORT void ahp_gt_set_axis_number(int axis, int value);
+DLL_EXPORT void ahp_gt_copy_axis(int axis, int value);
 
 /**
 * \brief Get the GT controller axis name
@@ -894,7 +840,7 @@ DLL_EXPORT int ahp_gt_is_intensity_limited(int axis);
 * \param axis The motor to reconfigure
 * \param value The intensity limit
 */
-DLL_EXPORT void ahp_gt_set_intensity_limit(int axis, int value);
+DLL_EXPORT void ahp_gt_set_intensity_limit(int axis, double value);
 
 /**
 * \brief Get the intensity limit
@@ -1020,8 +966,8 @@ DLL_EXPORT int ahp_gt_get_address(void);
 /**
 * \brief Write values from the GT controller
 * \param axis The motor to configure
-* \param percent The Percentual progress of the write
-* \param finished One when finished
+* \param percent Operation progress indication int32_t poiner.
+* \param finished Operation completed flag int32_t poiner.
 */
 DLL_EXPORT void ahp_gt_write_values(int axis, int *percent, int *finished);
 
@@ -1273,6 +1219,13 @@ DLL_EXPORT double ahp_gt_get_dec(void);
 /**\}
  * \}
  * \}*/
+ 
+#if (AHP_GT_VERSION < 0x173)
+#define GT GT1
+#define ahp_gt_connect(a, b) ahp_gt_connect(a)
+#define ahp_gt_set_pwm_frequency(a, b) ahp_gt_set_pwm_frequency(b)
+#define ahp_gt_get_pwm_frequency(a) ahp_gt_get_pwm_frequency()
+#endif
 
 #ifdef __cplusplus
 } // extern "C"
