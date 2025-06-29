@@ -35,7 +35,7 @@
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
 #define MAX_STEP_FREQ 1000
-
+#define DUMP(str, var) sprintf(str, "%s = %x", #var, var);
 #ifndef GAMMAJ2000
 ///Right ascension of the sun at J2000 zero from Greenwich
 #define GAMMAJ2000 18.6971378528
@@ -1049,42 +1049,43 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if (!WriteAndCheck (axis, offset + 1, values[idx++])) {
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if (!WriteAndCheck (axis, offset + 2, values[idx++])) {
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if (!WriteAndCheck (axis, offset + 3, values[idx++])) {
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if (!WriteAndCheck (axis, offset + 4, values[idx++])) {
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if (!WriteAndCheck (axis, offset + 5, values[idx++])) {
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if (!WriteAndCheck (axis, offset + 6, values[idx++])) {
         *finished = -1;
         return;
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff0) == 0x230 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff0) == 0x330 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
         if (!WriteAndCheck (0, 7, values[idx++])) {
             *finished = -1;
             return;
         }
+        *percent = *percent + 10;
         if (!WriteAndCheck (1, 15, values[idx++])) {
             *finished = -1;
             return;
@@ -1092,10 +1093,12 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     } else {
         idx++;
         idx++;
+        *percent = *percent + 10;
         if (!WriteAndCheck (axis, 7, values[idx++])) {
             *finished = -1;
             return;
         }
+        *percent = *percent + 10;
         if (!WriteAndCheck (axis, 15, values[idx++])) {
             *finished = -1;
             return;
@@ -1107,7 +1110,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
             }
         }
     }
-    *percent = *percent + 6.25;
+    *percent = *percent + 10;
     Reload(axis);
     *finished = 1;
 }
@@ -2137,71 +2140,6 @@ int ahp_gt_is_aligned() {
     return devices[ahp_gt_get_current_device()].is_aligned;
 }
 
-const char* ahp_gt_axis_name(int axis) {
-    const char ret [][32] =
-    {
-    "Ra",
-    "Dec",
-    "Focus",
-    "Filter",
-    "Rotator",
-    "Iris",
-    "Shutter",
-    "Dome",
-    "TipX",
-    "TipY",
-    "TipZ",
-    "TiltX",
-    "TiltY",
-    "TiltZ",
-    "Heater",
-    "DeflectorPrimaryX",
-    "DeflectorPrimaryY",
-    "DeflectorPrimaryZ",
-    "DeflectorSecondaryX",
-    "DeflectorSecondaryY",
-    "DeflectorSecondaryZ",
-    "DeflectorTertiaryX",
-    "DeflectorTertiaryY",
-    "DeflectorTertiaryZ",
-    "PolarizerX",
-    "PolarizerY",
-    "PolarizerZ",
-    "InstrumentX",
-    "InstrumentY",
-    "InstrumentZ",
-    "InstrumentRotationX",
-    "InstrumentRotationY",
-    "InstrumentRotationZ",
-    "PhasePrimaryX",
-    "PhasePrimaryY",
-    "PhasePrimaryZ",
-    "PhaseSecondaryX",
-    "PhaseSecondaryY",
-    "PhaseSecondaryZ",
-    "PhaseTertiaryX",
-    "PhaseTertiaryY",
-    "PhaseTertiaryZ",
-    "FrequencyPrimaryX",
-    "FrequencyPrimaryY",
-    "FrequencyPrimaryZ",
-    "FrequencySecondaryX",
-    "FrequencySecondaryY",
-    "FrequencySecondaryZ",
-    "FrequencyTertiaryX",
-    "FrequencyTertiaryY",
-    "FrequencyTertiaryZ",
-    "PCMPrimaryX",
-    "PCMPrimaryY",
-    "PCMPrimaryZ",
-    "PCMSecondaryX",
-    "PCMSecondaryY",
-    "PCMSecondaryZ",
-    "PCMTertiaryX",
-    "PCMTertiaryY",
-    "PCMTertiaryZ",
-    "RailX",
-    "RailY",
-    "RailZ"};
-    return ret[axis];
+const char* ahp_gt_get_axis_name(int axis) {
+    return axes[axis];
 }

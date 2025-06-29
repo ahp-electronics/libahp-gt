@@ -371,66 +371,67 @@ DIRECTION_FORWARD = 0x00,
 DIRECTION_BACKWARD = 0x01,
 } SkywatcherDirection;
 
+#define NumAxes 64
+
 ///Axis Indexes
-typedef enum {
-Ra = 0,
-Dec,
-Focus,
-Filter,
-Rotator,
-Iris,
-Shutter,
-Dome,
-Instrument,
-TipX,
-TipY,
-TipZ,
-TiltX,
-TiltY,
-TiltZ,
-InstrumentX,
-InstrumentY,
-InstrumentZ,
-InstrumentRotationX,
-InstrumentRotationY,
-InstrumentRotationZ,
-PhasePrimaryX,
-PhasePrimaryY,
-PhasePrimaryZ,
-PhaseSecondaryX,
-PhaseSecondaryY,
-PhaseSecondaryZ,
-PhaseTertiaryX,
-PhaseTertiaryY,
-PhaseTertiaryZ,
-FrequencyPrimaryX,
-FrequencyPrimaryY,
-FrequencyPrimaryZ,
-FrequencySecondaryX,
-FrequencySecondaryY,
-FrequencySecondaryZ,
-FrequencyTertiaryX,
-FrequencyTertiaryY,
-FrequencyTertiaryZ,
-PCMPrimaryX,
-PCMPrimaryY,
-PCMPrimaryZ,
-PCMSecondaryX,
-PCMSecondaryY,
-PCMSecondaryZ,
-PCMTertiaryX,
-PCMTertiaryY,
-PCMTertiaryZ,
-PlaneX,
-PlaneY,
-PlaneZ,
-RailX,
-RailY,
-RailZ,
+const char axes[NumAxes][32] = {
+"Ra",
+"Dec",
+"Focus",
+"Filter",
+"Rotator",
+"Iris",
+"Shutter",
+"Dome",
+"Instrument",
+"TipX",
+"TipY",
+"TipZ",
+"TiltX",
+"TiltY",
+"TiltZ",
+"InstrumentX",
+"InstrumentY",
+"InstrumentZ",
+"InstrumentRotationX",
+"InstrumentRotationY",
+"InstrumentRotationZ",
+"PhasePrimaryX",
+"PhasePrimaryY",
+"PhasePrimaryZ",
+"PhaseSecondaryX",
+"PhaseSecondaryY",
+"PhaseSecondaryZ",
+"PhaseTertiaryX",
+"PhaseTertiaryY",
+"PhaseTertiaryZ",
+"FrequencyPrimaryX",
+"FrequencyPrimaryY",
+"FrequencyPrimaryZ",
+"FrequencySecondaryX",
+"FrequencySecondaryY",
+"FrequencySecondaryZ",
+"FrequencyTertiaryX",
+"FrequencyTertiaryY",
+"FrequencyTertiaryZ",
+"PCMPrimaryX",
+"PCMPrimaryY",
+"PCMPrimaryZ",
+"PCMSecondaryX",
+"PCMSecondaryY",
+"PCMSecondaryZ",
+"PCMTertiaryX",
+"PCMTertiaryY",
+"PCMTertiaryZ",
+"PlaneX",
+"PlaneY",
+"PlaneZ",
+"RailX",
+"RailY",
+"RailZ",
 ///Guide, following indexes add motion compensation to the previous axes, starting  from Ra
-Guide = 64,
-NumAxes,
-}  SkywatcherAxis;
+"Guide = 64",
+};
 
 ///Axis Intensity predictor
 typedef struct {
@@ -736,7 +737,13 @@ DLL_EXPORT void ahp_gt_copy_axis(int axis, int value);
 * \param axis The motor axis number
 * \return The motor axis name or actuation destination
 */
-DLL_EXPORT const char* ahp_gt_axis_name(int axis);
+DLL_EXPORT const char* ahp_gt_get_axis_name(int axis);
+
+/**
+* \brief Get the GT controller axes names into an array
+* \return The motor axes names
+*/
+DLL_EXPORT const char** ahp_gt_get_axes_names();
 
 /**
 * \brief Set the GT controller axis number limit
