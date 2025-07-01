@@ -373,66 +373,6 @@ DIRECTION_BACKWARD = 0x01,
 
 #define NumAxes 64
 
-///Axis Indexes
-const char axes[NumAxes][32] = {
-"Ra",
-"Dec",
-"Focus",
-"Filter",
-"Rotator",
-"Iris",
-"Shutter",
-"Dome",
-"Instrument",
-"TipX",
-"TipY",
-"TipZ",
-"TiltX",
-"TiltY",
-"TiltZ",
-"InstrumentX",
-"InstrumentY",
-"InstrumentZ",
-"InstrumentRotationX",
-"InstrumentRotationY",
-"InstrumentRotationZ",
-"PhasePrimaryX",
-"PhasePrimaryY",
-"PhasePrimaryZ",
-"PhaseSecondaryX",
-"PhaseSecondaryY",
-"PhaseSecondaryZ",
-"PhaseTertiaryX",
-"PhaseTertiaryY",
-"PhaseTertiaryZ",
-"FrequencyPrimaryX",
-"FrequencyPrimaryY",
-"FrequencyPrimaryZ",
-"FrequencySecondaryX",
-"FrequencySecondaryY",
-"FrequencySecondaryZ",
-"FrequencyTertiaryX",
-"FrequencyTertiaryY",
-"FrequencyTertiaryZ",
-"PCMPrimaryX",
-"PCMPrimaryY",
-"PCMPrimaryZ",
-"PCMSecondaryX",
-"PCMSecondaryY",
-"PCMSecondaryZ",
-"PCMTertiaryX",
-"PCMTertiaryY",
-"PCMTertiaryZ",
-"PlaneX",
-"PlaneY",
-"PlaneZ",
-"RailX",
-"RailY",
-"RailZ",
-///Guide, following indexes add motion compensation to the previous axes, starting  from Ra
-"Guide = 64",
-};
-
 ///Axis Intensity predictor
 typedef struct {
 ///2nd order variable
@@ -725,6 +665,8 @@ DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
 */
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
 
+DLL_EXPORT void ahp_gt_delete_axis(int axis);
+
 /**
 * \brief Set the GT controller axis number
 * \param axis The motor old axis number
@@ -969,6 +911,14 @@ DLL_EXPORT int ahp_gt_get_address(void);
 /**\}
 * \defgroup Cfg Configuration
 * \{*/
+
+DLL_EXPORT int ahp_gt_reset(int axis);
+
+DLL_EXPORT int ahp_gt_reload(int axis);
+
+DLL_EXPORT int ahp_gt_read(int axis, int pos);
+
+DLL_EXPORT int ahp_gt_write_and_verify(int axis, int pos, int val);
 
 /**
 * \brief Write values from the GT controller
