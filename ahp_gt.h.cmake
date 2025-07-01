@@ -495,12 +495,6 @@ DLL_EXPORT int ahp_gt_get_mc_version(int axis);
 DLL_EXPORT MountType ahp_gt_get_mount_type(void);
 
 /**
-* \brief Get the current GT controller axis number limit
-* \return The GT controller axis number limit
-*/
-DLL_EXPORT int ahp_gt_get_axes_limit(void);
-
-/**
 * \brief Get the current GT features
 * \param axis The motor to query
 * \return The GT controller GTFeature configuration
@@ -664,34 +658,6 @@ DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
 * \param value The MountType after ahp_gt_write_values
 */
 DLL_EXPORT void ahp_gt_set_mount_type(MountType value);
-
-DLL_EXPORT void ahp_gt_delete_axis(int axis);
-
-/**
-* \brief Set the GT controller axis number
-* \param axis The motor old axis number
-* \param value The motor axis number
-*/
-DLL_EXPORT void ahp_gt_copy_axis(int axis, int value);
-
-/**
-* \brief Get the GT controller axis name
-* \param axis The motor axis number
-* \return The motor axis name or actuation destination
-*/
-DLL_EXPORT const char* ahp_gt_get_axis_name(int axis);
-
-/**
-* \brief Get the GT controller axes names into an array
-* \return The motor axes names
-*/
-DLL_EXPORT const char** ahp_gt_get_axes_names();
-
-/**
-* \brief Set the GT controller axis number limit
-* \param value The motor axis number limit
-*/
-DLL_EXPORT void ahp_gt_set_axes_limit(int value);
 
 /**
 * \brief Set the Skywatcher features
@@ -897,27 +863,89 @@ DLL_EXPORT int ahp_gt_select_device(int address);
 DLL_EXPORT int ahp_gt_get_current_device(void);
 
 /**
-* \brief Change the current device address
-* \param address The bus address to set on the connected GT Controller
+* \brief Delete the stored data of the indexed GT controller
+* \param axis The motor axis number
 */
-DLL_EXPORT void ahp_gt_set_address(int address);
+DLL_EXPORT void ahp_gt_delete_device(int index);
 
 /**
-* \brief Get the current device address
-* \return the address of the connected GT Controller
+* \brief Delete the stored data of the indexed GT controller
+* \param from The original GT controller data index
+* \param to The destination GT controller data index
 */
-DLL_EXPORT int ahp_gt_get_address(void);
+DLL_EXPORT void ahp_gt_copy_device(int from, int to);
 
+/**
+ * \defgroup Axs Multi-axes indexing
+ * \{*/
+
+ /**
+ * \brief Delete the stored data of the GT controller axis
+ * \param axis The motor axis number
+ */
+ DLL_EXPORT void ahp_gt_delete_axis(int axis);
+
+ /**
+ * \brief Set the GT controller axis number
+ * \param from The motor old axis number
+ * \param to The destination motor axis number
+ */
+ DLL_EXPORT void ahp_gt_copy_axis(int from, int to);
+
+ /**
+ * \brief Get the GT controller axis name
+ * \param axis The motor axis number
+ * \return The motor axis name or actuation destination
+ */
+ DLL_EXPORT const char* ahp_gt_get_axis_name(int axis);
+
+ /**
+ * \brief Get the GT controller axes names into an array
+ * \return The motor axes names
+ */
+ DLL_EXPORT const char** ahp_gt_get_axes_names(void);
+
+ /**
+ * \brief Set the GT controller axis number limit
+ * \param value The motor axis number limit
+ */
+ DLL_EXPORT void ahp_gt_set_axes_limit(int value);
+
+ /**
+ * \brief Get the current GT controller axis number limit
+ * \return The GT controller axis number limit
+ */
+ DLL_EXPORT int ahp_gt_get_axes_limit(void);
 /**\}
+* \}
 * \defgroup Cfg Configuration
 * \{*/
 
+/**
+* \brief Hard reset the selected  motor
+* \param axis The motor to reset
+*/
 DLL_EXPORT int ahp_gt_reset(int axis);
 
+/**
+* \brief Soft reset the selected  motor
+* \param axis The motor to reset
+*/
 DLL_EXPORT int ahp_gt_reload(int axis);
 
+/**
+* \brief Read a single word from the 16 available
+* \param axis The motor to query
+* \param pos The word index
+*/
 DLL_EXPORT int ahp_gt_read(int axis, int pos);
 
+/**
+* \brief Write a value to a single word of the 16 available
+* \param axis The motor to query
+* \param pos The word index
+* \param val The value
+*/
 DLL_EXPORT int ahp_gt_write_and_verify(int axis, int pos, int val);
 
 /**

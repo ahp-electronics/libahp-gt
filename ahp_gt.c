@@ -1078,6 +1078,11 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     int offset = 0;
+    int _percent, _finished;
+    if(percent == NULL)
+        percent = &_percent;
+    if(finished == NULL)
+        finished = &_finished;
     *percent = 0;
     *finished = 0;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
@@ -1281,16 +1286,11 @@ void ahp_gt_read_values(int axis)
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         value = ahp_gt_read(axis, 8);
         if(value > 0) {
-            if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) == 0x538) {
-                devices[ahp_gt_get_current_device()].axis[axis].index = ((value & 0xff000) >> 12);
-                ahp_gt_copy_axis(axis, devices[ahp_gt_get_current_device()].axis[axis].index);
-            }
             devices[ahp_gt_get_current_device()].axis[axis].intensity = value & 0x3ff;
             devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = (value & 0x400) != 0;
         }
     }
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
-    ahp_gt_select_device(devices[ahp_gt_get_current_device()].index);
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
@@ -1844,7 +1844,6 @@ int ahp_gt_detect_device() {
         return -1;
     int a = 0;
     memset(devices, 0, 128*sizeof(gt_info));
-    //ahp_gt_select_device(0);
     devices[ahp_gt_get_current_device()].detected = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     ahp_gt_set_axes_limit(NumAxes);
@@ -1873,22 +1872,20 @@ int ahp_gt_select_device(int address) {
     return -1;
 }
 
-void ahp_gt_set_address(int address)
+void ahp_gt_delete_device(int axis)
 {
-    int a;
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].index = fmax(1, fmin(address, 128)) - 1;
-    for(a = 0; a < devices[ahp_gt_get_current_device()].num_axes; a++) {
-        optimize_values(a);
-    }
+    memset(&devices[ahp_gt_get_current_device()], 0, sizeof(gt_info));
 }
 
-int ahp_gt_get_address()
+void ahp_gt_copy_device(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return 0;
-    return devices[ahp_gt_get_current_device()].index;
+        return;
+    devices[ahp_gt_get_current_device()].index = value;
+    memcpy(&devices[ahp_gt_get_current_device()], &devices[ahp_gt_get_current_device()], sizeof(gt_info));
+    memcpy(&devices[ahp_gt_get_current_device()].axis, &devices[ahp_gt_get_current_device()].axis, sizeof(gt_axis)*NumAxes);
 }
 
 SkywatcherAxisStatus ahp_gt_get_status(int axis)
@@ -2208,6 +2205,6 @@ const char* ahp_gt_get_axis_name(int axis) {
     return axes[axis];
 }
 
-const char** ahp_gt_get_axes_names(int axis) {
+const char** ahp_gt_get_axes_names() {
     return (const char**)axes;
 }
