@@ -30,7 +30,6 @@
 #include <sys/time.h>
 
 #include "rs232.c"
-
 #define AXES_LIMIT 127
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
@@ -1087,8 +1086,6 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     *finished = 0;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
         offset = axis * 8;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)
-        *percent = axis * 50;
     int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
     if((ahp_gt_get_mount_flags() & isForkMount) && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
@@ -1103,10 +1100,10 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     devices[ahp_gt_get_current_device()].axis [axis].one_second,
     ((int)(devices[ahp_gt_get_current_device()].axis [axis].accel_steps & 0xff) << 10) | (((int)devices[ahp_gt_get_current_device()].axis [axis].accel_increment & 0x3f) << 18) | (((int)devices[ahp_gt_get_current_device()].axis [axis].multiplier & 0x7f) << 3) | ((devices[ahp_gt_get_current_device()].axis[axis].stepping_conf & 0x03) << 1) | (devices[ahp_gt_get_current_device()].axis[axis].direction_invert & 1),
     (int)devices[ahp_gt_get_current_device()].axis [axis].features,
-        (((devices[ahp_gt_get_current_device()].axis[0].pwmfreq << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[0].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[0].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
-        (((devices[ahp_gt_get_current_device()].axis[0].pwmfreq << 4) >> 2) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[1].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[1].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
-        (((devices[ahp_gt_get_current_device()].axis[0].pwmfreq << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
-        (((devices[ahp_gt_get_current_device()].axis[0].pwmfreq << 4) >> 2) & 0x30) | ((mount_flags << 2) & 0x8) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[axis].pwmfreq << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[0].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[0].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[axis].pwmfreq << 2)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[1].stepping_mode << 6) & 0xc0) | ((mount_flags << 2) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[1].gtfeature & 0x7) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[axis].pwmfreq << 4)) & 0x30) | (((int)devices[ahp_gt_get_current_device()].axis[axis].stepping_mode << 6) & 0xc0) | ((mount_flags << 3) & 0x8) | ((int)devices[ahp_gt_get_current_device()].axis[axis].gtfeature & 0x7) | ((((unsigned char)devices[ahp_gt_get_current_device()].type)<<16)&0xff0000) | (int)((dividers<<8)&0xff00),
+        (((devices[ahp_gt_get_current_device()].axis[axis].pwmfreq << 2)) & 0x30) | ((mount_flags << 2) & 0x8) | (((mount_flags)<<14)&0xff0000) | (int)((dividers)&0xff00),
         (((devices[ahp_gt_get_current_device()].axis [axis].index << 12) & 0x7f000) | ((int)devices[ahp_gt_get_current_device()].axis[axis].intensity & 0x3ff) | (devices[ahp_gt_get_current_device()].axis[axis].intensity_limited ? 0x400 : 0)),
     };
     int idx = 0;
@@ -1709,7 +1706,7 @@ void ahp_gt_set_pwm_frequency(int axis, int value)
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
     value = 0xf-value;
-    devices[ahp_gt_get_current_device()].axis [0].pwmfreq = value;
+    devices[ahp_gt_get_current_device()].axis [axis].pwmfreq = value;
     optimize_values(axis);
 }
 
