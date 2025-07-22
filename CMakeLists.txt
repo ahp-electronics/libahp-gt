@@ -24,6 +24,7 @@ set(SOURCES
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/99-libahp-gt.rules.cmake ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-gt.rules )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FindAHPGT.cmake ${CMAKE_CURRENT_BINARY_DIR}/FindAHPGT.cmake )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
