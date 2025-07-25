@@ -321,7 +321,6 @@ PlaneZ,
 RailX,
 RailY,
 RailZ,
-///Guide, following indexes add motion compensation to the previous axes, starting  from Ra
 Guide = 64,
 } SkywatcherAxis;
 
@@ -839,6 +838,7 @@ void ahp_gt_add_intensity_deviator(int axis, gt_deviator deviator);
 
 /**
 * \brief Get the intensity or intensity estimated at a given frequency
+* \param axis The motor to reconfigure
 * \param freq The frequency at will be measured
 * \return The intensity calculated
 */
@@ -923,7 +923,7 @@ DLL_EXPORT int ahp_gt_get_current_device(void);
 
 /**
 * \brief Delete the stored data of the indexed GT controller
-* \param axis The motor axis number
+* \param index The device number
 */
 DLL_EXPORT void ahp_gt_delete_device(int index);
 
