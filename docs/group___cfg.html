@@ -71,6 +71,18 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:ga668f80acd56877d4d3b0e1edddb505c2"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cfg.html#ga668f80acd56877d4d3b0e1edddb505c2">ahp_gt_reset</a> (int axis)</td></tr>
+<tr class="memdesc:ga668f80acd56877d4d3b0e1edddb505c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hard reset the selected motor.  <a href="group___cfg.html#ga668f80acd56877d4d3b0e1edddb505c2">More...</a><br /></td></tr>
+<tr class="separator:ga668f80acd56877d4d3b0e1edddb505c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabd843232f53b13227898f7e97e2b62e1"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cfg.html#gabd843232f53b13227898f7e97e2b62e1">ahp_gt_reload</a> (int axis)</td></tr>
+<tr class="memdesc:gabd843232f53b13227898f7e97e2b62e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Soft reset the selected motor.  <a href="group___cfg.html#gabd843232f53b13227898f7e97e2b62e1">More...</a><br /></td></tr>
+<tr class="separator:gabd843232f53b13227898f7e97e2b62e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga833aead2b1e5d2cb684ae0e2572948b8"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cfg.html#ga833aead2b1e5d2cb684ae0e2572948b8">ahp_gt_read</a> (int axis, int pos)</td></tr>
+<tr class="memdesc:ga833aead2b1e5d2cb684ae0e2572948b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read a single word from the 16 available.  <a href="group___cfg.html#ga833aead2b1e5d2cb684ae0e2572948b8">More...</a><br /></td></tr>
+<tr class="separator:ga833aead2b1e5d2cb684ae0e2572948b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa080a15b840ac38fbcc7516c3e6595f1"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cfg.html#gaa080a15b840ac38fbcc7516c3e6595f1">ahp_gt_write_and_verify</a> (int axis, int pos, int val)</td></tr>
+<tr class="memdesc:gaa080a15b840ac38fbcc7516c3e6595f1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write a value to a single word of the 16 available.  <a href="group___cfg.html#gaa080a15b840ac38fbcc7516c3e6595f1">More...</a><br /></td></tr>
+<tr class="separator:gaa080a15b840ac38fbcc7516c3e6595f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabcde71963857eb8e964061266b5b92da"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___cfg.html#gabcde71963857eb8e964061266b5b92da">ahp_gt_write_values</a> (int axis, int *percent, int *finished)</td></tr>
 <tr class="memdesc:gabcde71963857eb8e964061266b5b92da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write values from the GT controller.  <a href="group___cfg.html#gabcde71963857eb8e964061266b5b92da">More...</a><br /></td></tr>
 <tr class="separator:gabcde71963857eb8e964061266b5b92da"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -80,6 +92,41 @@ Functions</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="ga833aead2b1e5d2cb684ae0e2572948b8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga833aead2b1e5d2cb684ae0e2572948b8">&#9670;&nbsp;</a></span>ahp_gt_read()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_gt_read </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pos</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">axis</td><td>The motor to query </td></tr>
+    <tr><td class="paramname">pos</td><td>The word index </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ga9c74472470f9d77283fef727e588d019"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga9c74472470f9d77283fef727e588d019">&#9670;&nbsp;</a></span>ahp_gt_read_values()</h2>
 
@@ -98,6 +145,96 @@ Functions</h2></td></tr>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">axis</td><td>The motor to query </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gabd843232f53b13227898f7e97e2b62e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gabd843232f53b13227898f7e97e2b62e1">&#9670;&nbsp;</a></span>ahp_gt_reload()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_gt_reload </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>axis</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">axis</td><td>The motor to reset </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga668f80acd56877d4d3b0e1edddb505c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga668f80acd56877d4d3b0e1edddb505c2">&#9670;&nbsp;</a></span>ahp_gt_reset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_gt_reset </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>axis</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">axis</td><td>The motor to reset </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="gaa080a15b840ac38fbcc7516c3e6595f1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa080a15b840ac38fbcc7516c3e6595f1">&#9670;&nbsp;</a></span>ahp_gt_write_and_verify()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT int ahp_gt_write_and_verify </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>axis</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>pos</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>val</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">axis</td><td>The motor to query </td></tr>
+    <tr><td class="paramname">pos</td><td>The word index </td></tr>
+    <tr><td class="paramname">val</td><td>The value </td></tr>
   </table>
   </dd>
 </dl>
@@ -149,7 +286,7 @@ Functions</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 26 2025 15:55:12 for AHP® GT Controllers API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Fri Jul 25 2025 14:56:53 for AHP® GT Controllers API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

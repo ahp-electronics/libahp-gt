@@ -72,6 +72,9 @@ $(function() {
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structgt__deviator.html">gt_deviator</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Axis Intensity predictor.  <a href="structgt__deviator.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="struct_skywatcher_axis_status.html">SkywatcherAxisStatus</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Axis Status.  <a href="struct_skywatcher_axis_status.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -103,7 +106,7 @@ Enumerations</h2></td></tr>
 , <a class="el" href="group___types.html#gga19b455d3dcdd4497552128e78459b560a4c4404fe1813eb9170d8757fc2c2a970">halfCurrentDec</a> = 0x4
 , <a class="el" href="group___types.html#gga19b455d3dcdd4497552128e78459b560aec4385558eeb0fd55b9989ea88bca2c4">bauds_115200</a> = 0x8
 , <br />
-&#160;&#160;<a class="el" href="group___types.html#gga19b455d3dcdd4497552128e78459b560a44967c7a8f2425d7f1ae4a8d12d2d11f">torqueControl</a> = 0x10
+&#160;&#160;<a class="el" href="group___types.html#gga19b455d3dcdd4497552128e78459b560a44967c7a8f2425d7f1ae4a8d12d2d11f">torqueControl</a> = 0x400
 <br />
  }</td></tr>
 <tr class="memdesc:ga19b455d3dcdd4497552128e78459b560"><td class="mdescLeft">&#160;</td><td class="mdescRight">GT custom flags.  <a href="group___types.html#ga19b455d3dcdd4497552128e78459b560">More...</a><br /></td></tr>
@@ -200,9 +203,6 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:ga0b02665a8679992ab1020923a8b5ea4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Direction.  <a href="group___types.html#ga0b02665a8679992ab1020923a8b5ea4d">More...</a><br /></td></tr>
 <tr class="separator:ga0b02665a8679992ab1020923a8b5ea4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1cd0f648e0f125add923e65d860d1f55"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___types.html#ga1cd0f648e0f125add923e65d860d1f55">SkywatcherAxis</a> {  }</td></tr>
-<tr class="memdesc:ga1cd0f648e0f125add923e65d860d1f55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Axis Indexes.  <a href="group___types.html#ga1cd0f648e0f125add923e65d860d1f55">More...</a><br /></td></tr>
-<tr class="separator:ga1cd0f648e0f125add923e65d860d1f55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
@@ -335,24 +335,6 @@ Enumerations</h2></td></tr>
 <tr><td class="fieldname"><a id="gga0e72ffa5952ffedc43505758a410db6fab9703aa1f0a00bab3091e617a8ee446e"></a>isDOB&#160;</td><td class="fielddoc"><p>Dobsonian mount. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="gga0e72ffa5952ffedc43505758a410db6fa92b864570269d5acbe8f58a626495dde"></a>isCustom&#160;</td><td class="fielddoc"><p>Custom mount. </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<a id="ga1cd0f648e0f125add923e65d860d1f55"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga1cd0f648e0f125add923e65d860d1f55">&#9670;&nbsp;</a></span>SkywatcherAxis</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="group___types.html#ga1cd0f648e0f125add923e65d860d1f55">SkywatcherAxis</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga1cd0f648e0f125add923e65d860d1f55aa73051e38214e2328e22c482b446defd"></a>Guide&#160;</td><td class="fielddoc"><p>Guide, following indexes add motion compensation to the previous axes, starting from Ra. </p>
 </td></tr>
 </table>
 
@@ -545,7 +527,7 @@ Enumerations</h2></td></tr>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 26 2025 15:55:12 for AHP® GT Controllers API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Fri Jul 25 2025 14:56:53 for AHP® GT Controllers API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>

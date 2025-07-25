@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['skywatcheraxisstatus_208',['SkywatcherAxisStatus',['../struct_skywatcher_axis_status.html',1,'']]]
+  ['gt_5fdeviator_221',['gt_deviator',['../structgt__deviator.html',1,'']]]
 ];

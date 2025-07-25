@@ -63,12 +63,18 @@ $(function() {
 
 <div class="header">
   <div class="summary">
+<a href="#groups">Modules</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle">
 <div class="title">Multi-device addressing<div class="ingroups"><a class="el" href="group___g_t___a_p_i.html">AHP® GT Controllers API</a></div></div>  </div>
 </div><!--header-->
 <div class="contents">
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="groups"></a>
+Modules</h2></td></tr>
+<tr class="memitem:group___axs"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___axs.html">Multi-axes indexing</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga82f78edae54f2af757b51ac4b45f5178"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#ga82f78edae54f2af757b51ac4b45f5178">ahp_gt_detect_device</a> (void)</td></tr>
@@ -80,15 +86,74 @@ Functions</h2></td></tr>
 <tr class="memitem:gad35d28cfdce7a97119a5a9ebbd9f3ce4"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#gad35d28cfdce7a97119a5a9ebbd9f3ce4">ahp_gt_get_current_device</a> (void)</td></tr>
 <tr class="memdesc:gad35d28cfdce7a97119a5a9ebbd9f3ce4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain the current device address.  <a href="group___adr.html#gad35d28cfdce7a97119a5a9ebbd9f3ce4">More...</a><br /></td></tr>
 <tr class="separator:gad35d28cfdce7a97119a5a9ebbd9f3ce4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa606a01cd27ae929d26b3fe3908d03fd"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#gaa606a01cd27ae929d26b3fe3908d03fd">ahp_gt_set_address</a> (int address)</td></tr>
-<tr class="memdesc:gaa606a01cd27ae929d26b3fe3908d03fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Change the current device address.  <a href="group___adr.html#gaa606a01cd27ae929d26b3fe3908d03fd">More...</a><br /></td></tr>
-<tr class="separator:gaa606a01cd27ae929d26b3fe3908d03fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4f8f32d32e6f1ceadfaaec6fa2ad5d90"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#ga4f8f32d32e6f1ceadfaaec6fa2ad5d90">ahp_gt_get_address</a> (void)</td></tr>
-<tr class="memdesc:ga4f8f32d32e6f1ceadfaaec6fa2ad5d90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the current device address.  <a href="group___adr.html#ga4f8f32d32e6f1ceadfaaec6fa2ad5d90">More...</a><br /></td></tr>
-<tr class="separator:ga4f8f32d32e6f1ceadfaaec6fa2ad5d90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9952d86fcfaba3daff9751f17c05f79b"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#ga9952d86fcfaba3daff9751f17c05f79b">ahp_gt_delete_device</a> (int index)</td></tr>
+<tr class="memdesc:ga9952d86fcfaba3daff9751f17c05f79b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete the stored data of the indexed GT controller.  <a href="group___adr.html#ga9952d86fcfaba3daff9751f17c05f79b">More...</a><br /></td></tr>
+<tr class="separator:ga9952d86fcfaba3daff9751f17c05f79b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5062ff6db6b14e6341e6a53aebca04bc"><td class="memItemLeft" align="right" valign="top">DLL_EXPORT void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group___adr.html#ga5062ff6db6b14e6341e6a53aebca04bc">ahp_gt_copy_device</a> (int from, int to)</td></tr>
+<tr class="memdesc:ga5062ff6db6b14e6341e6a53aebca04bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete the stored data of the indexed GT controller.  <a href="group___adr.html#ga5062ff6db6b14e6341e6a53aebca04bc">More...</a><br /></td></tr>
+<tr class="separator:ga5062ff6db6b14e6341e6a53aebca04bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="ga5062ff6db6b14e6341e6a53aebca04bc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5062ff6db6b14e6341e6a53aebca04bc">&#9670;&nbsp;</a></span>ahp_gt_copy_device()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT void ahp_gt_copy_device </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>from</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>to</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">from</td><td>The original GT controller data index </td></tr>
+    <tr><td class="paramname">to</td><td>The destination GT controller data index </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ga9952d86fcfaba3daff9751f17c05f79b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9952d86fcfaba3daff9751f17c05f79b">&#9670;&nbsp;</a></span>ahp_gt_delete_device()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">DLL_EXPORT void ahp_gt_delete_device </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>index</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">index</td><td>The device number </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ga82f78edae54f2af757b51ac4b45f5178"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga82f78edae54f2af757b51ac4b45f5178">&#9670;&nbsp;</a></span>ahp_gt_detect_device()</h2>
 
@@ -105,25 +170,6 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <dl class="section return"><dt>Returns</dt><dd>-1 if no devices were detected, 0 if a device with the current address was detected </dd></dl>
-
-</div>
-</div>
-<a id="ga4f8f32d32e6f1ceadfaaec6fa2ad5d90"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4f8f32d32e6f1ceadfaaec6fa2ad5d90">&#9670;&nbsp;</a></span>ahp_gt_get_address()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">DLL_EXPORT int ahp_gt_get_address </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="section return"><dt>Returns</dt><dd>the address of the connected GT Controller </dd></dl>
 
 </div>
 </div>
@@ -171,34 +217,10 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="gaa606a01cd27ae929d26b3fe3908d03fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa606a01cd27ae929d26b3fe3908d03fd">&#9670;&nbsp;</a></span>ahp_gt_set_address()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">DLL_EXPORT void ahp_gt_set_address </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>address</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">address</td><td>The bus address to set on the connected GT Controller </td></tr>
-  </table>
-  </dd>
-</dl>
-
-</div>
-</div>
 </div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Feb 26 2025 15:55:12 for AHP® GT Controllers API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
+Generated on Fri Jul 25 2025 14:56:53 for AHP® GT Controllers API by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.1
 </small></address>
 </body>
 </html>
