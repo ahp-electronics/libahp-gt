@@ -870,6 +870,7 @@ static void optimize_values(int axis)
     double baseclock = 375000;
     double usteps = 62.0;
     double maxdiv = 14.0;
+    double speed_limit = 1.0;
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].steps * devices[ahp_gt_get_current_device()].axis [axis].worm / devices[ahp_gt_get_current_device()].axis [axis].motor);
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].crown * devices[ahp_gt_get_current_device()].axis [axis].wormsteps);
     int maxsteps = 0xffffff;
@@ -888,26 +889,27 @@ static void optimize_values(int axis)
     switch(devices[ahp_gt_get_current_device()].axis[axis].stepping_mode) {
     case HalfStep:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier = 1;
-        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ;
+        speed_limit = 1.0;
         break;
     case Microstep:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier += (int)usteps;
-        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
+        speed_limit = 64.0/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
         break;
     case Mixed:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier += (int)usteps;
-        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
+        speed_limit = 1.0;
         break;
     default:
         break;
     }
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit /= devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps *= (double)devices[ahp_gt_get_current_device()].axis [axis].multiplier / (double)devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].crown * devices[ahp_gt_get_current_device()].axis [axis].wormsteps);
 
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxperiod = (int)sidereal_period;
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = (int)(800);
+    speed_limit /= devices[ahp_gt_get_current_device()].axis [axis].divider;
+    speed_limit /= (int)(sidereal_period);
+    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = speed_limit*devices[ahp_gt_get_current_device()].axis [axis].crown*SIDEREAL_DAY;
     devices[ahp_gt_get_current_device()].axis [axis].minperiod = 1;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = fmin(devices[ahp_gt_get_current_device()].axis [axis].speed_limit, devices[ahp_gt_get_current_device()].axis [axis].maxspeed);
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = (int)fmax(devices[ahp_gt_get_current_device()].axis [axis].minperiod, (devices[ahp_gt_get_current_device()].axis [axis].maxperiod / devices[ahp_gt_get_current_device()].axis [axis].maxspeed));
@@ -1278,8 +1280,7 @@ void ahp_gt_read_values(int axis)
             devices[ahp_gt_get_current_device()].mount_flags |= 1;
         }
     }
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
-        devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
+    devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
     if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
         value = ahp_gt_read(axis, 8);
         if(value > 0) {
