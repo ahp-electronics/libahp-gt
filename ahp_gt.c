@@ -1086,11 +1086,11 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         finished = &_finished;
     *percent = 0;
     *finished = 0;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 1)
         offset = axis * 8;
     int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
-    if((ahp_gt_get_mount_flags() & isForkMount) && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xfff) != 0x538)) {
+    if((ahp_gt_get_mount_flags() & isForkMount) && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 1)) {
         mount_flags |= 1;
     }
     int pwmfreq = 0;
@@ -1144,7 +1144,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         return;
     }
     *percent = *percent + 10;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff0) == 0x230 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff0) == 0x330 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37) {
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff0) == 0x230 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff0) == 0x330 || (devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 1) {
         if (!ahp_gt_write_and_verify (0, 7, values[idx++])) {
             *finished = -1;
             return;
@@ -1167,7 +1167,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
             *finished = -1;
             return;
         }
-        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
+        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) > 1) {
             if (!ahp_gt_write_and_verify (axis, 8, values[idx++])) {
                 *finished = -1;
                 return;
@@ -1229,11 +1229,11 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].axis [axis].dividers = 0;
     devices[ahp_gt_get_current_device()].index = 1;
     devices[ahp_gt_get_current_device()].rs232_polarity = 0;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x37 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x38 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 0x39) {
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) != 1 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) != 5 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) != 6) {
         return;
     }
 
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x37)
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 1)
         offset = axis * 8;
     value = ahp_gt_read(axis, offset + 2);
     if(value > 0)
@@ -1281,7 +1281,7 @@ void ahp_gt_read_values(int axis)
         }
     }
     devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xff) == 0x38) {
+    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) < 6 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) > 1) {
         value = ahp_gt_read(axis, 8);
         if(value > 0) {
             devices[ahp_gt_get_current_device()].axis[axis].intensity = value & 0x3ff;
