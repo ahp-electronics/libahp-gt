@@ -20,6 +20,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
    )
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/99-libahp-gt.rules.cmake ${CMAKE_CURRENT_BINARY_DIR}/99-libahp-gt.rules )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/ahp_gt.h )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
@@ -29,6 +30,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 link_directories(${CMAKE_LIBRARY_PATH})
 
+execute_process (COMMAND brew.sh WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 execute_process (COMMAND doxygen ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
 add_library(ahp_gt SHARED ${SOURCES} ${PLATFORM_SOURCES})
