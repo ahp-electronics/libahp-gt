@@ -536,6 +536,13 @@ DLL_EXPORT unsigned int ahp_gt_is_connected(void);
 DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 
 /**
+* \brief Report axis detection status
+* \param index the axis to check
+* \return non-zero if the axis is already detected
+*/
+DLL_EXPORT unsigned int ahp_gt_axis_is_detected(int axis);
+
+/**
 * \brief Get the GT firmware version
 * \param axis The axis number if checking for a single axis module
 * \return The GT controller firmware version
