@@ -1,0 +1,98 @@
+name: brew test-bot
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+  pull_request:
+  # workflow_dispatch:  # NOTE: nova with homebrew gha
+
+jobs:
+  test-bot:
+    strategy:
+      matrix:
+        # os: [ubuntu-latest, macos-latest] # NOTE: default
+        # NOTE: homebrew-core uses private self hosted runners
+        # NOTE: `macOS-latest` is the default runner provided by github
+        # os: [ self-hosted-catalinavm, self-hosted-bigsurvm ]
+        os: [ self-hosted-catalinavm, self-hosted-bigsurvm, self-hosted-mojavevm ]
+        # os: [ self-hosted-mojavevm ]
+
+    runs-on: ${{ matrix.os }}
+
+    timeout-minutes: 1200
+
+    steps:
+
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%dT%H:%M:%S')"
+
+      - name: Log date
+        run: echo "${{ steps.date.outputs.date }}"
+
+      - name: Set default run status
+        run: echo "::set-output name=last_run_status::default" > last_run_status
+
+      - name: Restore last run status
+        id: last_run
+        uses: actions/cache@v2
+        with:
+          path: |
+            last_run_status
+          key: |
+            ${{ github.run_id }}-${{ matrix.os }}-${{ steps.date.outputs.date }}
+          restore-keys: |
+            ${{ github.run_id }}-${{ matrix.os }}-
+
+      - name: Set last run status
+        id: last_run_status
+        run: cat last_run_status
+
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Cache Homebrew Bundler RubyGems
+        if: steps.last_run_status.outputs.last_run_status != 'success'
+        id: cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: ${{ steps.set-up-homebrew.outputs.gems-path }}
+          key: ${{ runner.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
+          restore-keys: ${{ runner.os }}-rubygems-
+
+      # NOTE: exp with using a condition to add env var for mojave runner
+      # SEE: https://docs.github.com/en/actions/learn-github-actions/environment-variables
+      #
+      # NOTE: may require using `RUNNER_NAME` instead of `runner.os`
+      - name: condition 1
+        if: runner.os == 'self-hosted-mojavevm'
+        run: echo "The operating system on the runner is, $RUNNER_OS."
+        run: export HOMEBREW_DEVELOPER=1
+
+      - name: Install Homebrew Bundler RubyGems
+        if: steps.cache.outputs.cache-hit != 'true' && steps.last_run_status.outputs.last_run_status != 'success'
+        run: brew install-bundler-gems
+
+      - run: brew test-bot --only-cleanup-before
+
+      - run: brew test-bot --only-setup
+
+      - run: brew test-bot --only-tap-syntax
+
+      - run: brew test-bot --only-formulae
+        if: github.event_name == 'pull_request'
+
+      - name: Uplod bottles as artifact
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v2.2.4
+        with:
+          name: bottles
+          path: '*.bottle.*'
+
+      - name: Save run status
+        if: steps.last_run_status.outputs.last_run_status != 'success'
+        run: echo "::set-output name=last_run_status::${{ steps.test_run.outcome }}" > last_run_status
