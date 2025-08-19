@@ -910,7 +910,7 @@ static void optimize_values(int axis)
     double steps_s = totalsteps / SIDEREAL_DAY;
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxperiod = (int)sidereal_period;
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = 800.0/steps_s;
+    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = 1600.0/steps_s;
     devices[ahp_gt_get_current_device()].axis [axis].minperiod = 1;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = (int)fmax(devices[ahp_gt_get_current_device()].axis [axis].minperiod, (devices[ahp_gt_get_current_device()].axis [axis].maxperiod / devices[ahp_gt_get_current_device()].axis [axis].maxspeed));
     devices[ahp_gt_get_current_device()].axis [axis].guide = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].axis [axis].totalsteps);
@@ -922,6 +922,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
     devices[ahp_gt_get_current_device()].axis [axis].dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
     devices[ahp_gt_get_current_device()].axis [axis].dividers |= (((unsigned char)(devices[ahp_gt_get_current_device()].axis [0].divider) & 0xf) << 1) | ((((unsigned char)(devices[ahp_gt_get_current_device()].axis[1].divider)) & 0xf) << 5);
+    devices[ahp_gt_get_current_device()].axis [axis].detected = 1;
 }
 int ahp_gt_reset(int axis)
 {
@@ -1854,7 +1855,6 @@ int ahp_gt_detect_device() {
         devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
         if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
             pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
-            devices[ahp_gt_get_current_device()].axis[a].detected = 1;
             devices[ahp_gt_get_current_device()].detected = 1;
             ahp_gt_read_values(a);
             return 0;
