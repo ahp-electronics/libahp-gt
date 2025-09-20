@@ -917,6 +917,7 @@ DLL_EXPORT int ahp_gt_detect_device(void);
 
 /**
 * \brief Select a device on a serial bus
+* \param axis The motor to indicize
 * \param address The address to query on bus
 * \return -1 if the selected device were not detected, 0 if the selected device is available
 */

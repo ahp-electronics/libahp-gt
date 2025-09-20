@@ -1410,7 +1410,6 @@ unsigned int ahp_gt_axis_is_detected(int axis)
 int ahp_gt_get_mc_version(int axis)
 {
     int v = dispatch_command(InquireMotorBoardVersion, axis, -1);
-    v = (v << 8 | v >> 8);
     v &= 0xffff;
     if (v == 0xffff)
         v = -1;
@@ -1869,8 +1868,10 @@ int ahp_gt_detect_device() {
 int ahp_gt_select_device(int address) {
     if(!ahp_gt_is_connected())
         return -1;
+    int a;
     address = fmax(0, fmin(address, 128));
-    dispatch_command(SetAddress, 0, address);
+    for(a = 0; a < NumAxes; a++)
+        dispatch_command(SetAddress, a, address);
     ahp_gt_current_device = address;
     return -1;
 }
