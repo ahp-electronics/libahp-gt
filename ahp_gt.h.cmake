@@ -119,6 +119,16 @@ DLL_EXPORT void ahp_set_stderr(FILE *f);
 * \defgroup Types Types
 * \{*/
 
+///GT Controller model
+typedef enum {
+    ///1A single chip GT1
+    GT1,
+    ///15A double chip - dual axis GT2
+    GT2,
+    ///15A single chip - single programmable axis GT5
+    GT5
+} GT_Model;
+
 ///Motor coils phase winding configuration
 typedef enum {
 ///AABB Motor winding
