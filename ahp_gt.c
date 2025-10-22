@@ -42,6 +42,9 @@
 #ifndef SIDEREAL_DAY
 #define SIDEREAL_DAY 86164.098903691
 #endif
+#ifndef SIDEREAL_NOON
+#define SIDEREAL_NOON (SIDEREAL_DAY / 2)
+#endif
 #ifndef SOLAR_DAY
 #define SOLAR_DAY 86400
 #endif
@@ -112,6 +115,8 @@ static const char axes[NumAxes][32] = {
 typedef struct {
     GT_Model model;
     int index;
+    int last_write;
+    int last_read;
     int totalsteps;
     int wormsteps;
     int accel_steps;
@@ -127,7 +132,6 @@ typedef struct {
     int dividers;
     double maxperiod;
     double minperiod;
-    double speed_limit;
     double max_step_frequency;
     double acceleration;
     double crown;
@@ -890,20 +894,16 @@ static void optimize_values(int axis)
     switch(devices[ahp_gt_get_current_device()].axis[axis].stepping_mode) {
     case HalfStep:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier = 1;
-        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ;
         break;
     case Microstep:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier += (int)usteps;
-        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
         break;
     case Mixed:
         devices[ahp_gt_get_current_device()].axis [axis].multiplier += (int)usteps;
-        devices[ahp_gt_get_current_device()].axis [axis].speed_limit = MAX_STEP_FREQ/devices[ahp_gt_get_current_device()].axis [axis].multiplier;
         break;
     default:
         break;
     }
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit /= devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps *= (double)devices[ahp_gt_get_current_device()].axis [axis].multiplier / (double)devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].crown * devices[ahp_gt_get_current_device()].axis [axis].wormsteps);
 
@@ -911,7 +911,6 @@ static void optimize_values(int axis)
     double steps_s = totalsteps / SIDEREAL_DAY;
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxperiod = (int)sidereal_period;
-    devices[ahp_gt_get_current_device()].axis [axis].speed_limit = 1600.0/steps_s;
     devices[ahp_gt_get_current_device()].axis [axis].minperiod = 1;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = (int)fmax(devices[ahp_gt_get_current_device()].axis [axis].minperiod, (devices[ahp_gt_get_current_device()].axis [axis].maxperiod / devices[ahp_gt_get_current_device()].axis [axis].maxspeed));
     devices[ahp_gt_get_current_device()].axis [axis].guide = (int)(SIDEREAL_DAY * baseclock / devices[ahp_gt_get_current_device()].axis [axis].totalsteps);
@@ -1006,11 +1005,9 @@ int ahp_gt_write_and_verify(int axis, int pos, int val)
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
-            usleep(10000);
             ret = dispatch_command(SetVars, pos, val);
             if (ret>-1)
             {
-                usleep(10000);
                 if (ahp_gt_read(axis, pos) == val) {
                     ntries = 0;
                     return 1;
@@ -1085,7 +1082,9 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    optimize_values(axis);
     int offset = 0;
+    if(devices[ahp_gt_get_current_device()].axis [axis].model == GT1) offset = axis * 8;
     int _percent, _finished;
     if(percent == NULL)
         percent = &_percent;
@@ -1093,8 +1092,6 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         finished = &_finished;
     *percent = 0;
     *finished = 0;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 1)
-        offset = axis * 8;
     int dividers = devices[ahp_gt_get_current_device()].axis [axis].dividers;
     int mount_flags = devices[ahp_gt_get_current_device()].mount_flags & ~0x1;
     if((ahp_gt_get_mount_flags() & isForkMount) && ((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) == 1)) {
@@ -1174,7 +1171,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
             *finished = -1;
             return;
         }
-        if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) > 1) {
+        if(devices[ahp_gt_get_current_device()].axis [axis].model == GT5 || devices[ahp_gt_get_current_device()].axis [axis].model == GT2) {
             if (!ahp_gt_write_and_verify (axis, 8, values[idx++])) {
                 *finished = -1;
                 return;
@@ -1183,6 +1180,7 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     }
     *percent = *percent + 10;
     ahp_gt_reload(axis);
+    devices[ahp_gt_get_current_device()].axis [axis].last_write = time(NULL);
     *finished = 1;
 }
 
@@ -1192,18 +1190,22 @@ void ahp_gt_read_values(int axis)
         return;
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
+    if(devices[ahp_gt_get_current_device()].axis [axis].last_read > devices[ahp_gt_get_current_device()].axis [axis].last_write)
+        return;
     int offset = 0;
-    if (devices[ahp_gt_get_current_device()].axis [axis].steps == 0)
-        devices[ahp_gt_get_current_device()].axis [axis].steps = 200;
+    double steps, totalsteps, wormsteps, multiplier;
+    steps = 200;
     long value = dispatch_command(InquireGridPerRevolution, axis, -1);
     if(value > 0)
-        devices[ahp_gt_get_current_device()].axis [axis].totalsteps = value;
+        totalsteps = value;
     value = dispatch_command(InquireTimerInterruptFreq, axis, -1);
     if(value > 0)
-        devices[ahp_gt_get_current_device()].axis [axis].wormsteps = value;
+        wormsteps = value;
     value = dispatch_command(InquireHighSpeedRatio, axis, -1);
-    double crown = (double)devices[ahp_gt_get_current_device()].axis [axis].totalsteps / devices[ahp_gt_get_current_device()].axis [axis].wormsteps;
-    double worm = (double)devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].steps / devices[ahp_gt_get_current_device()].axis [axis].multiplier;
+    if(value > 0)
+        multiplier = value;
+    double crown = (double)totalsteps / wormsteps;
+    double worm = (double)wormsteps / steps / multiplier;
     double motor = 1.0;
     int n_iterations = 10;
     while(((round(worm)-worm) != 0 || (round(motor)-motor) != 0) && n_iterations-- > 0) {
@@ -1214,11 +1216,13 @@ void ahp_gt_read_values(int axis)
         worm /= decimals;
         motor /= decimals;
     }
-    devices[ahp_gt_get_current_device()].axis [axis].crown = crown;
+    devices[ahp_gt_get_current_device()].axis [axis].steps = fabs(round(steps));
+    devices[ahp_gt_get_current_device()].axis [axis].crown = fabs(round(crown));
     devices[ahp_gt_get_current_device()].axis [axis].motor = fabs(round(motor));
     devices[ahp_gt_get_current_device()].axis [axis].worm = fabs(round(worm));
-    if(value > 0)
-        devices[ahp_gt_get_current_device()].axis [axis].multiplier = value;
+    devices[ahp_gt_get_current_device()].axis [axis].totalsteps = fabs(round(totalsteps));
+    devices[ahp_gt_get_current_device()].axis [axis].wormsteps = fabs(round(wormsteps));
+    devices[ahp_gt_get_current_device()].axis [axis].multiplier = fabs(round(multiplier));
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = 50;
     devices[ahp_gt_get_current_device()].axis [axis].guide = 12709;
     devices[ahp_gt_get_current_device()].axis [axis].one_second = 1500000;
@@ -1300,6 +1304,7 @@ void ahp_gt_read_values(int axis)
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
     optimize_values(axis);
+    devices[ahp_gt_get_current_device()].axis [axis].last_read = time(NULL);
 }
 
 int ahp_gt_connect_fd(int fd)
@@ -1623,13 +1628,6 @@ double ahp_gt_get_max_step_frequency(int axis)
     return devices[ahp_gt_get_current_device()].axis[axis].max_step_frequency;
 }
 
-double ahp_gt_get_speed_limit(int axis)
-{
-    if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
-        return 0.0;
-    return devices[ahp_gt_get_current_device()].axis[axis].speed_limit * M_PI * 2 / SIDEREAL_DAY;
-}
-
 double ahp_gt_get_timing(int axis)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
@@ -1662,7 +1660,6 @@ void ahp_gt_copy_axis(int axis, int value)
 {
     if(!ahp_gt_is_detected(ahp_gt_get_current_device()))
         return;
-    devices[ahp_gt_get_current_device()].axis [axis].index = value;
     memcpy(&devices[ahp_gt_get_current_device()].axis [value], &devices[ahp_gt_get_current_device()].axis [axis], sizeof(gt_axis));
 }
 
@@ -1884,13 +1881,19 @@ int ahp_gt_detect_device() {
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     ahp_gt_set_axes_limit(NumAxes);
     int num_axes = ahp_gt_get_axes_limit();
+    int first_axis = 0;
+    for (a = 0; a < num_axes; a++)
+        memset(&devices[a].axis, 0, 128*sizeof(gt_axis));
     for (a = 0; a < num_axes; a++) {
         devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
         if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
             pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
             devices[ahp_gt_get_current_device()].detected = 1;
             ahp_gt_read_values(a);
-            return 0;
+            if(first_axis == 0)
+                first_axis = a;
+        } else {
+            ahp_gt_copy_axis(first_axis, a);
         }
     }
     if(devices[ahp_gt_get_current_device()].detected) {
