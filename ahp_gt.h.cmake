@@ -708,13 +708,6 @@ DLL_EXPORT GTSteppingMode ahp_gt_get_stepping_mode(int axis);
 DLL_EXPORT double ahp_gt_get_max_speed(int axis);
 
 /**
-* \brief Get the speed limit
-* \param axis The motor to query
-* \return The speed limit allowed by autoconfiguration, in radians per second
-*/
-DLL_EXPORT double ahp_gt_get_speed_limit(int axis);
-
-/**
 * \brief Get the timing value of the axis
 * \param axis The motor to query
 * \return The timing value
