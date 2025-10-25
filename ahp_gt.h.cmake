@@ -1108,7 +1108,6 @@ DLL_EXPORT int ahp_gt_start_synscan_server(int port, int *interrupt);
 /**
 * \brief Set the alignment state of the current device
 * \param aligned 1 if aligned, 0 if not yet aligned
-* \return non-zero on failure
 */
 DLL_EXPORT void ahp_gt_set_aligned(int aligned);
 
