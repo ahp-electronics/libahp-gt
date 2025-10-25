@@ -547,7 +547,7 @@ DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
 
 /**
 * \brief Report axis detection status
-* \param index the axis to check
+* \param axis the axis to check
 * \return non-zero if the axis is already detected
 */
 DLL_EXPORT unsigned int ahp_gt_axis_is_detected(int axis);
@@ -920,7 +920,6 @@ DLL_EXPORT int ahp_gt_detect_device(void);
 
 /**
 * \brief Select a device on a serial bus
-* \param axis The motor to indicize
 * \param address The address to query on bus
 * \return -1 if the selected device were not detected, 0 if the selected device is available
 */
