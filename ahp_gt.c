@@ -1311,15 +1311,23 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].axis [axis].last_read = time(NULL);
 }
 
+void ahp_gt_clear()
+{
+    int d;
+    memset(devices, 0, sizeof(gt_info)*128);
+    for(d = 0; d < 128; d++) {
+        memset(devices[d].axis, 0, sizeof(gt_axis)*AXES_LIMIT);
+        devices[d].baud_rate = 9600;
+    }
+}
+
 int ahp_gt_connect_fd(int fd)
 {
     if(ahp_gt_is_connected())
         return 0;
-    memset(devices, 0, sizeof(gt_info)*128);
     if(fd != -1) {
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
-        memset(devices, 0, sizeof(gt_info)*128);
     }
     return 1;
 }
@@ -1342,7 +1350,6 @@ int ahp_gt_connect_udp(const char *address, int port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    memset(devices, 0, sizeof(gt_info)*128);
     int fd = -1;
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -1361,12 +1368,8 @@ int ahp_gt_connect(const char* port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    memset(devices, 0, sizeof(gt_info)*128);
     if(!ahp_serial_OpenComport(port)) {
-        devices[ahp_gt_get_current_device()].baud_rate = 9600;
-        int highspeed = 0;
-retry:
-        if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
+        if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
             return ahp_gt_connect_fd(ahp_serial_GetFD());
         }
         ahp_gt_connected = 0;

@@ -484,6 +484,11 @@ double timestamp;
  */
  DLL_EXPORT inline unsigned int ahp_gt_get_version(void) { return AHP_GT_VERSION; }
 
+ /**
+ * \brief Initialize the library with empty devices
+ */
+ DLL_EXPORT ahp_gt_clear();
+
 /**
 * \brief Connect to the GT controller
 * \param port The serial port filename
