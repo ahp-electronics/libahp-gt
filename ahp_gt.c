@@ -743,7 +743,7 @@ static int synscan_poll()
 static int Revu24str2long(char *s)
 {
     int res = 0;
-    int offset = 0
+    int offset = 0;
     char substr[2];
     memcpy(substr, s+offset, 2);
     res = strtol(substr, NULL, 16);
@@ -752,7 +752,7 @@ static int Revu24str2long(char *s)
     res |= strtol(substr, NULL, 16) << (4 * offset);
     offset += 2;
     memcpy(substr, s+offset, 2);
-    res |= strtol(substr, 16) << (4 * offset);
+    res |= strtol(substr, NULL, 16) << (4 * offset);
     offset += 2;
     memcpy(substr, s+offset, 2);
     res |= strtol(substr, NULL, 16) << (4 * offset);
