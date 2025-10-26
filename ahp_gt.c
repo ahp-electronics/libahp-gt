@@ -980,6 +980,7 @@ int ahp_gt_read(int axis, int pos)
     int ntries = 10;
     while (!ret && ntries-- > 0)
     {
+        usleep(10000);
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
@@ -999,15 +1000,18 @@ int ahp_gt_read(int axis, int pos)
 int ahp_gt_write_and_verify(int axis, int pos, int val)
 {
     int ret = 0;
-    int ntries = 30;
+    int ntries = 10;
     while (!ret && ntries-- > 0)
     {
+        usleep(10000);
         ret = dispatch_command(FlashEnable, axis, -1);
         if (ret>-1)
         {
+            usleep(10000);
             ret = dispatch_command(SetVars, pos, val);
             if (ret>-1)
             {
+                usleep(10000);
                 if (ahp_gt_read(axis, pos) == val) {
                     ntries = 0;
                     return 1;
