@@ -742,47 +742,40 @@ static int synscan_poll()
 
 static int Revu24str2long(char *s)
 {
-    int res = 0;
-    int offset = 0;
-    char substr[2];
-    memcpy(substr, s+offset, 2);
-    res = strtol(substr, NULL, 16);
-    offset += 2;
-    memcpy(substr, s+offset, 2);
-    res |= strtol(substr, NULL, 16) << (4 * offset);
-    offset += 2;
-    memcpy(substr, s+offset, 2);
-    res |= strtol(substr, NULL, 16) << (4 * offset);
-    offset += 2;
-    memcpy(substr, s+offset, 2);
-    res |= strtol(substr, NULL, 16) << (4 * offset);
+    res = HEX(s[4]);
+    res <<= 4;
+    res |= HEX(s[5]);
+    res <<= 4;
+    res |= HEX(s[2]);
+    res <<= 4;
+    res |= HEX(s[3]);
+    res <<= 4;
+    res |= HEX(s[0]);
+    res <<= 4;
+    res |= HEX(s[1]);
     return res;
 }
 
 static int Highstr2long(char *s)
 {
-    int res = 0;
-    int offset = 0;
-    char substr[2];
-    memcpy(substr, s+offset, 2);
-    res = strtol(substr, NULL, 16);
-    offset += 2;
-    memcpy(substr, s+offset, 1);
-    substr[1] = 0;
-    res |= strtol(substr, NULL, 16) << (4 * offset);
+    res = HEX(s[2]);
+    res <<= 4;
+    res |= HEX(s[0]);
+    res <<= 4;
+    res |= HEX(s[1]);
     return res;
 }
 
 static void long2Revu24str(unsigned int n, char *str)
 {
-    int offset = 0;
-    sprintf(str+offset, "%02X", (n>>(4*offset))&0xff);
-    offset += 2;
-    sprintf(str+offset, "%02X", (n>>(4*offset))&0xff);
-    offset += 2;
-    sprintf(str+offset, "%02X", (n>>(4*offset))&0xff);
-    offset += 2;
-    str[offset]        = '\0';
+    char hexa[16] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    str[0]        = hexa[(n & 0xF0) >> 4];
+    str[1]        = hexa[(n & 0x0F)];
+    str[2]        = hexa[(n & 0xF000) >> 12];
+    str[3]        = hexa[(n & 0x0F00) >> 8];
+    str[4]        = hexa[(n & 0xF00000) >> 20];
+    str[5]        = hexa[(n & 0x0F0000) >> 16];
+    str[6]        = '\0';
 }
 
 static int read_eqmod()
