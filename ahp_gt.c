@@ -746,16 +746,16 @@ static int Revu24str2long(char *s)
     int offset = 0
     char substr[2];
     memcpy(substr, s+offset, 2);
-    res = strtol(substr, 16);
+    res = strtol(substr, NULL, 16);
+    offset += 2;
+    memcpy(substr, s+offset, 2);
+    res |= strtol(substr, NULL, 16) << (4 * offset);
     offset += 2;
     memcpy(substr, s+offset, 2);
     res |= strtol(substr, 16) << (4 * offset);
     offset += 2;
     memcpy(substr, s+offset, 2);
-    res |= strtol(substr, 16) << (4 * offset);
-    offset += 2;
-    memcpy(substr, s+offset, 2);
-    res |= strtol(substr, 16) << (4 * offset);
+    res |= strtol(substr, NULL, 16) << (4 * offset);
     return res;
 }
 
@@ -765,10 +765,11 @@ static int Highstr2long(char *s)
     int offset = 0;
     char substr[2];
     memcpy(substr, s+offset, 2);
-    res = strtol(substr, 16);
+    res = strtol(substr, NULL, 16);
     offset += 2;
-    memcpy(substr, s+offset, 2);
-    res |= strtol(substr, 16) << (4 * offset);
+    memcpy(substr, s+offset, 1);
+    substr[1] = 0;
+    res |= strtol(substr, NULL, 16) << (4 * offset);
     return res;
 }
 
