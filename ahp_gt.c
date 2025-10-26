@@ -742,6 +742,7 @@ static int synscan_poll()
 
 static int Revu24str2long(char *s)
 {
+    int res = 0;
     res = HEX(s[4]);
     res <<= 4;
     res |= HEX(s[5]);
@@ -758,6 +759,7 @@ static int Revu24str2long(char *s)
 
 static int Highstr2long(char *s)
 {
+    int res = 0;
     res = HEX(s[2]);
     res <<= 4;
     res |= HEX(s[0]);
