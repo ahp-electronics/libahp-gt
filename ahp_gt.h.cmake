@@ -487,7 +487,7 @@ double timestamp;
  /**
  * \brief Initialize the library with empty devices
  */
- DLL_EXPORT ahp_gt_clear();
+ DLL_EXPORT void ahp_gt_clear();
 
 /**
 * \brief Connect to the GT controller

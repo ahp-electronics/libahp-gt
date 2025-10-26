@@ -745,16 +745,16 @@ static int Revu24str2long(char *s)
     int res = 0;
     int offset = 0
     char substr[2];
-    snprintf(substr, s+offset, 2);
+    memcpy(substr, s+offset, 2);
     res = strtol(substr, 16);
     offset += 2;
-    snprintf(substr, s+offset, 2);
+    memcpy(substr, s+offset, 2);
     res |= strtol(substr, 16) << (4 * offset);
     offset += 2;
-    snprintf(substr, s+offset, 2);
+    memcpy(substr, s+offset, 2);
     res |= strtol(substr, 16) << (4 * offset);
     offset += 2;
-    snprintf(substr, s+offset, 2);
+    memcpy(substr, s+offset, 2);
     res |= strtol(substr, 16) << (4 * offset);
     return res;
 }
@@ -762,12 +762,12 @@ static int Revu24str2long(char *s)
 static int Highstr2long(char *s)
 {
     int res = 0;
-    int offset = 0
+    int offset = 0;
     char substr[2];
-    snprintf(substr, s+offset, 2);
+    memcpy(substr, s+offset, 2);
     res = strtol(substr, 16);
     offset += 2;
-    snprintf(substr, s+offset, 2);
+    memcpy(substr, s+offset, 2);
     res |= strtol(substr, 16) << (4 * offset);
     return res;
 }
@@ -775,11 +775,11 @@ static int Highstr2long(char *s)
 static void long2Revu24str(unsigned int n, char *str)
 {
     int offset = 0;
-    snprintf(str+offset, (n>>(4*offset))&0xff);
+    sprintf(str+offset, "%02X", (n>>(4*offset))&0xff);
     offset += 2;
-    snprintf(str+offset, (n>>(4*offset))&0xff);
+    sprintf(str+offset, "%02X", (n>>(4*offset))&0xff);
     offset += 2;
-    snprintf(str+offset, (n>>(4*offset))&0xff);
+    sprintf(str+offset, "%02X", (n>>(4*offset))&0xff);
     offset += 2;
     str[offset]        = '\0';
 }
