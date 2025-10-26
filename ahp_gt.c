@@ -1316,9 +1316,6 @@ int ahp_gt_connect_fd(int fd)
         ahp_serial_SetFD(fd, 9600);
         ahp_gt_connected = 1;
         memset(devices, 0, sizeof(gt_info)*128);
-        if(!ahp_gt_detect_device()) {
-            return 0;
-        }
     }
     return 1;
 }
@@ -1354,7 +1351,6 @@ int ahp_gt_connect_udp(const char *address, int port)
         if(!connect(fd, (const struct sockaddr *)&addr, sizeof(addr)))
             return ahp_gt_connect_fd(fd);
     }
-
     return 1;
 }
 int ahp_gt_connect(const char* port)
@@ -1367,14 +1363,7 @@ int ahp_gt_connect(const char* port)
         int highspeed = 0;
 retry:
         if(!ahp_serial_SetupPort(devices[ahp_gt_get_current_device()].baud_rate, "8N1", 0)) {
-            ahp_gt_connected = 1;
-            if(!ahp_gt_detect_device()) {
-                return 0;
-            } else if(!highspeed) {
-                devices[ahp_gt_get_current_device()].baud_rate = 115200;
-                highspeed = 1;
-                goto retry;
-            }
+            return ahp_gt_connect_fd(ahp_serial_GetFD());
         }
         ahp_gt_connected = 0;
         ahp_serial_CloseComport();
@@ -1872,10 +1861,12 @@ int ahp_gt_get_current_device() {
     return ahp_gt_current_device;
 }
 
-int ahp_gt_detect_device() {
+int ahp_gt_detect_device(int *percent) {
     if(!ahp_gt_is_connected())
         return -1;
     int a = 0;
+    if(percent == NULL)
+        percent = (int*)malloc(sizeof(int));
     memset(devices, 0, 128*sizeof(gt_info));
     devices[ahp_gt_get_current_device()].detected = 0;
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
@@ -1884,6 +1875,7 @@ int ahp_gt_detect_device() {
     int first_axis = 0;
     for (a = 0; a < num_axes; a++)
         memset(&devices[a].axis, 0, 128*sizeof(gt_axis));
+    *percent = 0;
     for (a = 0; a < num_axes; a++) {
         devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
         if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
@@ -1895,7 +1887,9 @@ int ahp_gt_detect_device() {
         } else {
             ahp_gt_copy_axis(first_axis, a);
         }
+        *percent += 100 / num_axes;
     }
+    *percent = 0;
     if(devices[ahp_gt_get_current_device()].detected) {
         return 0;
     }

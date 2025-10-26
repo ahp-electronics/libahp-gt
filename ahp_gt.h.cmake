@@ -914,9 +914,10 @@ DLL_EXPORT void ahp_gt_set_max_speed(int axis, double value);
 
 /**
 * \brief Detect the currently selected device
+* \param percent The axis scanning progress
 * \return -1 if no devices were detected, 0 if a device with the current address was detected
 */
-DLL_EXPORT int ahp_gt_detect_device(void);
+DLL_EXPORT int ahp_gt_detect_device(int *percent);
 
 /**
 * \brief Select a device on a serial bus
