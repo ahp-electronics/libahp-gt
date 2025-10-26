@@ -838,8 +838,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         pthread_mutex_init(&mutex, &mutex_attr);
         mutexes_initialized = 1;
     }
-    while(pthread_mutex_trylock(&mutex))
-        usleep(100);
+//    while(pthread_mutex_trylock(&mutex))
+//        usleep(100);
     command[0] = '\0';
     char command_arg[28];
     int n;
@@ -860,10 +860,10 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
     ret = ((cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
     if(ret < 0) goto ret_err;
-    pthread_mutex_unlock(&mutex);
+//    pthread_mutex_unlock(&mutex);
     return ret;
 ret_err:
-    pthread_mutex_unlock(&mutex);
+//    pthread_mutex_unlock(&mutex);
     return -1;
 }
 
