@@ -1,0 +1,13 @@
+Package: libahp-gt
+Version: 1.7.6
+Architecture: amd64
+Maintainer: Ilia Platone <info@iliaplatone.com>
+Installed-Size: 127
+Depends: libc6 (>= 2.34)
+Section: libs
+Priority: optional
+Multi-Arch: same
+Homepage: http://iliaplatone.github.io/OpenVLBI/
+Description: GT Controllers programming library
+    This library programs the AHP GT telescope mount controllers, by
+    setting their gear and acceleration/speed configurations.

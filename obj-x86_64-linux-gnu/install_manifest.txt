@@ -1,0 +1,6 @@
+/usr/lib/udev/rules.d/99-libahp-gt.rules
+/usr/lib/x86_64-linux-gnu/libahp_gt.so.1.7.6
+/usr/lib/x86_64-linux-gnu/libahp_gt.so.1
+/usr/lib/x86_64-linux-gnu/libahp_gt.so
+/usr/include/ahp/ahp_gt.h
+/usr/share/cmake-3.22/Modules/FindAHPGT.cmake

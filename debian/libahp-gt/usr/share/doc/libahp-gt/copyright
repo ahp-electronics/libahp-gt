@@ -1,0 +1,7 @@
+Format: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?revision=174
+Upstream-Name: libahp-gt
+Source: http://github.com/ahp-electronics/libahp-gt
+
+Files: *
+Copyright: 2018, Ilia Platone <info@iliaplatone.com>
+License: LGPL-3+
