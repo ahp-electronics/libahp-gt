@@ -540,7 +540,6 @@ DLL_EXPORT unsigned int ahp_gt_is_connected(void);
 
 /**
 * \brief Report detection status
-* \param index the address to check
 * \return non-zero if already detected
 * \sa ahp_gt_detect_device
 * \sa ahp_gt_get_current_device
@@ -548,7 +547,7 @@ DLL_EXPORT unsigned int ahp_gt_is_connected(void);
 * \sa ahp_gt_connect_fd
 * \sa ahp_gt_disconnect
 */
-DLL_EXPORT unsigned int ahp_gt_is_detected(int index);
+DLL_EXPORT unsigned int ahp_gt_is_detected();
 
 /**
 * \brief Report axis detection status
