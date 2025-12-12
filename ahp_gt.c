@@ -1207,16 +1207,11 @@ void ahp_gt_read_values(int axis)
         multiplier = 64;
     double crown = (double)totalsteps / wormsteps;
     double worm = (double)wormsteps / steps / multiplier;
-    double motor = (double)steps / wormsteps / multiplier;
+    double motor = 1;
     double decimals = fabs(worm - round(worm));
-    if(decimals == 0) {
-        decimals = fabs(motor - round(motor));
-        worm = 1.0 / decimals;
-        motor /= decimals;
-    } else {
-        motor = 1.0 / decimals;
-        worm /= decimals;
-    }
+    if(decimals == 0) decimals++;
+    motor = 1.0 / decimals;
+    worm /= decimals;
     devices[ahp_gt_get_current_device()].axis [axis].steps = fabs(round(steps));
     devices[ahp_gt_get_current_device()].axis [axis].crown = fabs(round(crown));
     devices[ahp_gt_get_current_device()].axis [axis].motor = fabs(round(motor));
