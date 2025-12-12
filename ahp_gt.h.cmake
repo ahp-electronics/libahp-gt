@@ -126,7 +126,9 @@ typedef enum {
     ///15A double chip - dual axis GT2
     GT2,
     ///15A single chip - single programmable axis GT5
-    GT5
+    GT5,
+    ///other chip - unknown
+    UNKOWN
 } GT_Model;
 
 ///Motor coils phase winding configuration
