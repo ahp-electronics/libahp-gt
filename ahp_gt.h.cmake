@@ -129,7 +129,7 @@ typedef enum {
     GT5,
     ///other chip - unknown
     UNKOWN
-} GT_Model, GT1_Model;
+} GT_Model, GT1_Model, GT2_Model, GT5_Model;
 
 ///Motor coils phase winding configuration
 typedef enum {
@@ -139,7 +139,7 @@ typedef enum {
     ABAB             = 1,
 ///ABBA Motor winding
     ABBA             = 2,
-} GTSteppingConfiguration, GT1SteppingConfiguration;
+} GTSteppingConfiguration, GT1SteppingConfiguration, GT2SteppingConfiguration, GT5SteppingConfiguration;
 
 ///Stepping mode
 typedef enum {
@@ -149,7 +149,7 @@ Mixed            = 0,
 Microstep        = 1,
 ///Half-stepping in low speed, Half-stepping in high speed
 HalfStep         = 2,
-} GTSteppingMode, GT1SteppingMode;
+} GTSteppingMode, GT1SteppingMode, GT2SteppingMode, GT5SteppingMode;
 
 ///ST-4 port configuration
 typedef enum  {
@@ -161,7 +161,7 @@ GpioAsST4              = 0x0001,
 GpioAsEncoder          = 0x0002,
 ///The ST4 port will drive an external Step/Dir power drive
 GpioAsPulseDrive       = 0x0003,
-} GTFeature, GT1Feature;
+} GTFeature, GT1Feature, GT2Feature, GT5Feature;
 
 ///GT custom flags
 typedef enum {
@@ -175,7 +175,7 @@ halfCurrentDec = 0x4,
 bauds_115200 = 0x8,
 ///Control torque
 torqueControl = 0x400,
-} GTFlags, GT1Flags;
+} GTFlags, GT1Flags, GT2Flags, GT5Flags;
 
 ///Skywatcher default features - EQ8/AZEQ6/AZEQ5 only
 typedef enum {
