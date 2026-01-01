@@ -1287,14 +1287,23 @@ void ahp_gt_read_values(int axis)
             devices[ahp_gt_get_current_device()].mount_flags |= 1;
         }
     }
-    devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
-    if((devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) < 6 && (devices[ahp_gt_get_current_device()].axis [axis].version & 0xf) > 1) {
+    if(devices[ahp_gt_get_current_device()].axis [axis].model == GT1 || devices[ahp_gt_get_current_device()].axis [axis].model == GT2)
+        devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> (1+axis*4)) & 0xf;
+    else if(devices[ahp_gt_get_current_device()].axis [axis].model == GT5)
+        devices[ahp_gt_get_current_device()].axis[axis].divider = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 1) & 0xf;
+    if(devices[ahp_gt_get_current_device()].axis [axis].model == GT2 || devices[ahp_gt_get_current_device()].axis [axis].model == GT5) {
         value = ahp_gt_read(axis, 8);
         if(value > 0) {
             devices[ahp_gt_get_current_device()].axis[axis].intensity = value & 0x3ff;
             devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = (value & 0x400) != 0;
         }
     }
+    worm = (double)wormsteps / steps / multiplier / devices[ahp_gt_get_current_device()].axis[axis].divider;
+    motor = 1;
+    decimals = fabs(worm - round(worm));
+    if(decimals == 0) decimals++;
+    motor = 1.0 / decimals;
+    worm /= decimals;
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
     double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
@@ -1910,14 +1919,14 @@ int ahp_gt_select_device(int address) {
 
 void ahp_gt_delete_device(int index)
 {
-    if(!ahp_gt_is_detected(index))
+    if(!ahp_gt_is_detected())
         return;
     memset(&devices[index], 0, sizeof(gt_info));
 }
 
 void ahp_gt_copy_device(int from, int to)
 {
-    if(!ahp_gt_is_detected(from))
+    if(!ahp_gt_is_detected())
         return;
     devices[from].index = to;
     memcpy(&devices[to], &devices[from], sizeof(gt_info));
