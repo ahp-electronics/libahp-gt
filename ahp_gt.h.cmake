@@ -969,6 +969,13 @@ DLL_EXPORT void ahp_gt_copy_device(int from, int to);
  DLL_EXPORT void ahp_gt_copy_axis(int from, int to);
 
  /**
+ * \brief Enable the GT controller axis number
+ * \param axis The motor axis number
+ * \param value The new value
+ */
+ DLL_EXPORT void ahp_gt_move_axis(int axis, int value);
+
+ /**
  * \brief Get the GT controller axis name
  * \param axis The motor axis number
  * \return The motor axis name or actuation destination

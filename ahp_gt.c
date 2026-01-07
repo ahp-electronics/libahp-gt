@@ -1002,7 +1002,7 @@ int ahp_gt_read(int axis, int pos)
 int ahp_gt_write_and_verify(int axis, int pos, int val)
 {
     int ret = 0;
-    int ntries = 50;
+    int ntries = 10;
     while (!ret && ntries-- > 0)
     {
         usleep(10000);
@@ -1168,13 +1168,12 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
     }
     *percent = *percent + 10;
     if(devices[ahp_gt_get_current_device()].axis [axis].model == GT5 || devices[ahp_gt_get_current_device()].axis [axis].model == GT2) {
-        if (!ahp_gt_write_and_verify (axis, 8, values[idx++])) {
+        if (!ahp_gt_write_and_verify (axis, 8, (devices[ahp_gt_get_current_device()].axis [axis].index<<12)|((ahp_gt_is_intensity_limited(axis)<<10)|(int)ahp_gt_get_intensity_limit(axis)))) {
             *finished = -1;
             return;
         }
     }
     *percent = *percent + 10;
-    ahp_gt_reload(axis);
     devices[ahp_gt_get_current_device()].axis [axis].last_write = time(NULL);
     *finished = 1;
 }
@@ -1661,6 +1660,13 @@ void ahp_gt_copy_axis(int axis, int value)
     memcpy(&devices[ahp_gt_get_current_device()].axis [value], &devices[ahp_gt_get_current_device()].axis [axis], sizeof(gt_axis));
 }
 
+void ahp_gt_move_axis(int axis, int value)
+{
+    if(!ahp_gt_is_detected())
+        return;
+    devices[ahp_gt_get_current_device()].axis [axis].index = value;
+}
+
 void ahp_gt_set_axes_limit(int value)
 {
     devices[ahp_gt_get_current_device()].num_axes = value;
@@ -1889,6 +1895,7 @@ int ahp_gt_detect_device(int *percent) {
         devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
         if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
             pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
+            devices[ahp_gt_get_current_device()].axis [a].index = a;
             devices[ahp_gt_get_current_device()].axis[a].detected = 1;
             devices[ahp_gt_get_current_device()].detected = 1;
             ahp_gt_read_values(a);
