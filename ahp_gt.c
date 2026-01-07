@@ -1880,6 +1880,7 @@ int ahp_gt_detect_device(int *percent) {
     if(!ahp_gt_is_connected())
         return -1;
     int a = 0;
+    int d = 0;
     if(percent == NULL)
         percent = (int*)malloc(sizeof(int));
     memset(devices, 0, 128*sizeof(gt_info));
@@ -1887,24 +1888,25 @@ int ahp_gt_detect_device(int *percent) {
     devices[ahp_gt_get_current_device()].baud_rate = 9600;
     ahp_gt_set_axes_limit(NumAxes);
     int num_axes = ahp_gt_get_axes_limit();
-    int first_axis = 0;
     for (a = 0; a < num_axes; a++)
         memset(&devices[a].axis, 0, 128*sizeof(gt_axis));
+    double progress = 0;
     *percent = 0;
-    for (a = 0; a < num_axes; a++) {
-        devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
-        if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
-            pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
-            devices[ahp_gt_get_current_device()].axis [a].index = a;
-            devices[ahp_gt_get_current_device()].axis[a].detected = 1;
-            devices[ahp_gt_get_current_device()].detected = 1;
-            ahp_gt_read_values(a);
-            if(first_axis == 0)
-                first_axis = a;
-        } else {
-            ahp_gt_copy_axis(first_axis, a);
+    for (d = 1; d <= 128; d++) {
+        ahp_gt_select_device(d);
+        for (a = 0; a < num_axes; a++) {
+            devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
+            if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
+                pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
+                devices[ahp_gt_get_current_device()].axis [a].index = a;
+                devices[ahp_gt_get_current_device()].axis[a].detected = 1;
+                devices[ahp_gt_get_current_device()].detected = 1;
+                ahp_gt_read_values(a);
+            }
+            progress += 100.0 / num_axes / 128.0;
+            *percent = (int)progress;
         }
-        *percent = a * 100.0 / num_axes;
+        if(devices[ahp_gt_get_current_device()].detected) break;
     }
     *percent = 0;
     if(devices[ahp_gt_get_current_device()].detected) {
