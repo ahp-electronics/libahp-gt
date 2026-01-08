@@ -16,8 +16,17 @@ set(AHPGT_VERSION "${AHP_GT_VERSION_MAJOR}.${AHP_GT_VERSION_MINOR}.${AHP_GT_VERS
 set(AHP_GT_VERSION 0x${AHP_GT_VERSION_MAJOR}${AHP_GT_VERSION_MINOR}${AHP_GT_VERSION_RELEASE})
 set(AHPGT_SOVERSION ${AHP_GT_VERSION_MAJOR})
 
+add_definitions(-fno-permissive)
+
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/serial.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_win.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_osx.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_linux.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/unix.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/impl/win.cc
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )
@@ -26,6 +35,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.h.cmake ${CMAKE_CURRENT_BINARY
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.cmake ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile )
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/FindAHPGT.cmake ${CMAKE_CURRENT_BINARY_DIR}/FindAHPGT.cmake )
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_INCLUDE_PATH})
 link_directories(${CMAKE_LIBRARY_PATH})

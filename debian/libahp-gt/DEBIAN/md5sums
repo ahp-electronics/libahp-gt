@@ -1,6 +1,0 @@
-5c1c1fb6c75fb0e9fcb934303cc0571f  usr/include/ahp/ahp_gt.h
-078d708b145f79fb1e3f2565b30845c7  usr/lib/udev/rules.d/99-libahp-gt.rules
-de322b071f4a52bf62602a31c1887d83  usr/lib/x86_64-linux-gnu/libahp_gt.so.1.7.6
-ae6727743b91a870718235ecdf022f43  usr/share/cmake-3.22/Modules/FindAHPGT.cmake
-089aeab9f1fde722e9d0f0227e715b6c  usr/share/doc/libahp-gt/changelog.gz
-1ad39fbcc08c83152e46c395adaa0174  usr/share/doc/libahp-gt/copyright

@@ -27,9 +27,10 @@
 #include <pthread.h>
 #include <time.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <sys/time.h>
 
-#include "rs232.c"
+#include "rs232.h"
 #define AXES_LIMIT 127
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
@@ -790,7 +791,7 @@ static int read_eqmod()
     memset(response, '\0', 32);
     unsigned char c = 0;
     while(c != '\r' && err_code < max_err) {
-        if(1 == ahp_serial_RecvBuf(&c, 1) && c != 0) {
+        if(1 == serial_read(&c, 1) && c != 0) {
             response[nbytes_read++] = c;
         } else {
             err_code++;
@@ -857,8 +858,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     pgarb("%s\n", command);
 
-    ahp_serial_flushRXTX();
-    if(ahp_serial_SendBuf(command, n) < 0)
+    serial_flush();
+    if(serial_write(command, n) < 0)
         goto ret_err;
 
     ret = ((cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
@@ -1326,7 +1327,7 @@ int ahp_gt_connect_fd(int fd)
     if(ahp_gt_is_connected())
         return 0;
     if(fd != -1) {
-        ahp_serial_SetFD(fd, 9600);
+        serial_set_fd(fd);
         ahp_gt_connected = 1;
         return 0;
     }
@@ -1337,14 +1338,14 @@ void ahp_gt_set_fd(int fd)
 {
     if(!ahp_gt_is_connected())
         return;
-    return ahp_serial_SetFD(fd, 9600);
+    serial_set_fd(fd);
 }
 
 int ahp_gt_get_fd()
 {
     if(!ahp_gt_is_connected())
         return -1;
-    return ahp_serial_GetFD();
+    return serial_get_fd();
 }
 
 int ahp_gt_connect_udp(const char *address, int port)
@@ -1369,14 +1370,13 @@ int ahp_gt_connect(const char* port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    if(!ahp_serial_OpenComport(port)) {
-        if(!ahp_serial_SetupPort(9600, "8N1", 0)) {
-            return ahp_gt_connect_fd(ahp_serial_GetFD());
-        }
+    serial_connect(port, 9600, 1, 0, 8);
+    if(!serial_is_open()) {
         ahp_gt_connected = 0;
-        ahp_serial_CloseComport();
+        serial_close();
+        return 1;
     }
-    return 1;
+    return 0;
 }
 
 void ahp_gt_disconnect()
@@ -1389,7 +1389,7 @@ void ahp_gt_disconnect()
                 ahp_gt_stop_tracking_thread();
             }
         }
-        ahp_serial_CloseComport();
+        serial_close();
         if(mutexes_initialized) {
             pthread_mutex_unlock(&mutex);
             pthread_mutex_destroy(&mutex);
