@@ -1327,7 +1327,7 @@ int ahp_gt_connect_fd(int fd)
     if(ahp_gt_is_connected())
         return 0;
     if(fd != -1) {
-        serial_set_fd(fd);
+        serial_set_fd(fd, 9600);
         ahp_gt_connected = 1;
         return 0;
     }
@@ -1338,7 +1338,7 @@ void ahp_gt_set_fd(int fd)
 {
     if(!ahp_gt_is_connected())
         return;
-    serial_set_fd(fd);
+    serial_set_fd(fd, 9600);
 }
 
 int ahp_gt_get_fd()
@@ -1370,15 +1370,22 @@ int ahp_gt_connect(const char* port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    serial_connect(port, 9600, 1, 0, 8);
+    serial_connect(port, 9600, "8N1");
     if(!serial_is_open()) {
         ahp_gt_connected = 0;
         serial_close();
         return 1;
     }
+    ahp_gt_connected = 1;
     return 0;
 }
-
+void ahp_gt_set_high_rate(int value)
+{
+    if(ahp_gt_is_connected())
+        return 0;
+    serial_close();
+    serial_connect(port, value?115200:9600, "8N1");
+}
 void ahp_gt_disconnect()
 {
     int addr = 0;

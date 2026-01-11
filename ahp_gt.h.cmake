@@ -514,6 +514,12 @@ DLL_EXPORT int ahp_gt_connect_fd(int fd);
 DLL_EXPORT int ahp_gt_connect_udp(const char* address, int port);
 
 /**
+* \brief Set the baud rate to 115200 bps
+* \param value If non-zero the baud rate will be 115200, otherwise 9600
+*/
+DLL_EXPORT void ahp_gt_set_high_rate(int value);
+
+/**
 * \brief Return the file descriptor of the port connected to the GT controllers
 * \return The serial stream file descriptor
 */

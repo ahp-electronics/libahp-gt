@@ -20,13 +20,7 @@ add_definitions(-fno-permissive)
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/serial.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_win.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_osx.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/impl/list_ports/list_ports_linux.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/impl/unix.cc
-    ${CMAKE_CURRENT_SOURCE_DIR}/impl/win.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/rs232.c
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )
