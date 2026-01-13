@@ -565,6 +565,13 @@ DLL_EXPORT unsigned int ahp_gt_is_detected();
 DLL_EXPORT unsigned int ahp_gt_axis_is_detected(int axis);
 
 /**
+* \brief Get the motor controller model
+* \param axis the axis to check
+* \return GT_Model index of the queried axis
+*/
+DLL_EXPORT GT_Model ahp_gt_get_axis_model(int axis);
+
+/**
 * \brief Get the GT firmware version
 * \param axis The axis number if checking for a single axis module
 * \return The GT controller firmware version

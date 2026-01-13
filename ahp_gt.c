@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <sys/time.h>
 
-#include "rs232.h"
+#include "serial.h"
 #define AXES_LIMIT 127
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
@@ -159,6 +159,7 @@ typedef struct {
     int index;
     int num_axes;
     gt_axis axis[AXES_LIMIT];
+    char comport[128];
     int rs232_polarity;
     int baud_rate;
     MountType type;
@@ -189,8 +190,8 @@ static char response[32];
 static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
-static gt_info devices[128] = { 0 };
-static int sockfd;
+gt_info devices[128] = { 0 };
+int sockfd;
 
 static double get_timestamp()
 {
@@ -862,7 +863,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     if(serial_write(command, n) < 0)
         goto ret_err;
 
-    ret = ((cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
+    ret = ((cmd == SetAddress || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
     if(ret < 0) goto ret_err;
     pthread_mutex_unlock(&mutex);
     return ret;
@@ -1376,26 +1377,24 @@ int ahp_gt_connect(const char* port)
         serial_close();
         return 1;
     }
+    strcpy(devices[ahp_gt_get_current_device()].comport, port);
     ahp_gt_connected = 1;
     return 0;
 }
+
 void ahp_gt_set_high_rate(int value)
 {
     if(ahp_gt_is_connected())
-        return 0;
+        return;
     serial_close();
-    serial_connect(port, value?115200:9600, "8N1");
+    serial_connect(devices[ahp_gt_get_current_device()].comport, value?115200:9600, "8N1");
 }
+
 void ahp_gt_disconnect()
 {
     int addr = 0;
     if(ahp_gt_is_connected()) {
-        for(addr = 0; addr < 128; addr++) {
-            if(devices[addr].detected) {
-                ahp_gt_select_device(addr);
-                ahp_gt_stop_tracking_thread();
-            }
-        }
+        ahp_gt_select_device(0);
         serial_close();
         if(mutexes_initialized) {
             pthread_mutex_unlock(&mutex);
@@ -1887,7 +1886,6 @@ int ahp_gt_detect_device(int *percent) {
     if(!ahp_gt_is_connected())
         return -1;
     int a = 0;
-    int d = 0;
     if(percent == NULL)
         percent = (int*)malloc(sizeof(int));
     memset(devices, 0, 128*sizeof(gt_info));
@@ -1899,21 +1897,18 @@ int ahp_gt_detect_device(int *percent) {
         memset(&devices[a].axis, 0, 128*sizeof(gt_axis));
     double progress = 0;
     *percent = 0;
-    for (d = 1; d <= 128; d++) {
-        ahp_gt_select_device(d);
-        for (a = 0; a < num_axes; a++) {
-            devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
-            if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
-                pgarb("MC Axis %d Version: %02X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
-                devices[ahp_gt_get_current_device()].axis [a].index = a;
-                devices[ahp_gt_get_current_device()].axis[a].detected = 1;
-                devices[ahp_gt_get_current_device()].detected = 1;
-                ahp_gt_read_values(a);
-            }
-            progress += 100.0 / num_axes / 128.0;
-            *percent = (int)progress;
+    for (a = 0; a < num_axes; a++) {
+        devices[ahp_gt_get_current_device()].axis [a].index = a;
+        devices[ahp_gt_get_current_device()].axis[a].detected = 0;
+        devices[ahp_gt_get_current_device()].axis[a].version = ahp_gt_get_mc_version(a);
+        if(devices[ahp_gt_get_current_device()].axis[a].version > 0) {
+            pgarb("MC Axis %d Version: %06X\n", a, devices[ahp_gt_get_current_device()].axis[a].version);
+            devices[ahp_gt_get_current_device()].axis[a].index = a;
+            devices[ahp_gt_get_current_device()].axis[a].detected = 1;
+            devices[ahp_gt_get_current_device()].detected = 1;
+            ahp_gt_read_values(a);
         }
-        if(devices[ahp_gt_get_current_device()].detected) break;
+        *percent = a * 100.0 / num_axes;
     }
     *percent = 0;
     if(devices[ahp_gt_get_current_device()].detected) {
@@ -2261,6 +2256,10 @@ int ahp_gt_is_aligned() {
     if(!ahp_gt_is_detected())
         return 0;
     return devices[ahp_gt_get_current_device()].is_aligned;
+}
+
+GT_Model ahp_gt_get_axis_model(int axis) {
+    return devices[ahp_gt_get_current_device()].axis[axis].model;
 }
 
 const char* ahp_gt_get_axis_name(int axis) {

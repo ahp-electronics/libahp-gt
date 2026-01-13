@@ -34,6 +34,13 @@ extern "C" {
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <winsock2.h>
+#include <windows.h>
+#define DLL_EXPORT __declspec(dllexport)
+#else
+#define DLL_EXPORT extern
+#endif
 
 #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
     #define LINUX
@@ -73,10 +80,10 @@ extern "C" {
 #include <pthread.h>
 
 #ifdef AHP_DEBUG
-static int ahp_debug = 0;
-static char* ahp_app_name = NULL;
-static FILE *out = NULL;
-static FILE *err = NULL;
+int ahp_debug = 0;
+char* ahp_app_name = NULL;
+FILE *out = NULL;
+FILE *err = NULL;
 /**
 * \brief log a message to the error or output streams
 * \param x The log level
@@ -163,20 +170,20 @@ ahp_print(x, str); \
 #define pgarb(...) fprintf(stderr, __VA_ARGS__)
 #endif
 
-static pthread_mutexattr_t ahp_serial_mutex_attr;
-static pthread_mutex_t ahp_serial_mutex;
-static int ahp_serial_mutexes_initialized = 0;
-static int ahp_serial_baudrate = 230400;
-static char ahp_serial_mode[4] = { 0, 0, 0, 0 };
-static int ahp_serial_flowctrl = -1;
-static int ahp_serial_fd = -1;
+pthread_mutexattr_t ahp_serial_mutex_attr;
+pthread_mutex_t ahp_serial_mutex;
+int ahp_serial_mutexes_initialized = 0;
+int ahp_serial_baudrate = 230400;
+char ahp_serial_mode[4] = { 0, 0, 0, 0 };
+int ahp_serial_flowctrl = -1;
+int ahp_serial_fd = -1;
 
 #ifndef WINDOWS
-static int ahp_serial_error = 0;
+int ahp_serial_error = 0;
 
-static struct termios ahp_serial_new_port_settings, ahp_serial_old_port_settings;
+struct termios ahp_serial_new_port_settings, ahp_serial_old_port_settings;
 
-static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
+DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
 {
     strcpy(ahp_serial_mode, m);
     ahp_serial_flowctrl = fc;
@@ -333,28 +340,28 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
     return 0;
 }
 
-static void ahp_serial_flushRX()
+DLL_EXPORT void serial_flush_rx()
 {
     tcflush(ahp_serial_fd, TCIFLUSH);
 }
 
 
-static void ahp_serial_flushTX()
+DLL_EXPORT void serial_flush_tx()
 {
     tcflush(ahp_serial_fd, TCOFLUSH);
 }
 
 
-static void ahp_serial_flushRXTX()
+DLL_EXPORT void serial_flush()
 {
     tcflush(ahp_serial_fd, TCIOFLUSH);
 }
 
 #else
 
-static DCB ahp_serial_new_port_settings, ahp_serial_old_port_settings;
+DCB ahp_serial_new_port_settings, ahp_serial_old_port_settings;
 
-static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
+DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
 {
     strcpy(ahp_serial_mode, m);
     ahp_serial_flowctrl = fc;
@@ -456,21 +463,21 @@ static int ahp_serial_SetupPort(int bauds, const char *m, int fc)
 https://msdn.microsoft.com/en-us/library/windows/desktop/aa363428%28v=vs.85%29.aspx
 */
 
-static void ahp_serial_flushRX()
+DLL_EXPORT void serial_flush_rx()
 {
     HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
     PurgeComm(pHandle, PURGE_RXCLEAR | PURGE_RXABORT);
 }
 
 
-static void ahp_serial_flushTX()
+DLL_EXPORT void serial_flush_tx()
 {
     HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
     PurgeComm(pHandle, PURGE_TXCLEAR | PURGE_TXABORT);
 }
 
 
-static void ahp_serial_flushRXTX()
+DLL_EXPORT void serial_flush()
 {
     HANDLE pHandle = (HANDLE)_get_osfhandle(ahp_serial_fd);
     PurgeComm(pHandle, PURGE_RXCLEAR | PURGE_RXABORT);
@@ -479,7 +486,7 @@ static void ahp_serial_flushRXTX()
 
 #endif
 
-static int ahp_serial_OpenComport(const char* devname)
+DLL_EXPORT int serial_connect(char* devname, int baudrate, const char *mode)
 {
     char dev_name[128];
 #ifndef WINDOWS
@@ -507,10 +514,10 @@ static int ahp_serial_OpenComport(const char* devname)
     int flags = fcntl(ahp_serial_fd, F_GETFL);
     fcntl(ahp_serial_fd, F_SETFL, flags | O_NONBLOCK);
 #endif
-    return 0;
+    return ahp_serial_setup(baudrate, mode, 0);
 }
 
-static void ahp_serial_CloseComport()
+DLL_EXPORT void serial_close()
 {
     if(ahp_serial_fd != -1)
         close(ahp_serial_fd);
@@ -527,7 +534,7 @@ static void ahp_serial_CloseComport()
     ahp_serial_fd = -1;
 }
 
-static int ahp_serial_RecvBuf(unsigned char *buf, int size)
+DLL_EXPORT int serial_read(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
@@ -540,6 +547,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
         while(pthread_mutex_trylock(&ahp_serial_mutex))
             usleep(100);
         while(bytes_left > 0 && ntries-->0) {
+            usleep(12000000/ahp_serial_baudrate);
             n = read(ahp_serial_fd, buf+nbytes, bytes_left);
             if(n<1) {
                 err = -errno;
@@ -553,7 +561,7 @@ static int ahp_serial_RecvBuf(unsigned char *buf, int size)
     return nbytes;
 }
 
-static int ahp_serial_SendBuf(unsigned char *buf, int size)
+DLL_EXPORT int serial_write(unsigned char *buf, int size)
 {
     int n = -ENODEV;
     int nbytes = 0;
@@ -580,44 +588,7 @@ static int ahp_serial_SendBuf(unsigned char *buf, int size)
     return nbytes;
 }
 
-static int ahp_serial_RecvByte()
-{
-    int byte = -1;
-    int n = ahp_serial_RecvBuf((unsigned char*)&byte, 1);
-    if(n < 1)
-    {
-        return -errno;
-    }
-    return byte;
-}
-
-static int ahp_serial_SendByte(unsigned char byte)
-{
-    int n = ahp_serial_SendBuf(&byte, 1);
-    if(n < 1)
-    {
-        return -errno;
-    }
-    return 0;
-}
-
-static int ahp_serial_AlignFrame(int sof, int maxtries)
-{
-    int c = 0;
-    ahp_serial_flushRX();
-    while(c != sof && (maxtries > 0 ? maxtries-- > 0 : 1)) {
-        c = ahp_serial_RecvByte();
-        if(c < 0) {
-          if(errno == EAGAIN)
-              continue;
-          else
-              return errno;
-        }
-    }
-    return 0;
-}
-
-static void ahp_serial_SetFD(int f, int bauds)
+DLL_EXPORT void serial_set_fd(int f, int bauds)
 {
     if(!ahp_serial_mutexes_initialized) {
         pthread_mutexattr_init(&ahp_serial_mutex_attr);
@@ -636,9 +607,14 @@ static void ahp_serial_SetFD(int f, int bauds)
 #endif
 }
 
-static int ahp_serial_GetFD()
+DLL_EXPORT int serial_get_fd()
 {
     return ahp_serial_fd;
+}
+
+DLL_EXPORT int serial_is_open()
+{
+     return serial_get_fd() != -1;
 }
 
 #ifdef __cplusplus
