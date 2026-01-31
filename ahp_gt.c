@@ -1836,7 +1836,33 @@ void ahp_gt_set_divider(int axis, int value)
     if(!ahp_gt_is_detected())
         return;
     devices[ahp_gt_get_current_device()].axis[axis].divider = abs(value);
-    optimize_values(axis);
+    dispatch_command(FlashEnable, axis, -1);
+    int value1 = dispatch_command(GetVars, 7, -1);
+    value1 = (value1 >> 16) | (value1 << 16) | value1 & 0xff00;
+    int dividers = (value1 & 0xff00) >> 8;
+    value1 &= ~0xff00;
+    dispatch_command(FlashEnable, axis, -1);
+    int value2 = dispatch_command(GetVars, 7, -1);
+    value2 = (value2 >> 16) | (value2 << 16) | value2 & 0xff00;
+    dividers |= value2 & 0xff00;
+    value2 &= ~0xff00;
+    if(devices[ahp_gt_get_current_device()].axis[axis].model == GT1) {
+        dividers &= ~(0x1e << (axis * 4));
+        dividers |= value << (axis * 4);
+    } else {
+        dividers &= ~0x1fe;
+        dividers |= (value << 1) | (value << 5);
+    }
+    value1 |= (dividers << 8) & 0xff00;
+    value2 |= (dividers) & 0xff00;
+    value1 = (value1 >> 16) | (value1 << 16) | value1 & 0xff00;
+    value2 = (value2 >> 16) | (value2 << 16) | value2 & 0xff00;
+    dispatch_command(FlashEnable, axis, -1);
+    dispatch_command(SetVars, 7, value1);
+    dispatch_command(ReloadVars, axis, -1);
+    dispatch_command(FlashEnable, axis, -1);
+    dispatch_command(SetVars, 15, value2);
+    dispatch_command(ReloadVars, axis, -1);
 }
 
 void ahp_gt_set_multiplier(int axis, int value)
@@ -1952,6 +1978,18 @@ void ahp_gt_copy_device(int from, int to)
     devices[from].index = to;
     memcpy(&devices[to], &devices[from], sizeof(gt_info));
     memcpy(&devices[to].axis, &devices[from].axis, sizeof(gt_axis)*NumAxes);
+    int axis;
+    for(axis = 0; axis < NumAxes; axis++)
+        if(devices[to].axis[axis].detected) break;
+    dispatch_command(FlashEnable, axis, -1);
+    int oldvalue = dispatch_command(GetVars, 15, -1);
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    oldvalue &= ~0xfe00;
+    oldvalue |= to << 9;
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    dispatch_command(FlashEnable, axis, -1);
+    dispatch_command(SetVars, 15, oldvalue);
+    dispatch_command(ReloadVars, axis, -1);
 }
 
 SkywatcherAxisStatus ahp_gt_get_status(int axis)
