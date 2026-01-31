@@ -187,7 +187,6 @@ static pthread_mutex_t mutex_rw;
 static pthread_t tracking_thread;
 static char command[32];
 static char response[32];
-static int dispatch_command(SkywatcherCommand cmd, int axis, int command_arg);
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
 gt_info devices[128] = { 0 };
@@ -783,60 +782,12 @@ static void long2Revu24str(unsigned int n, char *str)
     str[6]        = '\0';
 }
 
-static int read_eqmod()
-{
-    char * reply;
-    int err_code = 0, nbytes_read = 0;
-    int max_err = 50;
-    // Clear string
-    memset(response, '\0', 32);
-    unsigned char c = 0;
-    while(c != '\r' && err_code < max_err) {
-        if(1 == serial_read(&c, 1) && c != 0) {
-            response[nbytes_read++] = c;
-        } else {
-            err_code++;
-        }
-    }
-    if (err_code == max_err)
-    {
-        return -1;
-    }
-    if(!strncmp(command, response, strlen(command))) {
-        reply = &response[strlen(command)];
-        nbytes_read -= strlen(command);
-    } else reply = response;
-
-    // Remove CR
-    reply[nbytes_read - 1] = '\0';
-
-    pwarn("%s\n", reply);
-
-    switch (reply[0])
-    {
-        case '=':
-            if(nbytes_read > 2) {
-                if(nbytes_read > 5)
-                    return Revu24str2long(reply+1);
-                else
-                    return Highstr2long(reply+1);
-            }
-            break;
-        case '!':
-            return -1;
-        default:
-        return -1;
-    }
-
-    return 0;
-}
-
 static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 {
     errno = 0;
     int ret = -1;
     int c;
-    memset(response, '0', 32);
+    memset(response, 0, 32);
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -847,6 +798,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         usleep(100);
     command[0] = '\0';
     char command_arg[28];
+    memset(command_arg, 0, 28);
     int n;
     if (arg < 0) {
         snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
@@ -861,16 +813,47 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
     serial_flush();
     if(serial_write(command, n) < 0)
-        goto ret_err;
-
-    ret = ((cmd == SetAddress || cmd == SetVars || cmd == FlashEnable || cmd == ReloadVars) ? 0 : read_eqmod());
-    if(ret < 0) goto ret_err;
+        return -1;
+int ntries = 3;
+retry:
+    switch(cmd) {
+        case SetVars:
+        case FlashEnable:
+        case ReloadVars:
+        case SetAddress:
+        ret = 0;
+        break;
+        case InquireMotorBoardVersion:
+        case InquireGridPerRevolution:
+        case InquireTimerInterruptFreq:
+        case InquireHighSpeedRatio:
+        case InquirePECPeriod:
+        case SetAxisPositionCmd:
+        case GetAxisPosition:
+        case InquireAuxEncoder:
+        case GetStepPeriod:
+        case GetFeatureCmd:
+        case GetVars:
+        serial_read(response, 8);
+        ret = response[0] != '=' ? -1 : 0;
+        if(!ret)
+            ret = Revu24str2long(response+1);
+        break;
+        case GetAxisStatus:
+        serial_read(response, 5);
+        ret = response[0] != '=' ? -1 : 0;
+        if(!ret)
+            ret = Highstr2long(response+1);
+        break;
+        default:
+        serial_read(response, 1);
+        ret = response[0] != '=' ? -1 : 0;
+        break;
+    }
+    if(ret < 0 && ntries-- > 0)
+        goto retry;
     pthread_mutex_unlock(&mutex);
     return ret;
-ret_err:
-    pthread_mutex_unlock(&mutex);
-    errno = ERANGE;
-    return -1;
 }
 
 static void optimize_values(int axis)
@@ -1559,6 +1542,14 @@ void ahp_gt_limit_intensity(int axis, int value)
     if(!ahp_gt_is_detected())
         return;
     devices[ahp_gt_get_current_device()].axis[axis].intensity_limited = value;
+    int oldvalue = dispatch_command(GetVars, 9, -1);
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    oldvalue &= ~0x0400;
+    oldvalue |= value ? 0x0400 : 0;
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    dispatch_command(FlashEnable, axis, -1);
+    dispatch_command(SetVars, 9, oldvalue);
+    dispatch_command(ReloadVars, axis, -1);
 }
 
 int ahp_gt_is_intensity_limited(int axis)
@@ -1573,6 +1564,16 @@ void ahp_gt_set_intensity_limit(int axis, double value)
     if(!ahp_gt_is_detected())
         return;
     devices[ahp_gt_get_current_device()].axis[axis].intensity = value;
+    dispatch_command(FlashEnable, axis, -1);
+    int oldvalue = dispatch_command(GetVars, 9, -1);
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    oldvalue &= ~0x03ff;
+    oldvalue |= (int)value & 0x03ff;
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    dispatch_command(FlashEnable, axis, -1);
+    dispatch_command(SetVars, 9, oldvalue);
+    dispatch_command(ReloadVars, axis, -1);
+
 }
 
 double ahp_gt_get_intensity_limit(int axis)
@@ -1664,6 +1665,15 @@ void ahp_gt_copy_axis(int axis, int value)
     if(!ahp_gt_is_detected())
         return;
     memcpy(&devices[ahp_gt_get_current_device()].axis [value], &devices[ahp_gt_get_current_device()].axis [axis], sizeof(gt_axis));
+    dispatch_command(FlashEnable, axis, -1);
+    int oldvalue = dispatch_command(GetVars, 9, -1);
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    oldvalue &= ~0xff000;
+    oldvalue |= value << 12;
+    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    dispatch_command(FlashEnable, axis, -1);
+    dispatch_command(SetVars, 9, oldvalue);
+    dispatch_command(ReloadVars, axis, -1);
 }
 
 void ahp_gt_move_axis(int axis, int value)

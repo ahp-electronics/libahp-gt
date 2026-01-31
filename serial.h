@@ -486,7 +486,7 @@ DLL_EXPORT void serial_flush()
 
 #endif
 
-DLL_EXPORT int serial_connect(char* devname, int baudrate, const char *mode)
+DLL_EXPORT int serial_connect(const char* devname, int baudrate, const char *mode)
 {
     char dev_name[128];
 #ifndef WINDOWS
