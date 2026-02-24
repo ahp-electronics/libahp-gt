@@ -1046,7 +1046,6 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
     ahp_gt_set_position(0, M_PI / 2.0);
     ahp_gt_set_position(1, M_PI / 2.0);
 
-    struct timeval tv;
     fd_set rfds;
     FD_ZERO(&rfds);
     FD_SET(sockfd, &rfds);
