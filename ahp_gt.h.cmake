@@ -274,8 +274,6 @@ typedef enum {
     Flash                     = '#',
     FlashEnable               = '!',
     SetAddress                = '=',
-    SetAxis                   = '.',
-    GetAxis                   = ',',
 } SkywatcherCommand;
 
 typedef enum {

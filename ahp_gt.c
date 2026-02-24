@@ -787,7 +787,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     errno = 0;
     int ret = -1;
     int c;
-    memset(response, 0, 32);
+    memset(response, '0', 32);
     if(!mutexes_initialized) {
         pthread_mutexattr_init(&mutex_attr);
         pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -798,7 +798,6 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         usleep(100);
     command[0] = '\0';
     char command_arg[28];
-    memset(command_arg, 0, 28);
     int n;
     if (arg < 0) {
         snprintf(command, 32, ":%c%c\r", cmd, (char)(axis+'1'));
@@ -811,49 +810,49 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     pgarb("%s\n", command);
 
-    serial_flush();
     if(serial_write(command, n) < 0)
-        return -1;
-int ntries = 3;
-retry:
+        goto ret_err;
+    serial_flush();
     switch(cmd) {
-        case SetVars:
-        case FlashEnable:
+        case Flash:
         case ReloadVars:
+        case FlashEnable:
         case SetAddress:
-        ret = 0;
-        break;
+            ret = 0;
+            break;
+        case GetAxisStatus:
+            serial_read(response, 10);
+            if(response[0] != '!' && response[5] == '\r')
+                ret = Highstr2long(response+1);
+            else
+                ret = -1;
+            break;
         case InquireMotorBoardVersion:
         case InquireGridPerRevolution:
         case InquireTimerInterruptFreq:
         case InquireHighSpeedRatio:
         case InquirePECPeriod:
-        case SetAxisPositionCmd:
         case GetAxisPosition:
-        case InquireAuxEncoder:
         case GetStepPeriod:
         case GetFeatureCmd:
+        case InquireAuxEncoder:
         case GetVars:
-        serial_read(response, 8);
-        ret = response[0] != '=' ? -1 : 0;
-        if(!ret)
-            ret = Revu24str2long(response+1);
-        break;
-        case GetAxisStatus:
-        serial_read(response, 5);
-        ret = response[0] != '=' ? -1 : 0;
-        if(!ret)
-            ret = Highstr2long(response+1);
-        break;
+            serial_read(response, 10);
+            if(response[0] != '!' && response[7] == '\r')
+                ret = Revu24str2long(response+1);
+            else
+                ret = -1;
+            break;
         default:
-        serial_read(response, 1);
-        ret = response[0] != '=' ? -1 : 0;
+            ret = 0;
         break;
     }
-    if(ret < 0 && ntries-- > 0)
-        goto retry;
     pthread_mutex_unlock(&mutex);
     return ret;
+ret_err:
+    pthread_mutex_unlock(&mutex);
+    errno = ERANGE;
+    return -1;
 }
 
 static void optimize_values(int axis)
