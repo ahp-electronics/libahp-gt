@@ -1042,19 +1042,17 @@ int ahp_gt_start_synscan_server(int port, int *interrupt)
         close(sockfd);
         return -1;
     }
+    fd_set rfds;
+    FD_SET(sockfd, &rfds);
 
     ahp_gt_set_position(0, M_PI / 2.0);
     ahp_gt_set_position(1, M_PI / 2.0);
 
-    fd_set rfds;
     FD_ZERO(&rfds);
-    FD_SET(sockfd, &rfds);
 
     while(!(*interrupt)) {
         devices[ahp_gt_get_current_device()].connfd = -1;
         struct sockaddr client;
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
         socklen_t len = sizeof(client);
         devices[ahp_gt_get_current_device()].connfd = accept(sockfd, &client, &len);
         if(devices[ahp_gt_get_current_device()].connfd > -1) {
@@ -1907,7 +1905,7 @@ double ahp_gt_get_intensity_deviation(int axis, double freq) {
     double y = 0;
     for (x = 0; x < devices[ahp_gt_get_current_device()].axis[axis].deviators_n; x ++) {
         y += devices[ahp_gt_get_current_device()].axis[axis].deviators[x].constant;
-        y += pow(devices[ahp_gt_get_current_device()].axis[axis].deviators[x].variable, 2);
+        y += pow(devices[ahp_gt_get_current_device()].axis[axis].deviators[x].variable, sin(freq) + 1);
     }
     return devices[ahp_gt_get_current_device()].axis[axis].voltage/pow(y, 0.5);
 }
