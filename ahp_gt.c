@@ -117,7 +117,6 @@ typedef struct {
     GT_Model model;
     int index;
     int last_step;
-    int last_write;
     int last_read;
     int totalsteps;
     int wormsteps;
@@ -132,6 +131,7 @@ typedef struct {
     int version;
     int features;
     int dividers;
+    double last_write;
     double maxperiod;
     double minperiod;
     double max_step_frequency;
@@ -1155,7 +1155,8 @@ void ahp_gt_write_values(int axis, int *percent, int *finished)
         }
     }
     *percent = *percent + 10;
-    devices[ahp_gt_get_current_device()].axis [axis].last_write = time(NULL);
+    dispatch_command(ReloadVars, axis, -1);
+    devices[ahp_gt_get_current_device()].axis [axis].last_write = get_timestamp();
     *finished = 1;
 }
 
