@@ -825,7 +825,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             if(response[0] != '!' && response[5] == '\r')
                 ret = Highstr2long(response+1);
             else
-                ret = -1;
+                goto ret_err;
             break;
         case InquireMotorBoardVersion:
         case InquireGridPerRevolution:
@@ -841,7 +841,7 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             if(response[0] != '!' && response[7] == '\r')
                 ret = Revu24str2long(response+1);
             else
-                ret = -1;
+                goto ret_err;
             break;
         default:
             ret = 0;
@@ -893,9 +893,7 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].axis [axis].wormsteps *= (double)devices[ahp_gt_get_current_device()].axis [axis].multiplier / (double)devices[ahp_gt_get_current_device()].axis [axis].divider;
     devices[ahp_gt_get_current_device()].axis [axis].totalsteps = (int)(devices[ahp_gt_get_current_device()].axis [axis].crown * devices[ahp_gt_get_current_device()].axis [axis].wormsteps);
 
-    double totalsteps = (double)ahp_gt_get_totalsteps(axis) * ahp_gt_get_divider(axis) / ahp_gt_get_multiplier(axis);
-    double steps_s = totalsteps / SIDEREAL_DAY;
-    double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
+    double sidereal_period = SIDEREAL_DAY * 63 * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxperiod = (int)sidereal_period;
     devices[ahp_gt_get_current_device()].axis [axis].minperiod = 1;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = (int)fmax(devices[ahp_gt_get_current_device()].axis [axis].minperiod, (devices[ahp_gt_get_current_device()].axis [axis].maxperiod / devices[ahp_gt_get_current_device()].axis [axis].maxspeed));
@@ -1287,7 +1285,7 @@ void ahp_gt_read_values(int axis)
     worm /= decimals;
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
     devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
-    double sidereal_period = SIDEREAL_DAY * devices[ahp_gt_get_current_device()].axis [axis].multiplier * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
+    double sidereal_period = SIDEREAL_DAY * 63 * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
     optimize_values(axis);
     devices[ahp_gt_get_current_device()].axis [axis].last_read = time(NULL);
