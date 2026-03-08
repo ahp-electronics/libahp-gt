@@ -812,6 +812,8 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
 
     if(serial_write(command, n) < 0)
         goto ret_err;
+    int len = 0;
+    int retry = 10;
     serial_flush();
     switch(cmd) {
         case Flash:
@@ -821,11 +823,23 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
             ret = 0;
             break;
         case GetAxisStatus:
-            serial_read(response, 10);
-            if(response[0] != '!' && response[5] == '\r')
+retry_Highstr2long:
+            while(c != '\r' && retry > 0) {
+                serial_read((unsigned char*)&c, 1);
+                if(c != '\r' && c != '\0') {
+                    response[len] = c;
+                    len++;
+                } else {
+                    retry--;
+                }
+            }
+            response[len] = 0;
+            if(len == 4 && response[0] != '!' && response[4] == '\0')
                 ret = Highstr2long(response+1);
-            else
+            else if(retry == 0)
                 goto ret_err;
+            else
+                goto retry_Highstr2long;
             break;
         case InquireMotorBoardVersion:
         case InquireGridPerRevolution:
@@ -837,11 +851,24 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         case GetFeatureCmd:
         case InquireAuxEncoder:
         case GetVars:
-            serial_read(response, 10);
-            if(response[0] != '!' && response[7] == '\r')
+retry_Revu24str2long:
+            c = 0;
+            if(retry > 0) {
+                serial_read((unsigned char*)&c, 1);
+                if(c != '\r' && c != '\0') {
+                    response[len] = c;
+                    len++;
+                } else {
+                    retry--;
+                }
+            }
+            response[len] = 0;
+            if(len == 7 && response[0] != '!' && response[7] == '\0')
                 ret = Revu24str2long(response+1);
-            else
+            else if(retry == 0)
                 goto ret_err;
+            else
+                goto retry_Revu24str2long;
             break;
         default:
             ret = 0;
@@ -1658,13 +1685,11 @@ void ahp_gt_copy_axis(int axis, int value)
     memcpy(&devices[ahp_gt_get_current_device()].axis [value], &devices[ahp_gt_get_current_device()].axis [axis], sizeof(gt_axis));
     dispatch_command(FlashEnable, axis, -1);
     int oldvalue = dispatch_command(GetVars, 9, -1);
-    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
     oldvalue &= ~0xff000;
     oldvalue |= value << 12;
-    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
     dispatch_command(FlashEnable, axis, -1);
     dispatch_command(SetVars, 9, oldvalue);
-    dispatch_command(ReloadVars, axis, -1);
+    dispatch_command(ReloadVars, value, -1);
 }
 
 void ahp_gt_move_axis(int axis, int value)
