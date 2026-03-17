@@ -1583,13 +1583,11 @@ void ahp_gt_set_intensity_limit(int axis, double value)
         return;
     devices[ahp_gt_get_current_device()].axis[axis].intensity = value;
     dispatch_command(FlashEnable, axis, -1);
-    int oldvalue = dispatch_command(GetVars, 9, -1);
-    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
+    int oldvalue = dispatch_command(GetVars, 8, -1);
     oldvalue &= ~0x03ff;
     oldvalue |= (int)value & 0x03ff;
-    oldvalue = (oldvalue >> 16) | (oldvalue << 16) | oldvalue & 0xff00;
     dispatch_command(FlashEnable, axis, -1);
-    dispatch_command(SetVars, 9, oldvalue);
+    dispatch_command(SetVars, 8, oldvalue);
     dispatch_command(ReloadVars, axis, -1);
 
 }
