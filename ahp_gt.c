@@ -1683,12 +1683,13 @@ void ahp_gt_copy_axis(int axis, int value)
     if(!ahp_gt_is_detected())
         return;
     memcpy(&devices[ahp_gt_get_current_device()].axis [value], &devices[ahp_gt_get_current_device()].axis [axis], sizeof(gt_axis));
+    devices[ahp_gt_get_current_device()].axis [axis].detected = 0;
     dispatch_command(FlashEnable, axis, -1);
-    int oldvalue = dispatch_command(GetVars, 9, -1);
+    int oldvalue = dispatch_command(GetVars, 8, -1);
     oldvalue &= ~0xff000;
     oldvalue |= value << 12;
     dispatch_command(FlashEnable, axis, -1);
-    dispatch_command(SetVars, 9, oldvalue);
+    dispatch_command(SetVars, 8, oldvalue);
     dispatch_command(ReloadVars, value, -1);
 }
 
