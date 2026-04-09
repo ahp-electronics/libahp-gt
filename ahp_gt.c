@@ -160,8 +160,6 @@ typedef struct {
     int num_axes;
     gt_axis axis[AXES_LIMIT];
     char comport[128];
-    int rs232_polarity;
-    int baud_rate;
     MountType type;
     int flipped;
     int will_flip;
@@ -189,6 +187,8 @@ static char command[32];
 static char response[32];
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
+static int rs232_polarity;
+static int baud_rate;
 gt_info devices[128] = { 0 };
 int sockfd;
 
@@ -930,9 +930,9 @@ static void optimize_values(int axis)
     devices[ahp_gt_get_current_device()].axis [axis].accel_steps = floor(fmin(63, pow(degrees * 2, 0.4) + 1));
     devices[ahp_gt_get_current_device()].axis [axis].accel_increment = (int)fmin (0xff, devices[ahp_gt_get_current_device()].axis [axis].guide / devices[ahp_gt_get_current_device()].axis [axis].accel_increment);
     devices[ahp_gt_get_current_device()].index &= 0x7f;
-    devices[ahp_gt_get_current_device()].rs232_polarity &= 0x1;
+    rs232_polarity &= 0x1;
     int dividers;
-    dividers = devices[ahp_gt_get_current_device()].rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
+    dividers = rs232_polarity | (devices[ahp_gt_get_current_device()].index << 9);
     dividers |= (((unsigned char)(devices[ahp_gt_get_current_device()].axis [0].divider) & 0xf) << 1) | ((((unsigned char)(devices[ahp_gt_get_current_device()].axis[1].divider)) & 0xf) << 5);
     if(devices[ahp_gt_get_current_device()].axis[axis].model == GT1 || devices[ahp_gt_get_current_device()].axis[axis].model == GT2) {
         devices[ahp_gt_get_current_device()].axis [0].dividers = dividers;
@@ -1241,7 +1241,7 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].mount_flags = 0;
     devices[ahp_gt_get_current_device()].axis [axis].dividers = 0;
     devices[ahp_gt_get_current_device()].index = 1;
-    devices[ahp_gt_get_current_device()].rs232_polarity = 0;
+    rs232_polarity = 0;
     if((devices[ahp_gt_get_current_device()].axis [axis].model != GT1) && (devices[ahp_gt_get_current_device()].axis [axis].model != GT2) && (devices[ahp_gt_get_current_device()].axis [axis].model != GT5)) {
         return;
     }
@@ -1307,7 +1307,7 @@ void ahp_gt_read_values(int axis)
     motor = 1.0 / decimals;
     worm /= decimals;
     devices[ahp_gt_get_current_device()].index = (devices[ahp_gt_get_current_device()].axis [axis].dividers >> 9) & 0x7f;
-    devices[ahp_gt_get_current_device()].rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
+    rs232_polarity = devices[ahp_gt_get_current_device()].axis [axis].dividers & 1;
     double sidereal_period = SIDEREAL_DAY * 63 * devices[ahp_gt_get_current_device()].axis [axis].wormsteps / devices[ahp_gt_get_current_device()].axis [axis].totalsteps;
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed = sidereal_period / devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value;
     optimize_values(axis);
@@ -1317,10 +1317,10 @@ void ahp_gt_read_values(int axis)
 void ahp_gt_clear()
 {
     int d;
-    memset(devices, 0, sizeof(gt_info)*128);
-    for(d = 0; d < 128; d++) {
+    memset(devices, 0, sizeof(gt_info)*ahp_gt_get_axes_limit());
+    for(d = 0; d < ahp_gt_get_axes_limit(); d++) {
         memset(devices[d].axis, 0, sizeof(gt_axis)*AXES_LIMIT);
-        devices[d].baud_rate = 9600;
+        baud_rate = 9600;
     }
 }
 
@@ -1331,6 +1331,7 @@ int ahp_gt_connect_fd(int fd)
     if(fd != -1) {
         serial_set_fd(fd, 9600);
         ahp_gt_connected = 1;
+        memset(devices, 0, ahp_gt_get_axes_limit()*sizeof(gt_info));
         return 0;
     }
     return 1;
@@ -1355,7 +1356,6 @@ int ahp_gt_connect_udp(const char *address, int port)
     if(ahp_gt_is_connected())
         return 0;
     int fd = -1;
-
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd >= 0 ) {
         struct sockaddr_in addr;
@@ -1372,12 +1372,20 @@ int ahp_gt_connect(const char* port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    serial_connect(port, 9600, "8N1");
+    if(!devices[ahp_gt_get_current_device()].detected) {
+        if(baud_rate == 115200 || (baud_rate != 9600 && baud_rate != 115200))
+            baud_rate = 9600;
+        if(baud_rate == 9600)
+            baud_rate = 115200;
+        serial_close();
+    }
+    serial_connect(port, baud_rate, "8N1");
     if(!serial_is_open()) {
         ahp_gt_connected = 0;
         serial_close();
         return 1;
     }
+    memset(devices, 0, ahp_gt_get_axes_limit()*sizeof(gt_info));
     strcpy(devices[ahp_gt_get_current_device()].comport, port);
     ahp_gt_connected = 1;
     return 0;
@@ -1403,7 +1411,7 @@ void ahp_gt_disconnect()
             pthread_mutexattr_destroy(&mutex_attr);
             mutexes_initialized = 0;
         }
-        memset(devices, 0, sizeof(gt_info)*128);
+        memset(devices, 0, sizeof(gt_info)*ahp_gt_get_axes_limit());
         ahp_gt_connected = 0;
     }
 }
@@ -1552,7 +1560,7 @@ int ahp_gt_get_rs232_polarity()
 {
     if(!ahp_gt_is_detected())
         return 0;
-    return devices[ahp_gt_get_current_device()].rs232_polarity;
+    return rs232_polarity;
 }
 
 void ahp_gt_limit_intensity(int axis, int value)
@@ -1705,6 +1713,8 @@ void ahp_gt_set_axes_limit(int value)
 
 int ahp_gt_get_axes_limit()
 {
+    if(devices[ahp_gt_get_current_device()].num_axes == 0)
+        devices[ahp_gt_get_current_device()].num_axes = NumAxes;
     return devices[ahp_gt_get_current_device()].num_axes;
 }
 
@@ -1794,7 +1804,7 @@ void ahp_gt_set_rs232_polarity(int value)
     int a;
     if(!ahp_gt_is_detected())
         return;
-    devices[ahp_gt_get_current_device()].rs232_polarity = value&1;
+    rs232_polarity = value&1;
     for(a = 0; a < ahp_gt_get_axes_limit(); a++)
         optimize_values(a);
 }
@@ -1939,14 +1949,11 @@ int ahp_gt_detect_device(int *percent) {
     int a = 0;
     if(percent == NULL)
         percent = (int*)malloc(sizeof(int));
-    memset(devices, 0, 128*sizeof(gt_info));
     devices[ahp_gt_get_current_device()].detected = 0;
-    devices[ahp_gt_get_current_device()].baud_rate = 9600;
-    ahp_gt_set_axes_limit(NumAxes);
+    baud_rate = 9600;
     int num_axes = ahp_gt_get_axes_limit();
     for (a = 0; a < num_axes; a++)
-        memset(&devices[a].axis, 0, 128*sizeof(gt_axis));
-    double progress = 0;
+        memset(&devices[a].axis, 0, ahp_gt_get_axes_limit()*sizeof(gt_axis));
     *percent = 0;
     for (a = 0; a < num_axes; a++) {
         devices[ahp_gt_get_current_device()].axis [a].index = a;
@@ -1971,7 +1978,7 @@ int ahp_gt_detect_device(int *percent) {
 int ahp_gt_select_device(int address) {
     if(!ahp_gt_is_connected())
         return -1;
-    address = fmax(0, fmin(address, 128));
+    address = fmax(0, fmin(address, ahp_gt_get_axes_limit()));
     if(!dispatch_command(SetAddress, 0, address)) {
         ahp_gt_current_device = address;
         return 0;
