@@ -188,7 +188,7 @@ static char response[32];
 static unsigned int ahp_gt_current_device = 0;
 static unsigned int ahp_gt_connected = 0;
 static int rs232_polarity;
-static int baud_rate;
+static int baud_rate = 9600;
 gt_info devices[128] = { 0 };
 int sockfd;
 
@@ -1372,13 +1372,6 @@ int ahp_gt_connect(const char* port)
 {
     if(ahp_gt_is_connected())
         return 0;
-    if(!devices[ahp_gt_get_current_device()].detected) {
-        if(baud_rate == 115200 || (baud_rate != 9600 && baud_rate != 115200))
-            baud_rate = 9600;
-        if(baud_rate == 9600)
-            baud_rate = 115200;
-        serial_close();
-    }
     serial_connect(port, baud_rate, "8N1");
     if(!serial_is_open()) {
         ahp_gt_connected = 0;
@@ -1395,8 +1388,7 @@ void ahp_gt_set_high_rate(int value)
 {
     if(ahp_gt_is_connected())
         return;
-    serial_close();
-    serial_connect(devices[ahp_gt_get_current_device()].comport, value?115200:9600, "8N1");
+    baud_rate = value?115200:9600;
 }
 
 void ahp_gt_disconnect()
@@ -1950,7 +1942,6 @@ int ahp_gt_detect_device(int *percent) {
     if(percent == NULL)
         percent = (int*)malloc(sizeof(int));
     devices[ahp_gt_get_current_device()].detected = 0;
-    baud_rate = 9600;
     int num_axes = ahp_gt_get_axes_limit();
     for (a = 0; a < num_axes; a++)
         memset(&devices[a].axis, 0, ahp_gt_get_axes_limit()*sizeof(gt_axis));
