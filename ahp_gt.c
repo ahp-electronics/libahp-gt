@@ -1433,7 +1433,7 @@ int ahp_gt_get_mc_version(int axis)
     switch (v&0xf) {
         case 1:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT1;
-            devices[ahp_gt_get_current_device()].axis[axis].variant = GT1;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT1_Standard;
             break;
         case 2:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT1;
@@ -1441,7 +1441,7 @@ int ahp_gt_get_mc_version(int axis)
             break;
         case 3:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
-            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Standard;
             break;
         case 4:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
@@ -1456,7 +1456,7 @@ int ahp_gt_get_mc_version(int axis)
             devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Fork;
         case 7:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
-            devices[ahp_gt_get_current_device()].axis[axis].variant = GT5;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT5_Standard;
             break;
         case 8:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT5;

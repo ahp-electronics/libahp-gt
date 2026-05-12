@@ -134,11 +134,11 @@ typedef enum {
 ///GT Controller variants
 typedef enum {
     ///1A single chip - dual axis GT1
-    GT1,
+    GT1_Standard,
     ///1A dual axis GT1 with microstepping brake
     GT1_Lock,
     ///15A double chip - dual axis GT2
-    GT2,
+    GT2_Standard,
     ///15A dual axis GT2 for fork mounts
     GT2_Fork,
     ///15A dual axis GT2 with external brake
@@ -146,7 +146,7 @@ typedef enum {
     ///15A dual axis GT2 with microstepping brake
     GT2_Lock,
     ///15A single chip - single programmable axis GT5
-    GT5,
+    GT5_Standard,
     ///15A single programmable axis GT5 with external brake
     GT5_Brake,
     ///15A single programmable axis GT5 with microstepping brake
