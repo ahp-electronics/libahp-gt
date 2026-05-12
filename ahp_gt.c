@@ -115,6 +115,7 @@ static const char axes[NumAxes][32] = {
 
 typedef struct {
     GT_Model model;
+    GT_ModelVariant variant;
     int index;
     int last_step;
     int last_read;
@@ -1432,19 +1433,40 @@ int ahp_gt_get_mc_version(int axis)
     switch (v&0xf) {
         case 1:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT1;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT1;
             break;
         case 2:
+            devices[ahp_gt_get_current_device()].axis[axis].model = GT1;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT1_Lock;
+            break;
         case 3:
-        case 7:
-        case 8:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2;
             break;
         case 4:
+            devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Lock;
+            break;
         case 5:
+            devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Brake;
+            break;
+        case 6:
+            devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Fork;
+        case 7:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT5;
+            break;
+        case 8:
+            devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT5_Lock;
+            break;
+        case 9:
+            devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
+            devices[ahp_gt_get_current_device()].axis[axis].variant = GT5_Brake;
             break;
         default:
-            devices[ahp_gt_get_current_device()].axis[axis].model = GT1;
             break;
     }
     return v;
@@ -2321,6 +2343,10 @@ int ahp_gt_is_aligned() {
 
 GT_Model ahp_gt_get_axis_model(int axis) {
     return devices[ahp_gt_get_current_device()].axis[axis].model;
+}
+
+GT_ModelVariant ahp_gt_get_axis_variant(int axis) {
+    return devices[ahp_gt_get_current_device()].axis[axis].variant;
 }
 
 const char* ahp_gt_get_axis_name(int axis) {

@@ -131,6 +131,30 @@ typedef enum {
     UNKOWN
 } GT_Model, GT1_Model, GT2_Model, GT5_Model;
 
+///GT Controller variants
+typedef enum {
+    ///1A single chip - dual axis GT1
+    GT1,
+    ///1A dual axis GT1 with microstepping brake
+    GT1_Lock,
+    ///15A double chip - dual axis GT2
+    GT2,
+    ///15A dual axis GT2 for fork mounts
+    GT2_Fork,
+    ///15A dual axis GT2 with external brake
+    GT2_Brake,
+    ///15A dual axis GT2 with microstepping brake
+    GT2_Lock,
+    ///15A single chip - single programmable axis GT5
+    GT5,
+    ///15A single programmable axis GT5 with external brake
+    GT5_Brake,
+    ///15A single programmable axis GT5 with microstepping brake
+    GT5_Lock,
+    ///other chip - unknown
+    UNKOWN
+} GT_ModelVariant, GT1_ModelVariant, GT2_ModelVariant, GT5_ModelVariant;
+
 ///Motor coils phase winding configuration
 typedef enum {
 ///AABB Motor winding
@@ -565,9 +589,16 @@ DLL_EXPORT unsigned int ahp_gt_axis_is_detected(int axis);
 /**
 * \brief Get the motor controller model
 * \param axis the axis to check
-* \return GT_Model index of the queried axis
+* \return GT_Model model of the queried axis
 */
 DLL_EXPORT GT_Model ahp_gt_get_axis_model(int axis);
+
+/**
+* \brief Get the motor controller model variant
+* \param axis the axis to check
+* \return GT_ModelVariant model variant of the queried axis
+*/
+DLL_EXPORT GT_ModelVariant ahp_gt_get_axis_variant(int axis)
 
 /**
 * \brief Get the GT firmware version
