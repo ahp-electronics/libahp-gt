@@ -152,7 +152,7 @@ typedef enum {
     ///15A single programmable axis GT5 with microstepping brake
     GT5_Lock,
     ///other chip - unknown
-    UNKOWN
+    NO_VARIANT
 } GT_ModelVariant, GT1_ModelVariant, GT2_ModelVariant, GT5_ModelVariant;
 
 ///Motor coils phase winding configuration
@@ -598,7 +598,7 @@ DLL_EXPORT GT_Model ahp_gt_get_axis_model(int axis);
 * \param axis the axis to check
 * \return GT_ModelVariant model variant of the queried axis
 */
-DLL_EXPORT GT_ModelVariant ahp_gt_get_axis_variant(int axis)
+DLL_EXPORT GT_ModelVariant ahp_gt_get_axis_variant(int axis);
 
 /**
 * \brief Get the GT firmware version

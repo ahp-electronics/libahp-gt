@@ -159,6 +159,8 @@ typedef struct {
 typedef struct {
     int index;
     int num_axes;
+    int udp_connection;
+    struct sockaddr_in udp_addr;
     gt_axis axis[AXES_LIMIT];
     char comport[128];
     MountType type;
@@ -811,8 +813,11 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
     }
     pgarb("%s\n", command);
 
-    if(serial_write(command, n) < 0)
-        goto ret_err;
+    if(devices[ahp_gt_get_current_device()].udp_connection)
+        sendto(ahp_gt_get_fd(), command, n, 0, (struct sockaddr *)&devices[ahp_gt_get_current_device()].udp_addr, sizeof(struct sockaddr_in));
+    else
+      if(serial_write(command, n) < 0)
+          goto ret_err;
     int len = 0;
     int retry = 10;
     serial_flush();
@@ -826,7 +831,10 @@ static int dispatch_command(SkywatcherCommand cmd, int axis, int arg)
         case GetAxisStatus:
 retry_Highstr2long:
             while(c != '\r' && retry > 0) {
-                serial_read((unsigned char*)&c, 1);
+                if(devices[ahp_gt_get_current_device()].udp_connection)
+                    recvfrom(serial_get_fd(), (unsigned char*)&c, 1, 0, NULL, 0);
+                else
+                    serial_read((unsigned char*)&c, 1);
                 if(c != '\r' && c != '\0') {
                     response[len] = c;
                     len++;
@@ -855,7 +863,10 @@ retry_Highstr2long:
 retry_Revu24str2long:
             c = 0;
             if(retry > 0) {
-                serial_read((unsigned char*)&c, 1);
+                if(devices[ahp_gt_get_current_device()].udp_connection)
+                    recvfrom(serial_get_fd(), (unsigned char*)&c, 1, 0, NULL, 0);
+                else
+                    serial_read((unsigned char*)&c, 1);
                 if(c != '\r' && c != '\0') {
                     response[len] = c;
                     len++;
@@ -1359,13 +1370,15 @@ int ahp_gt_connect_udp(const char *address, int port)
     int fd = -1;
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd >= 0 ) {
-        struct sockaddr_in addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;
-        addr.sin_port = htons(port);
-        addr.sin_addr.s_addr = inet_addr(address);
-        if(!connect(fd, (const struct sockaddr *)&addr, sizeof(addr)))
-            return ahp_gt_connect_fd(fd);
+        memset(&devices[ahp_gt_get_current_device()].udp_addr, 0, sizeof(devices[ahp_gt_get_current_device()].udp_addr));
+        devices[ahp_gt_get_current_device()].udp_addr.sin_family = AF_INET;
+        devices[ahp_gt_get_current_device()].udp_addr.sin_port = htons(port);
+        devices[ahp_gt_get_current_device()].udp_addr.sin_addr.s_addr = inet_addr(address);
+        if(bind(fd, (struct sockaddr *)&devices[ahp_gt_get_current_device()].udp_addr, sizeof(devices[ahp_gt_get_current_device()].udp_addr)) < 0) {
+            return 1;
+        }
+        devices[ahp_gt_get_current_device()].udp_connection = 1;
+        return ahp_gt_connect_fd(fd);
     }
     return 1;
 }
