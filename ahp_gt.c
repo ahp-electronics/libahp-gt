@@ -142,6 +142,7 @@ typedef struct {
     double motor;
     double worm;
     double guide;
+    double crown_timing;
     double one_second;
     double maxspeed;
     double maxspeed_value;
@@ -867,7 +868,7 @@ retry_Revu24str2long:
                     recvfrom(serial_get_fd(), (unsigned char*)&c, 1, 0, NULL, 0);
                 else
                     serial_read((unsigned char*)&c, 1);
-                if(c != '\r' && c != '\0') {
+                if(c != '\r' && c != '\0' && c > 0) {
                     response[len] = c;
                     len++;
                 } else {
@@ -1239,7 +1240,8 @@ void ahp_gt_read_values(int axis)
     devices[ahp_gt_get_current_device()].axis [axis].multiplier = fabs(round(multiplier));
     devices[ahp_gt_get_current_device()].axis [axis].maxspeed_value = 50;
     devices[ahp_gt_get_current_device()].axis [axis].guide = 12709;
-    devices[ahp_gt_get_current_device()].axis [axis].one_second = 1500000;
+    devices[ahp_gt_get_current_device()].axis [axis].crown_timing = SIDEREAL_DAY;
+    devices[ahp_gt_get_current_device()].axis [axis].one_second = 1500000.0;
     devices[ahp_gt_get_current_device()].axis [axis].accel_increment = 43;
     devices[ahp_gt_get_current_device()].axis [axis].accel_steps =  63;
     devices[ahp_gt_get_current_device()].axis [axis].direction_invert = 0;
@@ -1461,23 +1463,12 @@ int ahp_gt_get_mc_version(int axis)
             devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Lock;
             break;
         case 5:
-            devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
-            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Brake;
-            break;
-        case 6:
-            devices[ahp_gt_get_current_device()].axis[axis].model = GT2;
-            devices[ahp_gt_get_current_device()].axis[axis].variant = GT2_Fork;
-        case 7:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
             devices[ahp_gt_get_current_device()].axis[axis].variant = GT5_Standard;
             break;
-        case 8:
+        case 6:
             devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
             devices[ahp_gt_get_current_device()].axis[axis].variant = GT5_Lock;
-            break;
-        case 9:
-            devices[ahp_gt_get_current_device()].axis[axis].model = GT5;
-            devices[ahp_gt_get_current_device()].axis[axis].variant = GT5_Brake;
             break;
         default:
             break;
@@ -1683,18 +1674,32 @@ double ahp_gt_get_max_step_frequency(int axis)
     return devices[ahp_gt_get_current_device()].axis[axis].max_step_frequency;
 }
 
+void ahp_gt_set_crown_timing(int axis, double value)
+{
+   devices[ahp_gt_get_current_device()].axis [axis].crown_timing = value;
+}
+
+double ahp_gt_get_crown_timing(int axis)
+{
+    return devices[ahp_gt_get_current_device()].axis [axis].crown_timing;
+}
+
 double ahp_gt_get_timing(int axis)
 {
     if(!ahp_gt_is_detected())
         return 0.0;
-    return devices[ahp_gt_get_current_device()].axis [axis].one_second;
+    double tracking_speed = devices[ahp_gt_get_current_device()].axis [axis].crown_timing / (ahp_gt_get_crown_teeth(axis)*ahp_gt_get_worm_teeth(axis) / ahp_gt_get_motor_teeth(axis));
+    double err = (tracking_speed / round(tracking_speed) - 1.0);
+    return devices[ahp_gt_get_current_device()].axis [axis].one_second / 1500000.0 - err;
 }
 
-void ahp_gt_set_timing(int axis, int value)
+void ahp_gt_set_timing(int axis, double value)
 {
     if(!ahp_gt_is_detected())
         return;
-    devices[ahp_gt_get_current_device()].axis [axis].one_second = value;
+    double tracking_speed = devices[ahp_gt_get_current_device()].axis [axis].crown_timing / (ahp_gt_get_crown_teeth(axis)*ahp_gt_get_worm_teeth(axis) / ahp_gt_get_motor_teeth(axis));
+    double err = (tracking_speed / round(tracking_speed) - 1.0) * 1500000.0;
+    devices[ahp_gt_get_current_device()].axis [axis].one_second = value * 1500000.0 + err;
 }
 
 void ahp_gt_set_mount_type(MountType value)
@@ -2078,7 +2083,8 @@ double ahp_gt_get_position(int axis, double *timestamp)
     if(!ahp_gt_is_detected())
         return 0;
     int steps = dispatch_command(GetAxisPosition, axis, -1) - 0x800000;
-    if(errno == 0) devices[ahp_gt_get_current_device()].axis[axis].last_step = steps;
+    if(steps != -0x800000)
+        if(errno == 0) devices[ahp_gt_get_current_device()].axis[axis].last_step = steps;
     if(timestamp != NULL)
         *timestamp = get_timestamp() - 0.008333333;
     return (double)devices[ahp_gt_get_current_device()].axis[axis].last_step*M_PI*2.0/(double)devices[ahp_gt_get_current_device()].axis[axis].totalsteps;
@@ -2338,7 +2344,10 @@ void ahp_gt_correct_tracking(int axis, double target_period, int *interrupt) {
     ahp_gt_stop_motion(axis, 0);
     one_second = initial_second - initial_second*(one_second-1.0);
     ahp_gt_set_timing(axis, one_second);
-    ahp_gt_write_and_verify (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
+    if(devices[ahp_gt_get_current_device()].axis[axis].model == GT1)
+        ahp_gt_write_and_verify (axis, axis * 8 + 4, ahp_gt_get_timing(axis));
+    else
+        ahp_gt_write_and_verify (axis, 4, ahp_gt_get_timing(axis));
     ahp_gt_reload(axis);
 }
 

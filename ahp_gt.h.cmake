@@ -756,6 +756,20 @@ DLL_EXPORT GTSteppingMode ahp_gt_get_stepping_mode(int axis);
 DLL_EXPORT double ahp_gt_get_max_speed(int axis);
 
 /**
+* \brief Get the crown timing value of the axis
+* \param axis The motor to query
+* \return The timing value
+*/
+DLL_EXPORT double ahp_gt_get_crown_timing(int axis);
+
+/**
+* \brief Set the crown timing value of the axis
+* \param axis The motor to query
+* \param value The timing value
+*/
+DLL_EXPORT void ahp_gt_set_crown_timing(int axis, double value);
+
+/**
 * \brief Get the timing value of the axis
 * \param axis The motor to query
 * \return The timing value
@@ -767,7 +781,7 @@ DLL_EXPORT double ahp_gt_get_timing(int axis);
 * \param axis The motor to query
 * \param value The timing value
 */
-DLL_EXPORT void ahp_gt_set_timing(int axis, int value);
+DLL_EXPORT void ahp_gt_set_timing(int axis, double value);
 
 /**
 * \brief Set the mount type
