@@ -33,6 +33,7 @@
 #include "ahp_gt.h"
 
 #include "serial.h"
+#include "routines.h"
 #define AXES_LIMIT 127
 
 #define HEX(c) (int)(((c) < 'A') ? ((c) - '0') : ((c) - 'A') + 10)
