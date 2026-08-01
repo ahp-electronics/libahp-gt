@@ -74,6 +74,48 @@ extern "C" {
  * Each section and component is documented for general usage.
 *
 * \{
+* \defgroup Debug Debug features
+* \{*/
+
+#ifndef AHP_DEBUG
+#define AHP_DEBUG
+#define AHP_DEBUG_INFO 0
+#define AHP_DEBUG_ERROR 1
+#define AHP_DEBUG_WARNING 2
+#define AHP_DEBUG_DEBUG 3
+/**
+* \brief set the debug level
+* \param value the debug level
+*/
+DLL_EXPORT void ahp_set_debug_level(int value);
+/**
+* \brief get the debug level
+* \return The current debug level
+*/
+DLL_EXPORT int ahp_get_debug_level(void);
+/**
+* \brief set the application name
+* \param name the application name to be printed on logs
+*/
+DLL_EXPORT void ahp_set_app_name(char* name);
+/**
+* \brief get the application name
+* \return The current application name printed on logs
+*/
+DLL_EXPORT char* ahp_get_app_name(void);
+/**
+* \brief set the output log stream
+* \param f The FILE stream pointer to set as standard output
+*/
+DLL_EXPORT void ahp_set_stdout(FILE *f);
+/**
+* \brief set the error log stream
+* \param f The FILE stream pointer to set as standard error
+*/
+DLL_EXPORT void ahp_set_stderr(FILE *f);
+#endif
+
+/** \}
 * \defgroup Types Types
 * \{*/
 

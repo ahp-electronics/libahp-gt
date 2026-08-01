@@ -43,14 +43,11 @@ extern "C" {
 #endif
 
 #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-#define LINUX
-#define DLL_EXPORT extern
+    #define LINUX
 #elif defined(__APPLE__) && defined(__MACH__)
-#define MACOS
-#define DLL_EXPORT extern
+    #define MACOS
 #elif defined(_WIN32) || defined(_WIN64)
-#define WINDOWS
-#define DLL_EXPORT __declspec(dllexport)
+    #define WINDOWS
 #endif
 
 #ifndef WINDOWS
@@ -64,6 +61,14 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
+#define LINUX
+#elif defined(__APPLE__) && defined(__MACH__)
+#define MACOS
+#elif defined(_WIN32) || defined(_WIN64)
+#define WINDOWS
+#endif
+
 #else
 #undef UNICODE
 #undef _UNICODE
@@ -73,6 +78,97 @@ extern "C" {
 #include <winsock.h>
 #endif
 #include <pthread.h>
+
+#ifdef AHP_DEBUG
+int ahp_debug = 0;
+char* ahp_app_name = NULL;
+FILE *out = NULL;
+FILE *err = NULL;
+/**
+* \brief log a message to the error or output streams
+* \param x The log level
+* \param str The string to print
+*/
+extern void ahp_print(int x, char* str);
+
+void ahp_set_stdout(FILE *f)
+{
+    out = f;
+}
+
+void ahp_set_stderr(FILE *f)
+{
+    err = f;
+}
+
+void ahp_set_debug_level(int value)
+{
+    ahp_debug = value;
+}
+
+void ahp_set_app_name(char* name)
+{
+    ahp_app_name = name;
+}
+
+int ahp_get_debug_level()
+{
+    return ahp_debug;
+}
+
+char* ahp_get_app_name()
+{
+    return ahp_app_name;
+}
+
+void ahp_print(int x, char* str)
+{
+    if(x == 0 && out != NULL)
+        fprintf(out, "%s", str);
+    else if(x <= ahp_get_debug_level() && err != NULL)
+        fprintf(err, "%s", str);
+}
+
+#define pdbg(x, ...) ({ \
+char str[500]; \
+struct timespec ts; \
+time_t t = time(NULL); \
+struct tm tm = *localtime(&t); \
+clock_gettime(CLOCK_REALTIME, &ts); \
+sprintf(str, "[%04d-%02d-%02dT%02d:%02d:%02d.%03ld ", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec/1000000); \
+switch(x) { \
+    case AHP_DEBUG_ERROR: \
+    sprintf(&str[strlen(str)], "ERRO]"); \
+        break; \
+    case AHP_DEBUG_WARNING: \
+    sprintf(&str[strlen(str)], "WARN]"); \
+        break; \
+    case AHP_DEBUG_DEBUG: \
+    sprintf(&str[strlen(str)], "DEBG]"); \
+        break; \
+    default: \
+    sprintf(&str[strlen(str)], "INFO]"); \
+        break; \
+} \
+if(ahp_get_app_name() != NULL) \
+    sprintf(&str[strlen(str)], "[%s]", ahp_get_app_name()); \
+sprintf(&str[strlen(str)], " "); \
+sprintf(&str[strlen(str)], __VA_ARGS__); \
+ahp_print(x, str); \
+})
+#define pinfo(...) pdbg(AHP_DEBUG_INFO, __VA_ARGS__)
+#define perr(...) pdbg(AHP_DEBUG_ERROR, __VA_ARGS__)
+#define pwarn(...) pdbg(AHP_DEBUG_WARNING, __VA_ARGS__)
+#define pgarb(...) pdbg(AHP_DEBUG_DEBUG, __VA_ARGS__)
+#define pfunc pgarb("%s\n", __func__)
+#define start_gettime
+#define end_gettime
+#else
+#define pinfo(...) fprintf(stdout, __VA_ARGS__)
+#define perr(...) fprintf(stderr, __VA_ARGS__)
+#define pwarn(...) fprintf(stderr, __VA_ARGS__)
+#define pgarb(...) fprintf(stderr, __VA_ARGS__)
+#endif
 
 pthread_mutexattr_t ahp_serial_mutex_attr;
 pthread_mutex_t ahp_serial_mutex;
@@ -96,72 +192,72 @@ DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
     switch(ahp_serial_baudrate)
     {
     case      50 : baudr = B50;
-        break;
+                   break;
     case      75 : baudr = B75;
-        break;
+                   break;
     case     110 : baudr = B110;
-        break;
+                   break;
     case     134 : baudr = B134;
-        break;
+                   break;
     case     150 : baudr = B150;
-        break;
+                   break;
     case     200 : baudr = B200;
-        break;
+                   break;
     case     300 : baudr = B300;
-        break;
+                   break;
     case     600 : baudr = B600;
-        break;
+                   break;
     case    1200 : baudr = B1200;
-        break;
+                   break;
     case    1800 : baudr = B1800;
-        break;
+                   break;
     case    2400 : baudr = B2400;
-        break;
+                   break;
     case    4800 : baudr = B4800;
-        break;
+                   break;
     case    9600 : baudr = B9600;
-        break;
+                   break;
     case   19200 : baudr = B19200;
-        break;
+                   break;
     case   38400 : baudr = B38400;
-        break;
+                   break;
     case   57600 : baudr = B57600;
-        break;
+                   break;
     case  115200 : baudr = B115200;
-        break;
+                   break;
     case  230400 : baudr = B230400;
-        break;
+                   break;
 #if defined(__linux__)
     case  460800 : baudr = B460800;
-        break;
+                   break;
     case  500000 : baudr = B500000;
-        break;
+                   break;
     case  576000 : baudr = B576000;
-        break;
+                   break;
     case  921600 : baudr = B921600;
-        break;
+                   break;
     case 1000000 : baudr = B1000000;
-        break;
+                   break;
     case 1152000 : baudr = B1152000;
-        break;
+                   break;
     case 1500000 : baudr = B1500000;
-        break;
+                   break;
     case 2000000 : baudr = B2000000;
-        break;
+                   break;
     case 2500000 : baudr = B2500000;
-        break;
+                   break;
     case 3000000 : baudr = B3000000;
-        break;
+                   break;
     case 3500000 : baudr = B3500000;
-        break;
+                   break;
     case 4000000 : baudr = B4000000;
-        break;
+                   break;
 #endif
     default      : printf("invalid ahp_serial_baudrate\n");
-        return 1;
-    }
+                   return 1;
+  }
 
-    int cbits=CS8,  cpar=0, ipar=IGNPAR, bstop=0;
+  int cbits=CS8,  cpar=0, ipar=IGNPAR, bstop=0;
 
     if(strlen(ahp_serial_mode) != 3)
     {
@@ -172,49 +268,49 @@ DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
     switch(ahp_serial_mode[0])
     {
     case '8': cbits = CS8;
-        break;
+              break;
     case '7': cbits = CS7;
-        break;
+              break;
     case '6': cbits = CS6;
-        break;
+              break;
     case '5': cbits = CS5;
-        break;
+              break;
     default : printf("invalid number of data-bits '%c'\n", ahp_serial_mode[0]);
-        return 1;
+              return 1;
     }
 
     switch(ahp_serial_mode[1])
     {
     case 'N':
     case 'n': cpar = 0;
-        ipar = IGNPAR;
-        break;
+              ipar = IGNPAR;
+              break;
     case 'E':
     case 'e': cpar = PARENB;
-        ipar = INPCK;
-        break;
+              ipar = INPCK;
+              break;
     case 'O':
     case 'o': cpar = (PARENB | PARODD);
-        ipar = INPCK;
-        break;
+              ipar = INPCK;
+              break;
     default : printf("invalid parity '%c'\n", ahp_serial_mode[1]);
-        return 1;
+              return 1;
     }
 
     switch(ahp_serial_mode[2])
     {
     case '1': bstop = 0;
-        break;
+              break;
     case '2': bstop = CSTOPB;
-        break;
+              break;
     default : printf("invalid number of stop bits '%c'\n", ahp_serial_mode[2]);
-        return 1;
+              return 1;
     }
 
     ahp_serial_error = tcgetattr(ahp_serial_fd, &ahp_serial_old_port_settings);
     if(ahp_serial_error==-1)
     {
-        fprintf(stderr, "unable to read portsettings \n");
+        perr("unable to read portsettings \n");
         return 1;
     }
     memset(&ahp_serial_new_port_settings, 0, sizeof(ahp_serial_new_port_settings));  /* clear the new struct */
@@ -237,7 +333,7 @@ DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
     if(ahp_serial_error==-1)
     {
         tcsetattr(ahp_serial_fd, TCSANOW, &ahp_serial_old_port_settings);
-        fprintf(stderr, "unable to adjust portsettings \n");
+        perr("unable to adjust portsettings \n");
         return 1;
     }
 
@@ -303,23 +399,23 @@ DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
     case '7': ahp_serial_new_port_settings.ByteSize = DATABITS_7; break;
     case '8': ahp_serial_new_port_settings.ByteSize = DATABITS_8; break;
     default:
-        fprintf(stderr, "invalid byte size\n");
-        return 1;
+        perr("invalid byte size\n");
+    return 1;
     }
     switch(tolower(ahp_serial_mode[1])) {
     case 'n': ahp_serial_new_port_settings.Parity = NOPARITY; ahp_serial_new_port_settings.fParity = 0; break;
     case 'o': ahp_serial_new_port_settings.Parity = ODDPARITY; ahp_serial_new_port_settings.fParity = 1; break;
     case 'e': ahp_serial_new_port_settings.Parity = EVENPARITY; ahp_serial_new_port_settings.fParity = 1; break;
     default:
-        fprintf(stderr, "invalid parity\n");
-        return 1;
+        perr("invalid parity\n");
+    return 1;
     }
     switch(ahp_serial_mode[2]) {
     case '1': ahp_serial_new_port_settings.StopBits = ONESTOPBIT; break;
     case '2': ahp_serial_new_port_settings.StopBits = TWOSTOPBITS; break;
     default:
-        fprintf(stderr, "invalid stop bits\n");
-        return 1;
+        perr("invalid stop bits\n");
+    return 1;
     }
 
     if(ahp_serial_flowctrl)
@@ -337,7 +433,7 @@ DLL_EXPORT int ahp_serial_setup(int bauds, const char *m, int fc)
 
     if(!SetCommState(pHandle, &ahp_serial_new_port_settings))
     {
-        fprintf(stderr, "unable to set comport cfg settings\n");
+        perr("unable to set comport cfg settings\n");
         return 1;
     }
 
@@ -402,7 +498,7 @@ DLL_EXPORT int serial_connect(const char* devname, int baudrate, const char *mod
         ahp_serial_fd = open(dev_name, O_RDWR);
 
     if(ahp_serial_fd==-1) {
-        fprintf(stderr, "unable to open comport: %s\n", strerror(errno));
+        perr("unable to open comport: %s\n", strerror(errno));
         return 1;
     }
     if(!ahp_serial_mutexes_initialized) {
@@ -516,7 +612,7 @@ DLL_EXPORT int serial_get_fd()
 
 DLL_EXPORT int serial_is_open()
 {
-    return serial_get_fd() != -1;
+     return serial_get_fd() != -1;
 }
 
 #ifdef __cplusplus
