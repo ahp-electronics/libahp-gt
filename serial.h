@@ -44,10 +44,13 @@ extern "C" {
 
 #if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
     #define LINUX
+    #define DLL_EXPORT extern
 #elif defined(__APPLE__) && defined(__MACH__)
     #define MACOS
+    #define DLL_EXPORT extern
 #elif defined(_WIN32) || defined(_WIN64)
     #define WINDOWS
+    #define DLL_EXPORT __declspec(dllexport)
 #endif
 
 #ifndef WINDOWS
@@ -61,14 +64,6 @@ extern "C" {
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
-#if defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
-#define LINUX
-#elif defined(__APPLE__) && defined(__MACH__)
-#define MACOS
-#elif defined(_WIN32) || defined(_WIN64)
-#define WINDOWS
-#endif
-
 #else
 #undef UNICODE
 #undef _UNICODE
@@ -80,6 +75,10 @@ extern "C" {
 #include <pthread.h>
 
 #ifdef AHP_DEBUG
+#define AHP_DEBUG_INFO 0
+#define AHP_DEBUG_ERROR 1
+#define AHP_DEBUG_WARNING 2
+#define AHP_DEBUG_DEBUG 3
 int ahp_debug = 0;
 char* ahp_app_name = NULL;
 FILE *out = NULL;
@@ -89,39 +88,39 @@ FILE *err = NULL;
 * \param x The log level
 * \param str The string to print
 */
-extern void ahp_print(int x, char* str);
+DLL_EXPORT void ahp_print(int x, char* str);
 
-void ahp_set_stdout(FILE *f)
+DLL_EXPORT void ahp_set_stdout(FILE *f)
 {
     out = f;
 }
 
-void ahp_set_stderr(FILE *f)
+DLL_EXPORT void ahp_set_stderr(FILE *f)
 {
     err = f;
 }
 
-void ahp_set_debug_level(int value)
+DLL_EXPORT void ahp_set_debug_level(int value)
 {
     ahp_debug = value;
 }
 
-void ahp_set_app_name(char* name)
+DLL_EXPORT void ahp_set_app_name(char* name)
 {
     ahp_app_name = name;
 }
 
-int ahp_get_debug_level()
+DLL_EXPORT int ahp_get_debug_level()
 {
     return ahp_debug;
 }
 
-char* ahp_get_app_name()
+DLL_EXPORT char* ahp_get_app_name()
 {
     return ahp_app_name;
 }
 
-void ahp_print(int x, char* str)
+DLL_EXPORT void ahp_print(int x, char* str)
 {
     if(x == 0 && out != NULL)
         fprintf(out, "%s", str);

@@ -20,6 +20,7 @@ add_definitions(-fno-permissive)
 
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/ahp_gt.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/serial.h
    )
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/brew.sh.cmake ${CMAKE_CURRENT_BINARY_DIR}/brew.sh )

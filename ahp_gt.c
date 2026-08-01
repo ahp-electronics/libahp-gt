@@ -23,12 +23,14 @@
 *    SOFTWARE._
 */
 
-#include "ahp_gt.h"
-#include <pthread.h>
-#include <time.h>
-#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 #include <errno.h>
+#include <pthread.h>
 #include <sys/time.h>
+#include "ahp_gt.h"
 
 #include "serial.h"
 #define AXES_LIMIT 127
