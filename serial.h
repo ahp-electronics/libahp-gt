@@ -174,9 +174,11 @@ pthread_mutexattr_t ahp_serial_mutex_attr;
 pthread_mutex_t ahp_serial_mutex;
 int ahp_serial_mutexes_initialized = 0;
 int ahp_serial_baudrate = 230400;
+char ahp_serial_port[128];
 char ahp_serial_mode[4] = { 0, 0, 0, 0 };
 int ahp_serial_flowctrl = -1;
 int ahp_serial_fd = -1;
+static volatile int sighup_caught = 0;
 
 #ifndef WINDOWS
 int ahp_serial_error = 0;
@@ -488,6 +490,7 @@ DLL_EXPORT void serial_flush()
 
 DLL_EXPORT int serial_connect(const char* devname, int baudrate, const char *mode)
 {
+    strcpy(ahp_serial_port, devname);
     char dev_name[128];
 #ifndef WINDOWS
     sprintf(dev_name, "/dev/%s", devname);
